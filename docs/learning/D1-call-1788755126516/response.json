@@ -1,0 +1,28 @@
+{
+  "id": "ef960b80-71b3-45bd-b4cf-6d8f1dd40345",
+  "object": "chat.completion",
+  "created": 1788755127,
+  "model": "deepseek-v4-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "资金网关的核心职责是统一接入各类支付渠道，并对交易进行路由、转发与协议转换。它负责处理交易状态的同步与异步通知，确保资金流与信息流的一致性。此外，它也承担着对账、风控及资金安全的关键防线作用。"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 56,
+    "total_tokens": 70,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 14
+  },
+  "system_fingerprint": "a26a7955944dc5c60445bff77fac9c8e"
+}

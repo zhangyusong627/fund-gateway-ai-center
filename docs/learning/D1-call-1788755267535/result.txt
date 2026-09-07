@@ -1,0 +1,3 @@
+HTTP=200
+elapsed_ms=1476
+usage={"completion_tokens":92,"prompt_tokens":14,"total_tokens":106,"prompt_tokens_details":{"cached_tokens":0}}

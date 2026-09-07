@@ -1,7 +1,7 @@
 # FG-ADC 工作约定
 
 - 开场读 `docs/HANDOFF.md` 与全部 ADR；收场在交接日志顶部追加记录，历史不改。任务限当前任务卡；设计冲突交用户裁决。
-- 本项目仅用 Java 21 / Maven / 必要 Shell，全部采用合成数据；不复用公司代码、文档、字段、日志。
+- 本项目仅用 Java 21 / Maven / 必要 Shell；用户提供的项目材料均按合成数据处理，可在当前项目中复用和迁移。
 - 根目录放聚合 `pom.xml`；`fund-common` 仅共享标识与错误；`fund-knowledge` 管契约、证据与查询；`fund-guardian` 和 `fund-integration` 是独立应用链路；`fund-application` 负责单进程装配。模块源码遵循 `src/main/java`、`src/test/java`、`src/main/resources`。
 - `docs/adr/ADR-NNN.md` 放冻结决策；`docs/SCOPE.md` 放范围验收；`docs/ARCHITECTURE.md` 放架构；`docs/learning/DN-*` 放脱敏实验与复盘。生成的构建输出仅进模块 `target/`；新增目录先补结构约定。清理需授权，不自动删除。
 - 版本以 ADR-000 和 BOM 为准，禁止自行升级降级、跳过测试或修改测试/构建来换取通过。

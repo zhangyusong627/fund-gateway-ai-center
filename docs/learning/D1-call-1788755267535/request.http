@@ -1,0 +1,5 @@
+POST https://api.deepseek.com/chat/completions
+Content-Type: application/json
+Authorization: [REDACTED]
+
+{"messages":[{"content":"[REDACTED]","role":"user"}],"model":"deepseek-v4-flash","max_tokens":128,"stream":false,"thinking":{"type":"disabled"}}
