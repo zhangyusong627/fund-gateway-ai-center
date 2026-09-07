@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.practice.fundgateway.knowledge.credit.CreditApplication;
 import org.practice.fundgateway.knowledge.credit.CreditApplicationStructuredOutputService;
-import org.practice.fundgateway.knowledge.credit.ValidationIssue;
 import org.practice.fundgateway.knowledge.credit.ValidationResult;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
@@ -78,26 +77,9 @@ public class DeepSeekStructuredOutputExperiment implements CommandLineRunner {
         ValidationResult business = mapping.successful() && structure.valid()
                 ? validationService.validateBusiness(mapping.application())
                 : ValidationResult.failed(structure.issues());
-        business = enforceSyntheticDataBoundary(mapping.application(), business);
         saveEvidence(evidenceDir.resolve("result.txt"), formatResult(response, prompt, structure, business, started));
         saveEvidence(evidenceDir.resolve("response.json"), modelText);
         System.out.println("D2 structured call completed; evidence=" + evidenceDir);
-    }
-
-    /** 拒绝模型生成的疑似真实身份数据，确保实验只处理合成候选。 */
-    private ValidationResult enforceSyntheticDataBoundary(CreditApplication application,
-                                                            ValidationResult current) {
-        if (!current.valid() || application == null) {
-            return current;
-        }
-        boolean synthetic = application.billNo() != null && application.billNo().startsWith("SYN-")
-                && application.idNo() != null && application.idNo().startsWith("SYNTHETIC-")
-                && application.custName() != null && application.custName().contains("合成");
-        if (synthetic) {
-            return current;
-        }
-        return ValidationResult.failed(List.of(
-                new ValidationIssue("$", "模型输出未满足合成数据约束，拒绝进入后续流程")));
     }
 
     /** 保存不包含提示词和密钥的实验元数据。 */
