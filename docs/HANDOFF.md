@@ -200,6 +200,27 @@ M0 后续顺序不变：D3 工具循环 → D4 最小向量检索 → D5 最小�
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-023] 2026-09-08 · 当前会话
+
+**做了什么**
+- 检查本地 Spring AI 2.0.1 依赖和源码中的工具调用 API。
+
+**结果**
+- 找到 `ToolCallingManager`、`DefaultToolCallingManager` 和 `ToolCallLimitExceededException`。
+- 未找到 `ToolCallingAdvisor`；D3 入口调整为实际存在的 `ToolCallingManager`。
+
+**发现的坑**
+- 交接文档中的 `ToolCallingAdvisor` 结论与当前本地依赖不一致，不能直接按该类名写代码。
+
+**新产生的决策**
+- ADR-006：以 `ToolCallingManager` 作为 D3 验证入口。
+
+**下一步唯一动作**
+- 用 `ToolCallingManager` 实现最小只读工具调用、步数限制和失败路径实验。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-022] 2026-09-07 · 当前会话
 
 **做了什么**
