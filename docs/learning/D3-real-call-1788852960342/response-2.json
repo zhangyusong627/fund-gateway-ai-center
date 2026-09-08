@@ -1,0 +1,26 @@
+{
+  "id": "3cf17245-7a29-4fee-9c13-01a733ed64e4",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "根据工具查询结果，`synthetic-provider` 的 `credit-apply` 接口限制如下：\n\n- **QPS 限制**：20\n- **超时时间**：3000 毫秒（3秒）",
+        "role": "assistant",
+        "reasoning_content": "好的，根据工具返回结果，synthetic-provider 的 credit-apply 接口 QPS 限制是 20，超时时间是 3000 毫秒。可以回答用户了。"
+      }
+    }
+  ],
+  "created": 1788852962,
+  "model": "deepseek-v4-flash",
+  "system_fingerprint": "a26a7955944dc5c60445bff77fac9c8e",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 91,
+    "prompt_tokens": 216,
+    "total_tokens": 307,
+    "prompt_tokens_details": {
+      "cached_tokens": 128
+    }
+  }
+}

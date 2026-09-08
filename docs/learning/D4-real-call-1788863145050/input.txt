@@ -1,0 +1,3 @@
+授信申请需要填写申请金额
+model=BAAI/bge-small-zh-v1.5
+dimension=512

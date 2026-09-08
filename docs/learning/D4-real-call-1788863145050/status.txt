@@ -1,0 +1,3 @@
+embedding=success
+pgvector=success
+topK=2

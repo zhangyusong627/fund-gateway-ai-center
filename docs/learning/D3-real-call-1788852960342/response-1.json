@@ -1,0 +1,37 @@
+{
+  "id": "20fcff71-7551-41d9-8b91-cb25d5d610ec",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "call_00_gXiClzRKPTjGaVgqBnAT4819",
+            "type": "function",
+            "function": {
+              "name": "querySyntheticContract",
+              "arguments": "{\"provider\": \"synthetic-provider\", \"interface\": \"credit-apply\"}"
+            }
+          }
+        ],
+        "reasoning_content": "The user wants to query the synthetic-provider's credit-apply interface for QPS limits and timeout. Let me call the tool."
+      }
+    }
+  ],
+  "created": 1788852960,
+  "model": "deepseek-v4-flash",
+  "system_fingerprint": "a26a7955944dc5c60445bff77fac9c8e",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 94,
+    "prompt_tokens": 397,
+    "total_tokens": 491,
+    "prompt_tokens_details": {
+      "cached_tokens": 384
+    }
+  }
+}

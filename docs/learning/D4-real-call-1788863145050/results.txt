@@ -1,0 +1,1 @@
+[RetrievedChunk[chunkId=d4-credit-apply-3b0f1197, content=授信申请接口的申请金额字段, score=0.79590919066558], RetrievedChunk[chunkId=d4-credit-apply-279dee7c, content=授信申请接口的申请期限字段, score=0.7036250410303462]]

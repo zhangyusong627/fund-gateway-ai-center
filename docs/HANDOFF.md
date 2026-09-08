@@ -200,6 +200,27 @@ M0 后续顺序不变：D3 工具循环 → D4 最小向量检索 → D5 最小�
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-027] 2026-09-08 · 当前会话
+
+**做了什么**
+- 阅读 Spring AI 2.0.1 的 `ToolDefinition`、`DefaultToolDefinition`、`ToolCallback`、`DefaultToolCallingManager` 与 DeepSeek 工具定义转换源码，结合项目中的 `SyntheticContractQueryTool` 解释工具定义的职责和调用链。
+
+**结果**
+- 确认 `ToolDefinition` 只描述工具名称、用途和输入 JSON Schema；工具执行由 `ToolCallback` 承担，运行时查找和调用由 `ToolCallingManager` 承担。
+- 确认 `inputSchema` 用于指导模型生成参数，不会让 `DefaultToolCallingManager` 自动完成本地参数校验。
+
+**发现的坑**
+- 不能把“向模型提供 JSON Schema”误解成“Java 运行时已经强制校验参数”；当前工具仍需在 `call()` 内解析并校验输入。
+
+**新产生的决策**
+- 无。
+
+**下一步唯一动作**
+- 完成 M0 总结和阶段认证，之后再进入 M1 最小诊断集成。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-025] 2026-09-08 · 当前会话
 
 **做了什么**
