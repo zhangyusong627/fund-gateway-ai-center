@@ -104,6 +104,7 @@
 
 - D3 前置核对：本地 Spring AI 2.0.1 不存在 `ToolCallingAdvisor`，已确认使用 `ToolCallingManager` 作为实验入口。
 - 当前状态：未开始 D3 编码，先完成 API 证据记录，避免照搬错误类名。
+- M0 收口：D3、D4、D5 单点验证均已完成；全仓库 `clean verify` 通过，共 14 项测试通过。
 
 ## 2026-09-07 D2 提前执行记录
 
