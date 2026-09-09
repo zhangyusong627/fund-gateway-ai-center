@@ -1,0 +1,28 @@
+{
+  "summary": "synthetic-provider credit-apply is at 90% of its QPS limit, has a 2% timeout rate, and has a confirmed upstream-timeout incident; no configuration was changed.",
+  "riskLevel": "MEDIUM",
+  "findings": [
+    {
+      "ruleId": "R001",
+      "matched": true,
+      "evidence": "Contract qpsLimit=20; metric qps=18; utilization=0.90.",
+      "recommendation": "Review capacity headroom and rate-limit controls before allowing more traffic; do not increase the contract limit without operator approval.",
+      "requiresHumanReview": true
+    },
+    {
+      "ruleId": "R003",
+      "matched": true,
+      "evidence": "Metric timeoutRate=0.02; historical incident incident-001 has cause upstream-timeout.",
+      "recommendation": "Assess upstream dependency health and timeout handling; avoid changing timeout or retry settings without human approval.",
+      "requiresHumanReview": true
+    },
+    {
+      "ruleId": "R005",
+      "matched": true,
+      "evidence": "Incident incident-001 was confirmed with cause upstream-timeout on 2026-09-08T10:00:00+08:00.",
+      "recommendation": "A human operator should review incident follow-up actions, runbooks, and dependency mitigation before further changes.",
+      "requiresHumanReview": true
+    }
+  ],
+  "requiresHumanReview": true
+}

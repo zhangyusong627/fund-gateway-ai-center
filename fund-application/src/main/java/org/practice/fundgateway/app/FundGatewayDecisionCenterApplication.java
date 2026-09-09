@@ -14,7 +14,7 @@ public class FundGatewayDecisionCenterApplication {
      * 启动单进程应用。
      */
     public static void main(String[] args) {
-		SpringApplication.run(FundGatewayDecisionCenterApplication.class, args);
+        SpringApplication.run(FundGatewayDecisionCenterApplication.class, args);
     }
 
 }
