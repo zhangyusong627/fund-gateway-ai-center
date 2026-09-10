@@ -5,6 +5,11 @@
   <artifactId>fund-knowledge</artifactId>
   <dependencies>
     <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${apache-poi.version}</version>
+    </dependency>
+    <dependency>
       <groupId>ai.djl</groupId>
       <artifactId>api</artifactId>
       <version>0.34.0</version>

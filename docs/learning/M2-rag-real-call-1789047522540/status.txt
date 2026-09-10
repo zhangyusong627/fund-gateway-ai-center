@@ -1,0 +1,3 @@
+model=deepseek-v4-flash
+status=REJECTED_CITATION_NOT_ALLOWED
+accepted_citations=0

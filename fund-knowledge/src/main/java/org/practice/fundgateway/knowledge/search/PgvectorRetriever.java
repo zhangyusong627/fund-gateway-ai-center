@@ -23,14 +23,22 @@ public class PgvectorRetriever {
             throw new IllegalArgumentException("Top-K 必须大于零");
         }
         String vectorLiteral = toVectorLiteral(queryVector);
-        String sql = "SELECT chunk_id, content, 1 - (embedding <=> ?::vector) AS score "
+        String sql = "SELECT chunk_id, content, document_id, document_version, locator, "
+                + "metadata->>'sectionPath' AS section_path, metadata->>'tableIndex' AS table_index, "
+                + "metadata->>'rowIndex' AS row_index, 1 - (embedding <=> ?::vector) AS score "
                 + "FROM knowledge_chunks WHERE collection_name = ? "
                 + "ORDER BY embedding <=> ?::vector LIMIT ?";
         return jdbcTemplate.query(sql,
                 (resultSet, rowNumber) -> new RetrievedChunk(
                         resultSet.getString("chunk_id"),
                         resultSet.getString("content"),
-                        resultSet.getDouble("score")),
+                        resultSet.getDouble("score"),
+                        resultSet.getString("document_id"),
+                        resultSet.getString("document_version"),
+                        resultSet.getString("section_path"),
+                        integerOrDefault(resultSet.getString("table_index"), -1),
+                        integerOrDefault(resultSet.getString("row_index"), -1),
+                        resultSet.getString("locator")),
                 vectorLiteral, collectionName, vectorLiteral, topK);
     }
 
@@ -47,6 +55,32 @@ public class PgvectorRetriever {
     }
 
     /** 表示数据库返回的检索候选。 */
-    public record RetrievedChunk(String chunkId, String content, double score) {
+    public record RetrievedChunk(
+            String chunkId,
+            String content,
+            double score,
+            String documentId,
+            String documentVersion,
+            String sectionPath,
+            int tableIndex,
+            int rowIndex,
+            String locator) {
+
+        /** 保留旧调用方只关心文本和分数时的构造方式。 */
+        public RetrievedChunk(String chunkId, String content, double score) {
+            this(chunkId, content, score, null, null, null, -1, -1, null);
+        }
+    }
+
+    /** 将可空的 JSON 文本数字转换为来源坐标。 */
+    private static int integerOrDefault(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            return defaultValue;
+        }
     }
 }

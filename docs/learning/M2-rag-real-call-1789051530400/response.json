@@ -1,0 +1,25 @@
+{
+  "id": "19855058-a5d9-4d39-9c56-dfb716b9a201",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "{\"answer\":\"applyAmt 的数据类型为 BigDecimal，是否必填为 Y（必填），说明为授信申请金额。\",\"citations\":[{\"chunkId\":\"shengheng-consumer:source-v1:117\",\"locator\":\"授信申请#117-117\",\"quote\":\"applyAmt | BigDecimal | Y | 授信申请金额\"}]}",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789051534,
+  "model": "deepseek-flash",
+  "system_fingerprint": "aeb56401ca74e127821c4f9126dcb669",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 78,
+    "prompt_tokens": 365,
+    "total_tokens": 443,
+    "prompt_tokens_details": {
+      "cached_tokens": 128
+    }
+  }
+}
