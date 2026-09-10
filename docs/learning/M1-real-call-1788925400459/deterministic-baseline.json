@@ -1,0 +1,38 @@
+{
+  "findings": [
+    {
+      "ruleId": "R001",
+      "matched": true,
+      "riskLevel": "HIGH",
+      "evidence": "当前 QPS=18，契约上限=20",
+      "recommendation": "降低调用并发或限流值",
+      "requiresHumanReview": true
+    },
+    {
+      "ruleId": "R002",
+      "matched": false,
+      "riskLevel": "NONE",
+      "evidence": "超时率=0.02",
+      "recommendation": "继续观察",
+      "requiresHumanReview": false
+    },
+    {
+      "ruleId": "R003",
+      "matched": false,
+      "riskLevel": "NONE",
+      "evidence": "平均响应=420ms，契约超时=3000ms",
+      "recommendation": "继续观察",
+      "requiresHumanReview": false
+    },
+    {
+      "ruleId": "R004",
+      "matched": false,
+      "riskLevel": "NONE",
+      "evidence": "线程池活跃数=6/10",
+      "recommendation": "继续观察",
+      "requiresHumanReview": false
+    }
+  ],
+  "requiresHumanReview": true,
+  "evidenceSufficient": true
+}

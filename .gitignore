@@ -6,4 +6,3 @@
 .DS_Store
 models/*
 !models/.gitignore
-fund-application/docs/

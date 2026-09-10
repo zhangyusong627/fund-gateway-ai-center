@@ -21,7 +21,7 @@
         <module>fund-knowledge</module>
         <module>fund-guardian</module>
         <module>fund-integration</module>
-        <module>fund-application</module>
+        <module>fund-experiments</module>
     </modules>
     <dependencyManagement>
         <dependencies>

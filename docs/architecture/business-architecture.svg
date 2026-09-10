@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1220" viewBox="0 0 1920 1220">
+  <defs>
+    <style>
+      text{font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;fill:#233044}.title{font-size:32px;font-weight:700;fill:#17365d}.subtitle{font-size:15px;fill:#5b6b7f}.layerTitle{font-size:19px;font-weight:700}.domainTitle{font-size:20px;font-weight:700;fill:#fff}.cardTitle{font-size:16px;font-weight:700}.cardNote{font-size:13px;fill:#5d6d7e}.band{stroke-width:2}.card{fill:#fff;stroke-width:1.8;filter:url(#shadow)}.flow{stroke:#56758f;stroke-width:2.4;fill:none;marker-end:url(#arrow)}.cross{stroke:#9b6b2f;stroke-width:2.5;fill:none;marker-end:url(#arrowGold)}.dash{stroke:#758ba0;stroke-width:2.2;stroke-dasharray:7 6;fill:none;marker-end:url(#arrow)}
+    </style>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#55708a" flood-opacity=".16"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto"><path d="M0,0L0,7L9,3.5z" fill="#56758f"/></marker>
+    <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto"><path d="M0,0L0,7L9,3.5z" fill="#9b6b2f"/></marker>
+  </defs>
+  <rect width="1920" height="1220" fill="#f7f9fc"/><rect width="1920" height="72" fill="#eaf2fb"/><rect y="70" width="1920" height="2" fill="#4b91d1"/>
+  <text x="48" y="43" class="title">FG-ADC 资金网关智能决策中心 · 业务架构</text><text x="1395" y="42" class="subtitle">双业务域智能工程平台，共享知识能力与已发布接口规范</text>
+
+  <rect x="220" y="100" width="1640" height="120" rx="10" fill="#fde3e5" stroke="#e69aa3" class="band"/>
+  <rect x="38" y="136" width="150" height="48" rx="24" fill="#d95565"/><text x="113" y="167" text-anchor="middle" class="layerTitle" fill="#fff">业务参与方</text>
+  <rect x="275" y="130" width="345" height="62" rx="8" stroke="#d95565" class="card"/><text x="448" y="157" text-anchor="middle" class="cardTitle">运维与开发人员</text><text x="448" y="180" text-anchor="middle" class="cardNote">观察风险、发起诊断、核验证据</text>
+  <rect x="675" y="130" width="345" height="62" rx="8" stroke="#d95565" class="card"/><text x="848" y="157" text-anchor="middle" class="cardTitle">资方接入开发</text><text x="848" y="180" text-anchor="middle" class="cardNote">提交文档、审查候选规范</text>
+  <rect x="1075" y="130" width="345" height="62" rx="8" stroke="#d95565" class="card"/><text x="1248" y="157" text-anchor="middle" class="cardTitle">业务与接口负责人</text><text x="1248" y="180" text-anchor="middle" class="cardNote">确认接口事实与业务条件</text>
+  <rect x="1475" y="130" width="330" height="62" rx="8" stroke="#d95565" class="card"/><text x="1640" y="157" text-anchor="middle" class="cardTitle">项目所有者 / 审核人</text><text x="1640" y="180" text-anchor="middle" class="cardNote">裁决冲突、批准或拒绝</text>
+
+  <rect x="220" y="260" width="1640" height="150" rx="10" fill="#fff0c9" stroke="#dcae42" class="band"/>
+  <rect x="38" y="311" width="150" height="48" rx="24" fill="#d19a1c"/><text x="113" y="342" text-anchor="middle" class="layerTitle" fill="#fff">业务触发</text>
+  <rect x="260" y="282" width="740" height="105" rx="9" fill="#fff8e8" stroke="#d19a1c" stroke-width="1.5"/>
+  <text x="630" y="306" text-anchor="middle" class="cardTitle">运行风险触发</text>
+  <rect x="295" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="398" y="350" text-anchor="middle" class="cardTitle">趋势预防</text>
+  <rect x="525" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="628" y="350" text-anchor="middle" class="cardTitle">正式告警</text>
+  <rect x="755" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="858" y="350" text-anchor="middle" class="cardTitle">人工专项诊断</text>
+  <rect x="1080" y="282" width="740" height="105" rx="9" fill="#fff8e8" stroke="#d19a1c" stroke-width="1.5"/>
+  <text x="1450" y="306" text-anchor="middle" class="cardTitle">资方接入任务触发</text>
+  <rect x="1115" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1218" y="350" text-anchor="middle" class="cardTitle">新资方接入</text>
+  <rect x="1345" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1448" y="350" text-anchor="middle" class="cardTitle">文档版本更新</text>
+  <rect x="1575" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1678" y="350" text-anchor="middle" class="cardTitle">指定接口提取</text>
+
+  <rect x="220" y="450" width="1640" height="390" rx="10" fill="#e8eef7" stroke="#829bb8" class="band"/>
+  <rect x="38" y="621" width="150" height="48" rx="24" fill="#52779d"/><text x="113" y="652" text-anchor="middle" class="layerTitle" fill="#fff">核心业务域</text>
+
+  <rect x="250" y="480" width="755" height="330" rx="12" fill="#dcf3df" stroke="#4ba563" stroke-width="2"/>
+  <rect x="250" y="480" width="755" height="48" rx="12" fill="#3c9a52"/><rect x="250" y="516" width="755" height="12" fill="#3c9a52"/>
+  <text x="628" y="512" text-anchor="middle" class="domainTitle">智能守护</text>
+  <rect x="285" y="558" width="310" height="75" rx="8" stroke="#3c9a52" class="card"/><text x="440" y="587" text-anchor="middle" class="cardTitle">运行态势与风险识别</text><text x="440" y="611" text-anchor="middle" class="cardNote">窗口、趋势、单项与组合风险</text>
+  <rect x="655" y="558" width="310" height="75" rx="8" stroke="#3c9a52" class="card"/><text x="810" y="587" text-anchor="middle" class="cardTitle">诊断任务与证据快照</text><text x="810" y="611" text-anchor="middle" class="cardNote">去重、冷却、版本和数据质量</text>
+  <rect x="285" y="678" width="310" height="75" rx="8" stroke="#3c9a52" class="card"/><text x="440" y="707" text-anchor="middle" class="cardTitle">多证据诊断与建议</text><text x="440" y="731" text-anchor="middle" class="cardNote">根因候选、证据缺口、验证顺序</text>
+  <rect x="655" y="678" width="310" height="75" rx="8" stroke="#3c9a52" class="card"/><text x="810" y="707" text-anchor="middle" class="cardTitle">人工审核与模拟治理</text><text x="810" y="731" text-anchor="middle" class="cardNote">硬冲突拦截、结果核验与复盘</text>
+  <path d="M595 595H655 M440 633V678 M810 633V678 M595 715H655" class="flow"/>
+
+  <rect x="1075" y="480" width="755" height="330" rx="12" fill="#dceafa" stroke="#4a8fce" stroke-width="2"/>
+  <rect x="1075" y="480" width="755" height="48" rx="12" fill="#377fbd"/><rect x="1075" y="516" width="755" height="12" fill="#377fbd"/>
+  <text x="1453" y="512" text-anchor="middle" class="domainTitle">资方接入助手</text>
+  <rect x="1110" y="558" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1265" y="587" text-anchor="middle" class="cardTitle">文档解析与证据检索</text><text x="1265" y="611" text-anchor="middle" class="cardNote">正文、表格、版本与来源位置</text>
+  <rect x="1480" y="558" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1635" y="587" text-anchor="middle" class="cardTitle">候选接口规范抽取</text><text x="1635" y="611" text-anchor="middle" class="cardNote">字段、条件、错误码与引用</text>
+  <rect x="1110" y="678" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1265" y="707" text-anchor="middle" class="cardTitle">Java 校验与证据核对</text><text x="1265" y="731" text-anchor="middle" class="cardNote">结构、业务关系、来源存在性</text>
+  <rect x="1480" y="678" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1635" y="707" text-anchor="middle" class="cardTitle">人工确认与版本发布</text><text x="1635" y="731" text-anchor="middle" class="cardNote">批准、退回与不可变 V1</text>
+  <path d="M1420 595H1480 M1265 633V678 M1635 633V678 M1420 715H1480" class="flow"/>
+
+  <path d="M630 410V450 M1450 410V450" class="flow"/>
+  <path d="M1635 633V650H1040H810V633" class="cross"/><text x="1225" y="670" text-anchor="middle" class="cardNote">已发布接口规范成为只读诊断证据</text>
+
+  <rect x="220" y="880" width="1640" height="145" rx="10" fill="#e8e0f6" stroke="#a184cf" class="band"/>
+  <rect x="38" y="929" width="150" height="48" rx="24" fill="#7552aa"/><text x="113" y="960" text-anchor="middle" class="layerTitle" fill="#fff">共享业务能力</text>
+  <rect x="280" y="920" width="430" height="66" rx="8" stroke="#7552aa" class="card"/><text x="495" y="947" text-anchor="middle" class="cardTitle">文档知识与 RAG 证据</text><text x="495" y="970" text-anchor="middle" class="cardNote">原文、版本、来源、检索与引用</text>
+  <rect x="745" y="920" width="430" height="66" rx="8" stroke="#7552aa" class="card"/><text x="960" y="947" text-anchor="middle" class="cardTitle">已发布资方接口规范</text><text x="960" y="970" text-anchor="middle" class="cardNote">人工确认、版本化、不可静默修改</text>
+  <rect x="1210" y="920" width="590" height="66" rx="8" stroke="#7552aa" class="card"/><text x="1505" y="947" text-anchor="middle" class="cardTitle">统一证据、审计与评测</text><text x="1505" y="970" text-anchor="middle" class="cardNote">关联编号、模型与规则版本、审核、验证和结果</text>
+  <path d="M495 840V920 M960 840V920 M1505 840V920" class="dash"/>
+
+  <rect x="220" y="1065" width="1640" height="105" rx="10" fill="#fce5cf" stroke="#d59b62" class="band"/>
+  <rect x="38" y="1094" width="150" height="48" rx="24" fill="#c87931"/><text x="113" y="1125" text-anchor="middle" class="layerTitle" fill="#fff">业务成果</text>
+  <rect x="285" y="1090" width="680" height="55" rx="8" stroke="#c87931" class="card"/><text x="625" y="1114" text-anchor="middle" class="cardTitle">可追溯诊断报告、人工决定与模拟治理结果</text><text x="625" y="1135" text-anchor="middle" class="cardNote">支持回放、故障复盘和规则改进</text>
+  <rect x="1110" y="1090" width="680" height="55" rx="8" stroke="#c87931" class="card"/><text x="1450" y="1114" text-anchor="middle" class="cardTitle">可追溯候选事实与已发布接口规范</text><text x="1450" y="1135" text-anchor="middle" class="cardNote">支持人工复核、版本追踪和诊断引用</text>
+  <text x="48" y="1200" class="subtitle">业务边界：两条链路可独立使用；模型只生成候选事实、候选根因和建议；发布、规则、权限与审核由 Java 和人工控制。</text>
+</svg>

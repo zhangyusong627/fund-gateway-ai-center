@@ -1,0 +1,9 @@
+{
+  "provider": "synthetic-provider",
+  "interface": "credit-apply",
+  "qps": 18,
+  "avgLatencyMs": 420,
+  "timeoutRate": 0.02,
+  "activeThreads": 6,
+  "maxThreads": 10
+}

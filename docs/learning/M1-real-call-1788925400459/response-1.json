@@ -1,0 +1,55 @@
+{
+  "id": "efe4eb4c-a920-4a45-b87a-c479ab8ef82a",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "我将并行读取该接口的契约、运行指标和历史故障三方面数据来开始诊断。",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "call_00_wjBSpP3PLdSRgAWcerMD1674",
+            "type": "function",
+            "function": {
+              "name": "querySyntheticContract",
+              "arguments": "{\"provider\": \"synthetic-provider\", \"interface\": \"credit-apply\"}"
+            }
+          },
+          {
+            "index": 1,
+            "id": "call_01_LmRv2WVx2aReTgJKtuhx2680",
+            "type": "function",
+            "function": {
+              "name": "querySyntheticMetrics",
+              "arguments": "{\"provider\": \"synthetic-provider\", \"interface\": \"credit-apply\"}"
+            }
+          },
+          {
+            "index": 2,
+            "id": "call_02_TQALjScDPkgwelWSjQ0t7353",
+            "type": "function",
+            "function": {
+              "name": "querySyntheticIncidentHistory",
+              "arguments": "{\"provider\": \"synthetic-provider\", \"interface\": \"credit-apply\"}"
+            }
+          }
+        ],
+        "reasoning_content": "The user asks me to diagnose synthetic-provider's credit-apply interface. They want me to first read the contract, run metrics, and historical incidents, then only give read-only governance suggestions without performing config changes.\n\nLet me start by querying all three: contract, metrics, and incident history for provider \"synthetic-provider\" and interface \"credit-apply\". These are independent calls, so I can make them all at once."
+      }
+    }
+  ],
+  "created": 1788925400,
+  "model": "deepseek-v4-flash",
+  "system_fingerprint": "a26a7955944dc5c60445bff77fac9c8e",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 281,
+    "prompt_tokens": 537,
+    "total_tokens": 818,
+    "prompt_tokens_details": {
+      "cached_tokens": 512
+    }
+  }
+}

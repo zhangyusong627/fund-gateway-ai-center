@@ -1,0 +1,6 @@
+{
+  "provider": "synthetic-provider",
+  "interface": "credit-apply",
+  "qpsLimit": 20,
+  "timeoutMs": 3000
+}
