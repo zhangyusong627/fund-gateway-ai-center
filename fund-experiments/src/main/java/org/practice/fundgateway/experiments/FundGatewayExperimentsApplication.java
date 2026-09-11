@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.practice.fundgateway.integration.contract.ContractReviewController;
 import org.practice.fundgateway.integration.contract.ContractReviewService;
+import org.practice.fundgateway.guardian.metrics.MetricProcessingConfiguration;
 
 @SpringBootApplication
-@Import({ContractReviewController.class, ContractReviewService.class})
+@Import({ContractReviewController.class, ContractReviewService.class, MetricProcessingConfiguration.class})
 /**
  * 资金网关智能决策中心的 Spring Boot 启动入口。
  *

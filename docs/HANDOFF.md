@@ -198,6 +198,267 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+
+### [C-096] 2026-09-11 · M4 运行 profile 完整链路回放
+
+**做了什么**
+- 补充实验启动类对 `MetricProcessingConfiguration` 的显式导入，使 `m4-runtime` 能获得窗口聚合器。
+- 使用 `m4,m4-producer,m4-runtime` 启动应用，回放 18 条正常指标和 2 条风险指标。
+- 验证 Redpanda 消费、窗口聚合、风险规则/指纹/冷却、PostgreSQL 落库的完整链路。
+- 保存证据：`docs/learning/M4-runtime-profile-e2e-20260911.md`。
+
+**结果**
+- 首次启动因缺少窗口聚合器 Bean 失败；补充显式配置导入后重新构建成功。
+- 第二次启动成功，Kafka 消费组正常订阅，Mock Producer 发送 20 条消息。
+- 本次运行新增 1 条风险事件、1 条诊断任务；数据库总量为 3 条风险事件、4 条诊断任务，未清理历史数据。
+- 完整链路通过：`Redpanda → MetricEventConsumer → MetricWindowAggregator → RiskDiagnosisCoordinator → PostgreSQL`。
+
+**发现的坑**
+- 实验启动模块与领域模块处于不同根包时，不能依赖组件扫描自动发现领域配置，必须显式导入配置类。
+- 运行 profile 使用已有 Kafka 消费组的历史 offset；验收统计必须区分本次新增记录与数据库历史总量。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 执行 M4 全量测试与静态检查，整理阶段验收结果后准备提交。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-095] 2026-09-11 · 指标消费者接入风险编排入口
+
+**做了什么**
+- 扩展 `MetricEventConsumer`：消息完成 JSON 解析、eventId 幂等和窗口聚合后，可选调用 `RiskDiagnosisCoordinator`。
+- 保留无编排器时的纯聚合模式，避免未配置 PostgreSQL 时应用启动失败。
+- 新增消费者触发编排测试。
+
+**结果**
+- 守护模块 11 个测试全部通过。
+- 正式消费者入口现在具备“消费 → 聚合 → 规则/指纹/冷却/落库”的调用链，但默认配置仍未注入 PostgreSQL 编排器；需要应用运行配置开启后才执行真实落库。
+
+**发现的坑**
+- 直接按每条消息触发当前窗口诊断会依赖冷却抑制重复任务；后续可再优化为窗口关闭事件触发，减少重复计算。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 在 M4 运行 profile 中注入 PostgreSQL 编排器，重新执行 Redpanda 到数据库的完整链路回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-094] 2026-09-11 · M4 降频验收统计完成
+
+**做了什么**
+- 从 Redpanda 读取完整 20 条指标消息，执行规则、指纹、冷却和 PostgreSQL 幂等编排。
+- 保存统计证据到 `docs/learning/M4-rate-reduction-acceptance-20260911.md`。
+
+**结果**
+- 验收输出：`metricMessages=20`、`riskEvents=1`、`diagnosticTasks=1`。
+- 指标消息数与诊断任务数为 20:1，重复回放没有新增诊断任务，满足降频目标。
+- 发现将少量风险事件与大量正常事件先合并会稀释窗口错误率；验收程序改为逐事件最小窗口，保留该边界观察。
+
+**发现的坑**
+- `taskCreated=false` 是因为本次风险窗口已有幂等任务，并非消费失败；最终任务数量仍为 1。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 完成 M4 阶段全量测试与验收记录，确认实时链路核心目标后收尾。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-093] 2026-09-11 · M4 风险编排与 PostgreSQL 幂等回放通过
+
+**做了什么**
+- 新增 `RiskDiagnosisCoordinator`，串联规则命中、风险指纹、冷却和 Repository。
+- 新增 `M4RiskPersistenceReplay`，使用本地 PostgreSQL 真实执行重复风险回放。
+- 保存证据到 `docs/learning/M4-risk-persistence-replay-20260911.md`。
+
+**结果**
+- 守护模块测试 10 个全部通过。
+- 真实回放结果：`firstTask=true`、`secondTask=false`、`riskEvents=1`、`diagnosticTasks=1`。
+- 证明重复风险不会重复创建诊断任务，风险事实保留一条。
+
+**发现的坑**
+- 当前风险任务仍是 `PENDING` 记录，尚未接入后续 Agent 诊断；M5 才允许调用模型。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 统计一次完整回放的指标消息数、风险事件数和诊断任务数，形成 M4 降频验收证据。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-092] 2026-09-11 · M4 PostgreSQL 风险事件与诊断任务表完成
+
+**做了什么**
+- 经用户授权，在本地 PostgreSQL 创建 `guardian` Schema、`risk_events` 和 `diagnostic_tasks` 两张表。
+- 新增 `GuardianRiskRepository`，支持风险指纹冲突更新和风险指纹+窗口唯一约束下的诊断任务幂等写入。
+- 新增 `guardian-schema.sql`，保存可重复执行的表结构脚本。
+- 执行 `mvn -B -pl fund-guardian -am test`。
+
+**结果**
+- 数据库实际查询确认两张表已创建。
+- 守护模块 8 个测试全部通过；未执行真实风险事件写入回放，Repository 尚未接入消费编排。
+
+**发现的坑**
+- 当前 Repository 已具备落库接口，但风险规则输出还没有串到 Repository；不能把“表存在”当成“实时链路已持久化”。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 将风险规则命中、指纹和冷却结果编排为风险事件与诊断任务，并执行真实 PostgreSQL 幂等回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-091] 2026-09-11 · M4 风险规则、指纹和冷却完成
+
+**做了什么**
+- 新增 `RiskRuleEvaluator`，实现错误率、高 P95 和错误率+延迟组合三条确定性规则。
+- 新增 `RiskFingerprint`，按服务、接口和排序后的规则 ID 生成 SHA-256 稳定指纹。
+- 新增 `RiskCooldownGate`，在固定冷却窗口内抑制重复风险。
+- 新增规则、组合命中、指纹稳定和冷却测试。
+
+**结果**
+- `mvn -B -pl fund-guardian -am test`：8 个测试全部通过。
+- 正常窗口不触发；风险窗口可同时命中单指标与组合规则；同一指纹在冷却期内只放行一次。
+
+**发现的坑**
+- 当前指纹和冷却状态仍在内存中，应用重启后会丢失；PostgreSQL 幂等和风险事件落库尚未接入。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 增加风险事件与诊断任务的 PostgreSQL 幂等落库，并验证消息数显著大于诊断任务数。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-090] 2026-09-11 · Redpanda 与 Mock 指标消息端到端回放通过
+
+**做了什么**
+- 重启 Colima 并恢复 Docker daemon 网络，下载 `redpandadata/redpanda:v24.3.6`。
+- 启动 `fund-redpanda-m4`，使用 `m4,m4-producer` profile 发送 20 条指标消息。
+- 通过 `rpk` 核对 Topic、消费组和消息内容；保存证据到 `docs/learning/M4-redpanda-replay-20260911.md`。
+
+**结果**
+- Redpanda Kafka API 启动成功，Topic `guardian.metric-events.v1` 创建成功。
+- Mock 生产者发送 20 条消息（正常 18、风险 2）；消费组 `fund-guardian-m4` 的 `TOTAL-LAG=0`，消息已消费完成。
+- pgvector 容器已恢复运行；Spring Boot 编译和之前的 M4 测试均通过。
+
+**发现的坑**
+- Colima 重启会停止无自动重启策略的 pgvector 容器，重启后必须显式 `docker start fund-integration-pgvector`。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 接入风险规则、风险指纹和冷却机制，验证正常指标不触发且重复风险被抑制。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-089] 2026-09-11 · Redpanda 镜像下载重试仍受 Docker Registry 超时
+
+**做了什么**
+- 按授权执行 `docker pull redpandadata/redpanda:v24.3.6`。
+- 额外尝试官方镜像域名 `docker.redpanda.com/redpandadata/redpanda:v24.3.6`。
+
+**结果**
+- 两次拉取均被 Docker daemon 解析到 Docker Registry 后连接超时；镜像仍未下载，本地未启动 Redpanda。
+- Docker daemon 本身正常，现有 pgvector 容器不受影响。
+
+**发现的坑**
+- 当前网络到镜像 Registry 不稳定；仅重试不会解决，需可用镜像代理、预下载 tar 或网络恢复后再拉取。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- Docker Registry 网络恢复后继续拉取固定 Redpanda 镜像并完成端到端回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-088] 2026-09-11 · Redpanda 启动验证受镜像网络阻断
+
+**做了什么**
+- 核对 Docker daemon：可用，服务端版本 `29.5.2`，现有 pgvector 容器正常运行。
+- 在不安装全局依赖的前提下，尝试用等价 `docker run` 启动 `redpandadata/redpanda:v24.3.6`。
+
+**结果**
+- Docker daemon 正常；本地未缓存 Redpanda 镜像。
+- 拉取 Docker Hub 镜像因网络连接超时失败，Redpanda 未启动，20 条消息端到端回放尚未执行。
+
+**发现的坑**
+- 当前阻塞点是 Docker Hub 镜像拉取网络，不是 Java 代码或 Docker daemon；不能把镜像未拉到误判为 MQ 配置错误。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 网络可用后拉取固定版本 Redpanda 镜像并执行端到端回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-087] 2026-09-11 · M4 Mock 生产者与 Redpanda Compose 配置
+
+**做了什么**
+- 新增根目录 `docker-compose.yml`，固定本地 Redpanda `v24.3.6`，暴露 Kafka 外部端口 `19092`。
+- 新增 `M4MockMetricProducer`，发送 18 条正常指标和 2 条风险指标到 `guardian.metric-events.v1`。
+- 新增 M4 profile Kafka 配置和指标装配配置，消费者默认不自动启动。
+- 执行 `mvn -B -pl fund-experiments -am test`。
+
+**结果**
+- Maven 测试通过：知识模块 12、守护模块 6、接入模块 14、实验模块 3，全部无失败。
+- `docker compose config` 未能执行：本机 Docker CLI 没有 Compose 插件，`docker-compose` 命令也不存在；Compose 文件已写入但尚未启动 Redpanda。
+
+**发现的坑**
+- 当前机器只有 Docker CLI，没有可用 Compose 子命令；不能把“配置写好”误记为“Redpanda 已运行”。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 在本机补齐可用的 Docker Compose 执行入口后，启动 Redpanda 并完成 20 条 Mock 指标消息端到端回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+### [C-086] 2026-09-11 · M4 指标 JSON 消费入口与事件幂等
+
+**做了什么**
+- 为 `fund-guardian` 引入 Spring Kafka 客户端，面向 Redpanda Kafka 协议。
+- 新增 `MetricEventConsumer`，监听 `guardian.metric-events.v1`，解析指标 JSON，按 `eventId` 去重后交给窗口聚合器；默认关闭自动启动，避免未配置 MQ 时影响应用启动。
+- 新增消费幂等测试。
+
+**结果**
+- `mvn -B -pl fund-guardian -am test`：6 个测试全部通过。
+- 当前已具备消息消费代码入口和内存幂等；尚未启动 Redpanda，也未完成 Mock 生产者、数据库幂等、风险指纹和冷却。
+
+**发现的坑**
+- Spring Kafka 依赖由 Spring Boot 4.1.1 管理，解析到 Kafka Client 4.2.1；未手动覆盖版本。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 增加本地 Redpanda Compose 配置和 Mock 指标生产者，完成消息端到端回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
 ### [C-085] 2026-09-11 · M4 指标事件与窗口聚合首批实现
 
 **做了什么**
