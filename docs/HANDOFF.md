@@ -198,6 +198,57 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-106] 2026-09-11 · Docker Compose 全局安装与四服务回放
+
+**做了什么**
+- 通过清华 Homebrew bottle 镜像全局安装 Docker Compose，并在 `~/.docker/config.json` 保留原配置后加入 CLI 插件目录 `/opt/homebrew/lib/docker/cli-plugins`。
+- 执行 `docker compose version`、`docker compose config -q`，并运行 `docker compose up -d --build`。
+- 修正 `docker-compose.yml` 中 Redpanda 健康检查命令，移除当前 rpk 不支持的 `--brokers` 参数。
+- 为释放宿主端口，停止旧容器 `fund-integration-pgvector` 与 `fund-redpanda-m4`，未删除容器或卷数据。
+- 执行四服务状态检查及两个应用健康接口检查。
+
+**结果**
+- Docker Compose 5.5.1 已安装并可用；Docker CLI/Server 为 29.6.2/29.5.2。
+- `docker compose config -q` 通过；镜像构建和 Compose 启动成功。
+- postgres：Up (healthy)；Redpanda：Up (healthy)；fund-integration：Up，`/health` 返回 `UP`；fund-guardian：Up，`/health` 返回 `UP`。
+
+**发现的坑**
+- 首次启动因旧容器占用 55432 端口失败；释放旧容器后恢复。
+- Redpanda 原健康检查使用了 v24.3.6 不支持的 `rpk cluster health --brokers=...`，改为 `rpk cluster health` 后通过。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 保持当前 Compose 环境可复现，进入最终交付确认。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+
+### [C-105] 2026-09-11 · Docker Compose 插件安装尝试
+
+**做了什么**
+- 按授权执行 `HOMEBREW_NO_AUTO_UPDATE=1 brew install docker-compose`。
+- 检查 Docker CLI、Colima、插件目录和 Compose 版本。
+
+**结果**
+- Homebrew 已识别待安装的 `docker-compose 5.5.0`，但下载 bottle 时阻塞在 `ghcr.io`，安装未完成。
+- Docker CLI 29.6.2、Docker 服务端 29.5.2、Colima 仍正常；`docker compose` 当前仍不可用。
+- 未修改 Docker/Colima 运行配置，未留下半安装插件。
+
+**发现的坑**
+- 当前网络到 GitHub Container Registry 不稳定，Homebrew 自动更新还可能持有 Git 锁；后续安装应继续禁用自动更新，并在网络可达时重试。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 网络恢复后重试安装 `docker-compose`，随后执行 Compose 全链路回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
 
 ### [C-104] 2026-09-11 · M7 最终本地回归完成
 
