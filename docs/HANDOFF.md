@@ -199,6 +199,33 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
 
+### [C-099] 2026-09-11 · M5 固定 JSON 诊断与 DeepSeek 联调通过
+
+**做了什么**
+- 新增 `M5DeepSeekDiagnosisExperiment`，使用合成诊断快照构造固定 JSON 提示词。
+- 通过 `DEEPSEEK_API_KEY` 调用 `deepseek-v4-flash`，保存原始请求、原始响应、模型正文和 Java 门禁结果。
+- 将模型正文映射为 `ModelDiagnosisReport`，交由 `ModelDiagnosisGate.assess` 与确定性规则逐项比对。
+- 保存证据：`docs/learning/M5-real-call-1789120796775/`。
+
+**结果**
+- `mvn -B -pl fund-experiments -am package -DskipTests` 构建通过。
+- 真实 DeepSeek 请求成功，模型返回固定 JSON，中文门禁和规则一致性门禁通过。
+- 门禁结果：`status=ACCEPTED`，模型报告中的 R001～R004 与 Java 规则命中结果一致。
+
+**发现的坑**
+- 直接运行旧 jar 不会包含新增实验类，必须先执行 package；真实联调前应检查 jar 构建时间和实验 profile。
+- 模型调用耗时约 30 秒，M5 需要补充超时、失败停止和原始响应异常路径验证。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 为 M5 增加模型超时/格式错误/规则冲突的失败回放测试，并记录人工审核分支。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+
 ### [C-098] 2026-09-11 · M5 诊断快照与冲突门禁首批实现
 
 **做了什么**
