@@ -1,0 +1,3 @@
+model=deepseek-v4-flash
+status=ACCEPTED
+candidateId=candidate-9352d015-a7d7-427f-80d1-9fb4806a2d84

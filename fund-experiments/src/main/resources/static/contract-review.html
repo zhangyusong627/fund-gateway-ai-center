@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>资方接口规范审核</title>
+    <style>
+        body { max-width: 980px; margin: 32px auto; padding: 0 20px; font-family: sans-serif; color: #243447; }
+        button { margin: 4px; padding: 8px 14px; cursor: pointer; }
+        textarea { width: 100%; min-height: 300px; font-family: monospace; }
+        pre { background: #f4f6f8; padding: 16px; white-space: pre-wrap; }
+        .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .hint { color: #5f6b76; }
+    </style>
+</head>
+<body>
+<h1>资方接口规范审核</h1>
+<p class="hint">这是 M3 最小演示页面。候选事实必须先通过 Java 校验，审核通过后才生成不可变 V1。</p>
+<label for="candidate">候选规范 JSON</label>
+<textarea id="candidate"></textarea>
+<div class="row">
+    <button onclick="submitCandidate()">提交审核</button>
+    <button onclick="approveCandidate()">通过并发布</button>
+    <button onclick="returnCandidate()">退回</button>
+    <button onclick="rejectCandidate()">拒绝</button>
+    <button onclick="queryPublished()">查询已发布 V1</button>
+</div>
+<p>当前候选编号：<strong id="candidateId">未提交</strong></p>
+<pre id="result">等待操作</pre>
+<script>
+    // 提供一份合成候选，页面不包含任何真实机构数据。
+    const citation = {
+        chunkId: 'doc:v1:117', documentId: 'synthetic-doc', documentVersion: 'v1',
+        locator: '4.2 授信申请#117-117', quote: 'applyAmt | BigDecimal | 必填'
+    };
+    const sample = {
+        candidateId: 'candidate-page-001', providerId: 'synthetic-provider',
+        interfaceId: 'credit-application', purpose: '提交授信申请',
+        endpoint: '/credit/apply', httpMethod: 'POST',
+        fields: [{ name: 'applyAmt', type: 'BigDecimal', requirement: 'REQUIRED',
+            condition: null, description: '申请金额', evidence: citation }],
+        evidence: [citation], sourceDocumentVersion: 'v1',
+        extractionModel: 'deepseek-v4-flash', createdAt: '2026-09-10T00:00:00Z', status: 'DRAFT'
+    };
+    document.getElementById('candidate').value = JSON.stringify(sample, null, 2);
+
+    // 统一处理审核接口响应。
+    async function request(url, method, body) {
+        const response = await fetch(url, {
+            method: method, headers: {'Content-Type': 'application/json'},
+            body: body ? JSON.stringify(body) : undefined
+        });
+        const text = await response.text();
+        document.getElementById('result').textContent = response.status + '\n' + text;
+        if (!response.ok) throw new Error(text);
+        return JSON.parse(text);
+    }
+    async function submitCandidate() {
+        const result = await request('/api/integration/contracts/candidates', 'POST', JSON.parse(document.getElementById('candidate').value));
+        document.getElementById('candidateId').textContent = result.candidate.candidateId;
+    }
+    function id() { return document.getElementById('candidateId').textContent; }
+    async function approveCandidate() { await request('/api/integration/contracts/candidates/' + id() + '/approve', 'POST', {reviewer: '项目所有者'}); }
+    async function returnCandidate() { await request('/api/integration/contracts/candidates/' + id() + '/return', 'POST', {reason: '请补充字段条件'}); }
+    async function rejectCandidate() { await request('/api/integration/contracts/candidates/' + id() + '/reject', 'POST', {reason: '证据不足'}); }
+    async function queryPublished() { await request('/api/integration/contracts/published?providerId=synthetic-provider&interfaceId=credit-application', 'GET'); }
+</script>
+</body>
+</html>

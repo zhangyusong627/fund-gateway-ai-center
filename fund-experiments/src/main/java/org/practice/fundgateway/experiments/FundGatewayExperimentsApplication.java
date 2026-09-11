@@ -2,8 +2,12 @@ package org.practice.fundgateway.experiments;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+import org.practice.fundgateway.integration.contract.ContractReviewController;
+import org.practice.fundgateway.integration.contract.ContractReviewService;
 
 @SpringBootApplication
+@Import({ContractReviewController.class, ContractReviewService.class})
 /**
  * 资金网关智能决策中心的 Spring Boot 启动入口。
  *

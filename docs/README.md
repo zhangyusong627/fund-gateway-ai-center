@@ -19,7 +19,7 @@
 - [`planning/ROADMAP.md`](planning/ROADMAP.md)：唯一里程碑和依赖顺序。
 - [`planning/DAILY_PLAN.md`](planning/DAILY_PLAN.md)：每日安排。
 - [`planning/EXECUTION_PROTOCOL.md`](planning/EXECUTION_PROTOCOL.md)：开工、验证、收工和学习验收机制。
-- `tasks/`：当前或历史阶段任务卡，例如 M2 RAG 任务卡。
+- `tasks/`：当前或历史阶段任务卡，例如 M2 RAG、M3 资方接入助手任务卡。
 
 ## 决策、评审与学习证据
 
