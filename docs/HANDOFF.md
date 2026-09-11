@@ -199,6 +199,32 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
 
+### [C-104] 2026-09-11 · M7 最终本地回归完成
+
+**做了什么**
+- 对两个独立应用执行可执行 jar 启动检查。
+- 访问 `http://localhost:18081/health` 与 `http://localhost:18082/health`。
+- 使用 Ruby YAML 解析器校验 `docker-compose.yml` 语法。
+
+**结果**
+- fund-integration 健康检查返回 `UP`。
+- fund-guardian 健康检查返回 `UP`。
+- Compose YAML 语法校验通过。
+- `mvn -B clean verify` 已通过；M0～M6 代码与本地证据已完成。
+
+**发现的坑**
+- 当前机器 Docker CLI 缺少 Compose 插件，因此无法执行 `docker compose up` 的命令级回放；需要在具备 Compose 插件的环境补做这一项。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 在具备 Docker Compose 插件的环境运行一次 Compose 全链路启动并保存日志，完成最终交付验收。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+
 ### [C-103] 2026-09-11 · 全量构建修复与 M5/M6 交付验证
 
 **做了什么**
