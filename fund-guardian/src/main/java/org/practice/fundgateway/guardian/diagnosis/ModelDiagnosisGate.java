@@ -1,6 +1,9 @@
 package org.practice.fundgateway.guardian.diagnosis;
 
 import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** 校验模型最终报告的结构、枚举值和规则白名单。 */
 public class ModelDiagnosisGate {
@@ -23,6 +26,33 @@ public class ModelDiagnosisGate {
             }
         }
         return report;
+    }
+
+    /** 在结构校验后比较确定性规则，冲突时转人工审核。 */
+    public GateDecision assess(ModelDiagnosisReport report, DiagnosisSnapshot snapshot) {
+        validate(report);
+        if (snapshot == null || snapshot.ruleFindings().isEmpty()) {
+            return new GateDecision(GateStatus.HUMAN_REVIEW, "缺少确定性规则证据");
+        }
+        Map<String, RuleFinding> rules = snapshot.ruleFindings().stream()
+                .collect(Collectors.toMap(RuleFinding::ruleId, Function.identity(), (first, ignored) -> first));
+        for (ModelFinding finding : report.findings()) {
+            RuleFinding rule = rules.get(finding.ruleId());
+            if (rule != null && rule.matched() != finding.matched()) {
+                return new GateDecision(GateStatus.HUMAN_REVIEW, "模型结论与确定性规则冲突：" + finding.ruleId());
+            }
+        }
+        return new GateDecision(GateStatus.ACCEPTED, "模型结论与确定性规则一致");
+    }
+
+    /** 表示模型报告经过最终门禁后的处理结果。 */
+    public record GateDecision(GateStatus status, String reason) {
+    }
+
+    /** 最终门禁状态。 */
+    public enum GateStatus {
+        ACCEPTED,
+        HUMAN_REVIEW
     }
 
     /** 业务文本至少包含一个中文字符，技术标识仍可保留英文。 */
