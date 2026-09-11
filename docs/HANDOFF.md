@@ -199,6 +199,30 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
 
+### [C-105] 2026-09-11 · Docker Compose 插件安装尝试
+
+**做了什么**
+- 按授权执行 `HOMEBREW_NO_AUTO_UPDATE=1 brew install docker-compose`。
+- 检查 Docker CLI、Colima、插件目录和 Compose 版本。
+
+**结果**
+- Homebrew 已识别待安装的 `docker-compose 5.5.0`，但下载 bottle 时阻塞在 `ghcr.io`，安装未完成。
+- Docker CLI 29.6.2、Docker 服务端 29.5.2、Colima 仍正常；`docker compose` 当前仍不可用。
+- 未修改 Docker/Colima 运行配置，未留下半安装插件。
+
+**发现的坑**
+- 当前网络到 GitHub Container Registry 不稳定，Homebrew 自动更新还可能持有 Git 锁；后续安装应继续禁用自动更新，并在网络可达时重试。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 网络恢复后重试安装 `docker-compose`，随后执行 Compose 全链路回放。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
+
+
 ### [C-104] 2026-09-11 · M7 最终本地回归完成
 
 **做了什么**
