@@ -6,6 +6,7 @@ import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationResponse
 import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
+import org.practice.fundgateway.console.ConsoleModels.RagEvaluationResponse;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +47,12 @@ public class DemoConsoleController {
     @GetMapping("/rag/collections")
     public List<PublishedCollection> publishedCollections() {
         return ragService.publishedCollections();
+    }
+
+    /** 运行知识库固定问题集评测。 */
+    @PostMapping("/rag/evaluate")
+    public RagEvaluationResponse evaluateRag() throws Exception {
+        return ragService.evaluate();
     }
 
     /** 触发一次真实 RAG 检索。 */

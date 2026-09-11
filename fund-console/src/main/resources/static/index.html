@@ -307,9 +307,9 @@
         </section>
 
         <section id="evaluation" class="workspace">
-            <div class="page-heading"><div><h1>RAG 评测中心</h1><p>用固定问题集衡量检索质量，而不是凭一次看起来正确的回答判断效果。</p></div><button class="secondary" disabled>运行评测 · 后端待接入</button></div>
-            <div class="kpi-grid"><div class="kpi"><span>Recall@3</span><strong>—</strong><small>待执行</small></div><div class="kpi"><span>MRR</span><strong>—</strong><small>待执行</small></div><div class="kpi"><span>引用命中率</span><strong>—</strong><small>待执行</small></div><div class="kpi"><span>拒答准确率</span><strong>—</strong><small>待执行</small></div></div>
-            <div class="panel"><h2>评测问题集</h2><p>每道题保存预期文档、预期分片、是否应拒答，以及实际命中排名。</p><div class="placeholder"><div><b>尚未运行正式版本评测</b><span>现有 M2 固定问题集将在后端接入后显示在这里。</span></div></div></div>
+            <div class="page-heading"><div><h1>RAG 评测中心</h1><p>用固定问题集衡量检索质量，而不是凭一次看起来正确的回答判断效果。</p></div><button id="runEvaluation" class="secondary">运行固定评测</button></div>
+            <div id="evaluationSummary" class="kpi-grid"><div class="kpi"><span>Recall@3</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>MRR</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>引用命中率</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>拒答准确率</span><strong>—</strong><small>点击运行评测</small></div></div>
+            <div class="panel"><h2>评测问题集</h2><p>每道题保存预期关键词、实际命中排名和证据门禁结果。</p><div id="evaluationList" class="placeholder"><div><b>尚未运行固定评测</b></div></div></div>
         </section>
 
         <section id="guardian" class="workspace">
@@ -613,6 +613,21 @@
     byId('refreshDiagnosis').addEventListener('click', loadDiagnosticTasks);
     byId('refreshApproval').addEventListener('click', loadApprovalTasks);
     byId('refreshAudit').addEventListener('click', loadAudit);
+    byId('runEvaluation').addEventListener('click', async () => {
+        const button = byId('runEvaluation');
+        button.disabled = true; button.textContent = '正在评测…';
+        try {
+            const result = await request('/api/console/rag/evaluate', {method: 'POST'});
+            const metric = value => `${(Number(value) * 100).toFixed(1)}%`;
+            byId('evaluationSummary').innerHTML = `<div class="kpi"><span>Recall@3</span><strong>${metric(result.recallAt3)}</strong><small>固定问题集</small></div><div class="kpi"><span>MRR</span><strong>${Number(result.meanReciprocalRank).toFixed(3)}</strong><small>平均倒数排名</small></div><div class="kpi"><span>引用命中率</span><strong>${metric(result.citationHitRate)}</strong><small>来源可追溯</small></div><div class="kpi"><span>拒答准确率</span><strong>${metric(result.refusalAccuracy)}</strong><small>证据不足门禁</small></div>`;
+            byId('evaluationList').className = '';
+            byId('evaluationList').innerHTML = result.cases.map(item => `<div class="mini-row"><span>${escapeHtml(item.question)}<br><small>预期：${escapeHtml(item.expectedKeyword)} · 实际排名：${item.actualRank || '未命中'}</small></span><span class="status-pill ${item.hit || item.status === 'INSUFFICIENT_EVIDENCE' ? 'ok' : 'bad'}">${escapeHtml(item.status)}</span></div>`).join('');
+        } catch (error) {
+            byId('evaluationList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+        } finally {
+            button.disabled = false; button.textContent = '运行固定评测';
+        }
+    });
 
     async function loadAudit() {
         try {

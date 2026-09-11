@@ -39,6 +39,17 @@ public final class ConsoleModels {
                                       int chunkCount, String embeddingModel, int embeddingDimension) {
     }
 
+    /** 固定问题集评测结果，指标由每次检索结果复算。 */
+    public record RagEvaluationResponse(int caseCount, double recallAt3, double meanReciprocalRank,
+                                        double citationHitRate, double refusalAccuracy,
+                                        List<RagEvaluationCase> cases) {
+    }
+
+    /** 一道评测题的预期关键词和实际召回结果。 */
+    public record RagEvaluationCase(String question, String expectedKeyword, int expectedRank,
+                                    boolean hit, int actualRank, String status) {
+    }
+
     /** 一条带来源和分数的 RAG 候选证据。 */
     public record RagCandidate(int rank, String chunkId, String content, double vectorScore,
                                double keywordScore, double finalScore, String documentId,

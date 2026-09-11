@@ -13,6 +13,8 @@ import org.practice.fundgateway.console.ConsoleModels.RagCandidate;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
+import org.practice.fundgateway.console.ConsoleModels.RagEvaluationCase;
+import org.practice.fundgateway.console.ConsoleModels.RagEvaluationResponse;
 import org.practice.fundgateway.knowledge.embedding.LocalBgeEmbeddingModel;
 import org.practice.fundgateway.knowledge.search.EvidenceAcceptanceGate;
 import org.practice.fundgateway.knowledge.search.HybridPgvectorRetriever;
@@ -76,6 +78,47 @@ public class ConsoleRagService {
                         resultSet.getInt("embedding_dimension")));
     }
 
+    /** 执行固定三题评测，验证字段、条件和证据不足三类行为。 */
+    public RagEvaluationResponse evaluate() throws Exception {
+        List<EvaluationCase> definitions = List.of(
+                new EvaluationCase("授信申请金额字段是什么类型，是否必填？", "applyAmt", false),
+                new EvaluationCase("公共请求参数 requestNo 是什么？", "requestNo", false),
+                new EvaluationCase("不存在的火星字段有什么含义？", "火星字段", true));
+        List<RagEvaluationCase> results = new java.util.ArrayList<>();
+        int hitCount = 0;
+        int reciprocalRankSum = 0;
+        int citationHits = 0;
+        int refusalCorrect = 0;
+        for (EvaluationCase definition : definitions) {
+            RagQueryResponse response = query(new RagQueryRequest(null, definition.question(),
+                    List.of(definition.expectedKeyword()), 3));
+            int rank = 0;
+            for (RagCandidate candidate : response.candidates()) {
+                if (candidate.content().contains(definition.expectedKeyword())) {
+                    rank = candidate.rank();
+                    break;
+                }
+            }
+            boolean hit = rank > 0;
+            boolean refusalExpected = definition.refusalExpected();
+            boolean refusalActual = "INSUFFICIENT_EVIDENCE".equals(response.status());
+            if (hit) {
+                hitCount++;
+                reciprocalRankSum += 1_000 / rank;
+                citationHits++;
+            }
+            if (refusalExpected == refusalActual) {
+                refusalCorrect++;
+            }
+            results.add(new RagEvaluationCase(definition.question(), definition.expectedKeyword(),
+                    1, hit, rank, response.status()));
+        }
+        int count = definitions.size();
+        return new RagEvaluationResponse(count, (double) hitCount / count,
+                (double) reciprocalRankSum / (1000 * count),
+                (double) citationHits / count, (double) refusalCorrect / count, results);
+    }
+
     /** 检查数据库和本地模型是否已具备运行条件。 */
     public boolean ready() {
         try {
@@ -116,6 +159,10 @@ public class ConsoleRagService {
         return collections.stream().filter(item -> item.collectionName().equals(requestedCollection))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException(
                         "知识集合不存在或尚未发布：" + requestedCollection)).collectionName();
+    }
+
+    /** 固定问题集定义。 */
+    private record EvaluationCase(String question, String expectedKeyword, boolean refusalExpected) {
     }
 
     /** 延迟加载模型，避免应用启动阶段占用大量内存。 */
