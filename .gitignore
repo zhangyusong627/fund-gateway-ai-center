@@ -6,3 +6,4 @@
 .DS_Store
 models/*
 !models/.gitignore
+runtime/

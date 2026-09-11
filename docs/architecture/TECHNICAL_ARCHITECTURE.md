@@ -2,7 +2,7 @@
 
 ## 技术目标
 
-技术架构只服务两个闭环：可追溯 RAG 和受控 Agent。采用一个 Maven 仓库、两个最终可独立启动的 Spring Boot 应用、一个共享知识模块和最小本地基础设施，不建设通用 AI 平台。
+技术架构只服务本期两个能力：可追溯知识库和受控智能守护。采用一个 Maven 仓库、知识共享模块、智能守护应用和最小本地基础设施，不建设通用 AI 平台。
 
 ## 技术架构图
 
@@ -11,12 +11,13 @@
 ## 模块职责
 
 - `fund-knowledge`：文档解析、切分、本地 BGE Embedding、pgvector 检索、引用和评测。
-- `fund-integration`：文档任务、候选接口规范、Java 校验、人工确认和不可变版本发布。
+- `fund-integration`：暂缓的既有 SPI/资方接入助手，保持现状，不作为本期新增运行边界。
 - `fund-guardian`：指标消费、窗口、规则、风险、诊断快照、Agent、门禁、审核和模拟治理。
+- `fund-console`：统一管理后台、REST 入站接口和跨模块只读聚合，不承载领域规则。
 - `fund-common`：通用标识、错误和审计关联信息，不放领域实体。
-- `fund-experiments`：只保留 M0/M1 实验入口，不进入最终运行拓扑。
+- `fund-experiments`：历史实验与回放入口，不进入最终业务边界。
 
-两个业务域内部采用轻量 DDD 与六边形依赖：入站适配器调用应用用例，应用层编排领域对象，基础设施实现出站端口。
+知识库和智能守护内部采用轻量 DDD 与六边形依赖：入站适配器调用应用用例，应用层编排领域对象，基础设施实现出站端口。
 
 ## 核心数据流
 
@@ -24,11 +25,9 @@
 flowchart LR
  D[文档版本] --> P[解析与切分] --> E[BGE Embedding] --> V[pgvector]
  V --> R[Top-K与引用]
- R --> I[候选接口规范]
- I --> J[Java校验] --> H[人工确认] --> C[发布V1]
+ R --> K[诊断知识证据]
  M[Mock指标] --> Q[Redpanda] --> W[窗口与特征] --> F[风险与降频]
  F --> S[诊断快照]
- C --> S
  R --> S
  S --> A[Tool Calling与DeepSeek] --> G[Java最终门禁] --> O[报告或人工审核]
 ```
@@ -39,13 +38,13 @@ flowchart LR
 - Redpanda：只承载 `guardian.metric-events.v1` 与 `integration.contract-published.v1`。
 - DeepSeek：候选事实抽取和诊断推理；不负责数值计算、权限和状态转换。
 - 本地 BGE：文档与查询使用同一模型、512 维和归一化配置。
-- Docker Compose：最终启动 PostgreSQL/pgvector、Redpanda、fund-integration 和 fund-guardian。
+- Docker Compose：最终启动 PostgreSQL/pgvector、Redpanda 和本期智能守护或知识库入口。
 - 本期不使用 Redis；幂等由 PostgreSQL 唯一约束保证，冷却与频控由应用逻辑和持久化时间字段完成。
 
 ## 数据所有权
 
 - `knowledge`：文档、分块、向量、来源、索引版本和检索评测。
-- `integration`：接入任务、候选规范、审核和发布版本。
+- `integration`：既有接入任务、候选规范、审核和发布版本，暂缓扩展。
 - `guardian`：聚合窗口、风险、诊断快照、报告、审核和模拟治理。
 - 审计记录随所属域保存，并通过 `traceId` 关联。
 - 原始指标由 Redpanda 有限期保留，不永久复制全部遥测。

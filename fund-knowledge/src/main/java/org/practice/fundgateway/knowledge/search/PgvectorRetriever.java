@@ -26,7 +26,8 @@ public class PgvectorRetriever {
         String sql = "SELECT chunk_id, content, document_id, document_version, locator, "
                 + "metadata->>'sectionPath' AS section_path, metadata->>'tableIndex' AS table_index, "
                 + "metadata->>'rowIndex' AS row_index, 1 - (embedding <=> ?::vector) AS score "
-                + "FROM knowledge_chunks WHERE collection_name = ? "
+                + "FROM knowledge.knowledge_chunks c JOIN knowledge.rag_collections r ON r.collection_name=c.collection_name "
+                + "WHERE c.collection_name = ? AND r.status='PUBLISHED' "
                 + "ORDER BY embedding <=> ?::vector LIMIT ?";
         return jdbcTemplate.query(sql,
                 (resultSet, rowNumber) -> new RetrievedChunk(

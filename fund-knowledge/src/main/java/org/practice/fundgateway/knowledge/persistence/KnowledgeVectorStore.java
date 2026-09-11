@@ -12,4 +12,18 @@ public interface KnowledgeVectorStore {
     /** 幂等保存一个知识分块及其向量。 */
     void save(String collectionName, KnowledgeChunk chunk, float[] vector,
               EmbeddingDescriptor descriptor);
+
+    /** 创建不可查询的暂存集合，供索引完成后发布。 */
+    default void beginStagingCollection(String collectionName, String description,
+                                         EmbeddingDescriptor descriptor) {
+        ensureCollection(collectionName, description, descriptor);
+    }
+
+    /** 将暂存集合发布为可查询集合。 */
+    default void publishStagingCollection(String collectionName) {
+    }
+
+    /** 删除失败的暂存集合及其分片。 */
+    default void discardStagingCollection(String collectionName) {
+    }
 }
