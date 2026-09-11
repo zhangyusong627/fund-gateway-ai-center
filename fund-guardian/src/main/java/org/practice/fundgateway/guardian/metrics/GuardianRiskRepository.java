@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -53,9 +54,26 @@ public class GuardianRiskRepository {
         return inserted > 0;
     }
 
+    /** 读取一条待诊断任务及其风险事件快照。 */
+    public Optional<DiagnosticTaskRecord> findPendingTask() {
+        List<DiagnosticTaskRecord> records = jdbcTemplate.query("select t.task_id, t.risk_fingerprint, "
+                + "t.window_start, e.payload_json from guardian.diagnostic_tasks t "
+                + "join guardian.risk_events e on e.risk_fingerprint=t.risk_fingerprint "
+                + "where t.status='PENDING' order by t.created_at limit 1", (rs, rowNum) ->
+                new DiagnosticTaskRecord(UUID.fromString(rs.getString("task_id")),
+                        rs.getString("risk_fingerprint"), rs.getTimestamp("window_start").toInstant(),
+                        rs.getString("payload_json")));
+        return records.stream().findFirst();
+    }
+
     /** 表示待落库的风险事件。 */
     public record RiskEventRecord(String fingerprint, String serviceName, String interfacePath,
                                   String severity, List<String> ruleIds, Instant windowStart,
                                   Instant windowEnd, Instant occurredAt, String payloadJson) {
+    }
+
+    /** 表示从数据库读取的待诊断任务。 */
+    public record DiagnosticTaskRecord(UUID taskId, String fingerprint, Instant windowStart,
+                                       String payloadJson) {
     }
 }
