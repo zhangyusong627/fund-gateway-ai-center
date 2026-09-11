@@ -66,6 +66,11 @@ public class GuardianRiskRepository {
         return records.stream().findFirst();
     }
 
+    /** 更新诊断任务状态，避免同一任务被重复消费。 */
+    public boolean updateDiagnosticTaskStatus(UUID taskId, String status) {
+        return jdbcTemplate.update("update guardian.diagnostic_tasks set status=? where task_id=?", status, taskId) > 0;
+    }
+
     /** 表示待落库的风险事件。 */
     public record RiskEventRecord(String fingerprint, String serviceName, String interfacePath,
                                   String severity, List<String> ruleIds, Instant windowStart,

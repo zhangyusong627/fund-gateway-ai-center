@@ -1,4 +1,19 @@
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: fund_integration
+      POSTGRES_USER: fund_demo
+      POSTGRES_PASSWORD: fund_demo_password
+    ports:
+      - '55432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fund_demo -d fund_integration"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   redpanda:
     image: redpandadata/redpanda:v24.3.6
     command:
@@ -23,6 +38,34 @@ services:
       - '19644:9644'
     volumes:
       - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health --brokers=localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  fund-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.integration
+    ports:
+      - '18081:18081'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  fund-guardian:
+    build:
+      context: .
+      dockerfile: Dockerfile.guardian
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    ports:
+      - '18082:18082'
+    depends_on:
+      redpanda:
+        condition: service_healthy
 
 volumes:
   redpanda-data:
+  postgres-data:

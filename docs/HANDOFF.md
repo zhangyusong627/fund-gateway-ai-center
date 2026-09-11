@@ -160,7 +160,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 | M0 | D1-D5 已完成，真实模型、结构化输出、工具循环、本地 Embedding 与 pgvector 已验证 |
 | M1-D1 | 三个只读工具、Java 规则、真实 Tool Calling、结构化报告、中文门禁和三层验收已完成 |
 | 架构基线 | 双业务域核心版 PRD、业务架构、技术架构及 ADR-008～ADR-010 已完成收敛，等待用户终审 |
-| 当前阶段 | M1 设计基线已确认；M2 知识底座与 RAG 任务卡已建立，下一批实现 DOCX 解析与分块 |
+| 当前阶段 | M0～M4 已完成；M5 数据库任务到模型报告门禁接缝已完成；M6 双应用启动与 Docker 构建配置已完成，进入 M7 最终验收 |
 
 ---
 
@@ -197,6 +197,31 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ---
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
+
+
+### [C-102] 2026-09-11 · M5 数据库任务接缝与 M6 双应用交付
+
+**做了什么**
+- 新增数据库待诊断任务状态读取与更新，完成风险任务到 `DiagnosisSnapshot` 的组装。
+- 新增 M5 数据库端到端实验入口，支持 DeepSeek 报告门禁后更新任务状态。
+- 补齐 fund-guardian、fund-integration 独立启动类、健康检查、Dockerfile 和 Compose 服务配置。
+
+**结果**
+- `mvn -B -pl fund-experiments -am test` 全部通过：知识 12、守护 15、集成 14、实验 3。
+- 两个应用 Jar 独立启动和 `/health=UP` 已验证；package 构建通过。
+- 未伪报 Compose CLI 通过：本机 Docker CLI 缺少 Compose 插件。
+
+**发现的坑**
+- 诊断任务状态回写必须在模型为空、JSON 解析失败或门禁失败时明确标记 FAILED/HUMAN_REVIEW，不能保持 PENDING 造成重复消费。
+
+**新产生的决策**（有就写 ADR 编号，没有写"无"）
+- 无。
+
+**下一步唯一动作**（只写一个，不要列清单）
+- 完成 M7 最终验收回归，补充 Compose 可复现验证或明确记录本机工具缺口。
+
+**需要用户裁决的问题**（没有写"无"）
+- 无。
 
 
 ### [C-101] 2026-09-11 · M5 风险任务读取与快照组装
