@@ -495,7 +495,17 @@
         try {
             const result = await request(`/api/console/knowledge/documents/${encodeURIComponent(documentId)}/versions/${encodeURIComponent(version)}`);
             byId('documentUploadEmpty').style.display = 'none';
-            byId('documentUploadResult').innerHTML = `<div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div><details open><summary>分片预览</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>`;
+            const createTaskButton = result.status === 'PARSED'
+                ? '<button id="createIndexTaskRun" class="secondary" style="margin-top:14px">确认并创建索引任务</button>'
+                : '';
+            byId('documentUploadResult').innerHTML = `
+                <div class="stats"><div class="stat"><span>文档元素</span><strong>${number(result.elementCount)}</strong></div><div class="stat"><span>段落</span><strong>${number(result.paragraphCount)}</strong></div><div class="stat"><span>表格行</span><strong>${number(result.tableRowCount)}</strong></div><div class="stat"><span>分片</span><strong>${number(result.chunkCount)}</strong></div></div>
+                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
+                <details open><summary>分片预览</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>
+                ${createTaskButton}`;
+            if (createTaskButton) {
+                byId('createIndexTaskRun').addEventListener('click', () => createIndexTask(result.documentId, result.version));
+            }
         } catch (error) {
             byId('documentUploadResult').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         }
@@ -646,51 +656,6 @@
             byId('auditList').innerHTML = calls.length ? calls.map(call => `<details class="audit-item"><summary>${escapeHtml(call.model)} · ${escapeHtml(call.status)} · ${number(call.totalTokens)} tokens · ${escapeHtml(call.calledAt)}</summary><div class="source">${escapeHtml(call.traceId)} · ${escapeHtml(call.priceVersion)} · ${escapeHtml(call.estimatedCost)} ${escapeHtml(call.currency)}</div><pre>${escapeHtml(JSON.stringify({rawRequest: call.rawRequest, rawResponse: call.rawResponse}, null, 2))}</pre></details>`).join('') : '<div class="placeholder"><div><b>暂无模型调用</b><span>在智能守护回放中启用 DeepSeek 后，这里会记录完整审计。</span></div></div>';
         } catch (error) {
             byId('auditList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
-        }
-    }
-
-    byId('documentUploadRun').addEventListener('click', async () => {
-        const button = byId('documentUploadRun');
-        const file = byId('uploadFile').files[0];
-        byId('documentUploadError').innerHTML = '';
-        if (!file) {
-            byId('documentUploadError').innerHTML = '<div class="error">请选择一份 DOCX 文件</div>';
-            return;
-        }
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('documentId', byId('uploadDocumentId').value.trim());
-        formData.append('version', byId('uploadVersion').value.trim());
-        button.disabled = true;
-        button.textContent = '正在保存、解析并分片…';
-        try {
-            const result = await uploadRequest('/api/console/knowledge/documents', formData);
-            byId('documentUploadEmpty').style.display = 'none';
-            byId('documentUploadResult').innerHTML = `
-                <div class="stats"><div class="stat"><span>文档元素</span><strong>${number(result.elementCount)}</strong></div><div class="stat"><span>段落</span><strong>${number(result.paragraphCount)}</strong></div><div class="stat"><span>表格行</span><strong>${number(result.tableRowCount)}</strong></div><div class="stat"><span>分片</span><strong>${number(result.chunkCount)}</strong></div></div>
-                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
-                <details open><summary>首批分片预览</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>
-                <button id="createIndexTaskRun" class="secondary" style="margin-top:14px">确认并创建索引任务</button>`;
-            byId('createIndexTaskRun').addEventListener('click', () => createIndexTask(result.documentId, result.version));
-        } catch (error) {
-            byId('documentUploadError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
-        } finally {
-            button.disabled = false;
-            button.textContent = '上传并解析';
-        }
-    });
-
-    async function createIndexTask(documentId, version) {
-        const button = byId('createIndexTaskRun');
-        button.disabled = true;
-        button.textContent = '正在创建任务…';
-        try {
-            const params = new URLSearchParams({documentId, version});
-            const result = await request(`/api/console/knowledge/index-tasks?${params}`, {method: 'POST'});
-            button.outerHTML = `<div class="mini-row"><span>索引任务 ${escapeHtml(result.taskId)}</span><span class="status-pill pending">${escapeHtml(result.status)}</span></div>`;
-        } catch (error) {
-            button.disabled = false;
-            button.textContent = `创建失败：${error.message}`;
         }
     }
 
