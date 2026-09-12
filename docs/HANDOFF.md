@@ -199,6 +199,32 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-114] 2026-09-12 · WorkBuddy
+
+**做了什么**
+- 按 ADR-013 第 3 条执行方案 A：备份 + 清库重建，把数据库内的旧 `document_id` 命名彻底清掉。
+- `pg_dump` 备份两个 schema 到 `backups/`：`knowledge-20260912.sql` 14.9 MB（含 pgvector 向量）、`guardian-20260912.sql` 38 KB。
+- `DROP SCHEMA knowledge/guardian CASCADE`，级联删除 13 个表（knowledge 6 + guardian 7）；重启 `fund-console` 与 `fund-guardian` 容器，让应用重建 JDBC 连接池。
+- 手动执行 `fund-knowledge/src/main/resources/knowledge-schema.sql` 和 `fund-guardian/src/main/resources/guardian-schema.sql` 重建表结构（按 ADR-012 第 2 条：应用启动不自动建表）。
+
+**结果**
+- `/api/console/status` 返回 `{status:"DEGRADED", persistenceMode:"JDBC", publishedCollections:0, embeddingDimension:512, deepSeekAvailable:true}`，符合 ADR-012 第 3 条「没有已发布集合时返回 DEGRADED」。
+- `mvn -B verify` 在替换后通过，本次未触发代码改动。
+- 本地领先远程 1 个 commit（c25815d：合规替换），未 push。
+
+**发现的坑**
+- 代码层 `shengheng-consumer`、`m2_shengheng_*`、`DINGRUI-bank-api` 这些字符串如果不在仓库 grep 阶段覆盖到，运行时 pgvector 仍按旧 document_id 检索；本次 sed 三轮覆盖后才清零（首轮漏了 fund-console HTML 和 3 个实验 Java 文件，第二轮补 `m2_shengheng_*` 和 `shengheng-api` 才彻底）。
+- 数据库「文档版本 ID」本质是 metadata，跟 pgvector embedding 内容无关；如果只想改 document_id 不重建 vector，可以走方案 B（原地 UPDATE），但 audit JSON 嵌套深、容易漏改。
+
+**新产生的决策**
+- ADR-013 已把方案 A 列为本次执行的合规迁移路径；后续若再有命名变更，应在 ADR 提前约定 document_id 规则，避免运行时和代码层再分裂。
+
+**下一步唯一动作**
+- 学习者通过 18080 控制台把 `~/Downloads/求职面试/金融机构标准接口文档/升恒消费金融接口文档.docx`（待手工重命名为升恒）重新上传为 `shengheng-api@v1`，同样把鼎瑞那份重命名后上传为 `dingrui-bank-api@v1`，触发解析 + 索引任务到 `PUBLISHED` 状态，再跑一次 M7 自验收（HANDOFF §3）。
+
+**需要用户裁决的问题**
+- 是否同意本次数据库重建后 `backups/` 目录跟随仓库一起版本化（gitignore 已配置 `backups/` 但目录尚未加入）或仅本地保留。
+
 ### [C-113] 2026-09-12 · Codex
 
 **做了什么**
