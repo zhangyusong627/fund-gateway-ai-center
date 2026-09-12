@@ -1,0 +1,574 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2640" height="1840" viewBox="0 0 2640 1840">
+  <defs>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,Arial,'PingFang SC','Microsoft YaHei',sans-serif}
+      .title{font-size:27px;font-weight:700;fill:#17365d}
+      .subtitle{font-size:14.5px;fill:#41556b}
+      .source{font-size:12px;fill:#7b8794}
+      .tableName{font-size:14px;font-weight:700;fill:#ffffff}
+      .tableLabel{font-size:11.5px;fill:#cfe0f5}
+      .colName{font-size:12.5px;fill:#233044}
+      .colNameKey{font-size:12.5px;font-weight:700;fill:#17365d}
+      .colComment{font-size:11.5px;fill:#7b8794}
+      .colType{font-size:11.5px;fill:#6b7a8d}
+      .badge{font-size:9.5px;font-weight:700}
+      .relLabel{font-size:10.5px;fill:#4a5b70;paint-order:stroke;stroke:#f5f7fa;stroke-width:3.4;stroke-linejoin:round}
+      .legendText{font-size:12px;fill:#41556b}
+      .noteText{font-size:12px;fill:#5b6b7f}
+    </style>
+    <filter id="boxShadow" x="-6%" y="-6%" width="112%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="#1b2b45" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+<rect width="2640" height="1840" fill="#f5f7fa"/>
+<text class="title" x="60" y="58">FG-ADC 数据模型 · knowledge schema</text>
+<text class="subtitle" x="60" y="82">知识库与 RAG 检索、评测、审计</text>
+<text class="source" x="60" y="104">来源：PostgreSQL 16 + pgvector 库 fund_integration 真实结构快照</text>
+<g class="legend">
+<rect x="60" y="122" width="1010" height="52" rx="8" fill="#ffffff" stroke="#d7dfe9" stroke-width="1"/>
+<text class="legendText" x="74" y="143">标记：</text>
+<rect x="116" y="132" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="126" y="144.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="legendText" x="142" y="146">主键</text>
+<rect x="196" y="132" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="206" y="144.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="legendText" x="222" y="146">外键</text>
+<rect x="276" y="132" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="286" y="144.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="legendText" x="302" y="146">唯一约束</text>
+<line x1="530" y1="148" x2="620" y2="148" stroke="#56758f" stroke-width="2"/>
+<line x1="530" y1="141" x2="530" y2="155" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="141" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="148" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="155" stroke="#56758f" stroke-width="2"/>
+<text class="legendText" x="496" y="152">1</text>
+<text class="legendText" x="626" y="152">N</text>
+<text class="legendText" x="642" y="152">一对多（父表 1 : 子表 N），线标签为外键字段</text>
+<text class="legendText" x="74" y="166">字段行：字段名 · 中文注释 · 数据类型；"?" 表示该字段可空　|　虚线表示逻辑关联，未建立数据库外键约束</text>
+</g>
+<g class="relations">
+<path d="M540 430.0 H652 V966.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="966.0" x2="751" y2="959.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="966.0" x2="751" y2="966.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="966.0" x2="751" y2="973.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="423.0" x2="550" y2="437.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="694.0" text-anchor="start">collection_name</text>
+<path d="M540 212.0 H682 V490.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="490.0" x2="751" y2="483.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="490.0" x2="751" y2="490.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="490.0" x2="751" y2="497.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="205.0" x2="550" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="347.0" text-anchor="start">document_id, version</text>
+<path d="M540 212.0 H712 V212.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="212.0" x2="751" y2="205.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="212.0" x2="751" y2="212.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="212.0" x2="751" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="205.0" x2="550" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="208.0" text-anchor="start">document_id, version</text>
+<path d="M540 212.0 H652 V768.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="768.0" x2="751" y2="761.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="768.0" x2="751" y2="768.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="768.0" x2="751" y2="775.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="205.0" x2="550" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="486.0" text-anchor="start">document_id, version</text>
+<path d="M1220 1444.0 H1332 V232.0 H1420" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="232.0" x2="1431" y2="225.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="232.0" x2="1431" y2="232.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="232.0" x2="1431" y2="239.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1230" y1="1437.0" x2="1230" y2="1451.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1239" y="834.0" text-anchor="start">set_id</text>
+<path d="M1900 450.0 H2012 V212.0 H2100" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="212.0" x2="2111" y2="205.0" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="212.0" x2="2111" y2="212.0" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="212.0" x2="2111" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1910" y1="443.0" x2="1910" y2="457.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1919" y="327.0" text-anchor="start">run_id</text>
+<path d="M1900 212.0 H2042 V232.0 H2100" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="232.0" x2="2111" y2="225.0" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="232.0" x2="2111" y2="232.0" stroke="#56758f" stroke-width="2"/>
+<line x1="2100" y1="232.0" x2="2111" y2="239.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1910" y1="205.0" x2="1910" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1919" y="218.0" text-anchor="start">case_id</text>
+<path d="M1220 1444.0 H1362 V470.0 H1420" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="470.0" x2="1431" y2="463.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="470.0" x2="1431" y2="470.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="470.0" x2="1431" y2="477.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1230" y1="1437.0" x2="1230" y2="1451.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1239" y="953.0" text-anchor="start">set_id</text>
+<path d="M540 430.0 H682 V1484.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="1484.0" x2="751" y2="1477.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="1484.0" x2="751" y2="1484.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="1484.0" x2="751" y2="1491.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="423.0" x2="550" y2="437.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="953.0" text-anchor="start">collection_name</text>
+</g>
+<g class="table">
+<rect x="60" y="168" width="480" height="174" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M60 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#17365d"/>
+<text class="tableName" x="73" y="190.5">knowledge_documents</text>
+<text class="tableLabel" x="527" y="190.5" text-anchor="end">文档版本</text>
+<rect x="72" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="82" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="97" y="216.5">document_id</text>
+<text class="colComment" x="193.5" y="216.5">文档标识</text>
+<text class="colType" x="528" y="216.5" text-anchor="end">varchar(128) ?</text>
+<rect x="61" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="72" y="224" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="82" y="236.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="97" y="236.5">version</text>
+<text class="colComment" x="163.5" y="236.5">文档版本</text>
+<text class="colType" x="528" y="236.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="76" y="256.5">file_path</text>
+<text class="colComment" x="157.5" y="256.5">文件存放路径</text>
+<text class="colType" x="528" y="256.5" text-anchor="end">varchar(1024) ?</text>
+<rect x="61" y="262" width="478" height="20" fill="#f7f9fb"/>
+<rect x="72" y="264" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="82" y="276.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="97" y="276.5">file_sha256</text>
+<text class="colComment" x="193.5" y="276.5">文件 SHA-256 校验值</text>
+<text class="colType" x="528" y="276.5" text-anchor="end">character(64) ?</text>
+<text class="colName" x="76" y="296.5">status</text>
+<text class="colComment" x="135.0" y="296.5">文档状态</text>
+<text class="colType" x="528" y="296.5" text-anchor="end">varchar(32) ?</text>
+<rect x="61" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="316.5">created_at</text>
+<text class="colComment" x="165.0" y="316.5">创建时间</text>
+<text class="colType" x="528" y="316.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="76" y="336.5">updated_at</text>
+<text class="colComment" x="165.0" y="336.5">更新时间</text>
+<text class="colType" x="528" y="336.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="60" y="386" width="480" height="214" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M60 420 V395 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V420 Z" fill="#17365d"/>
+<text class="tableName" x="73" y="408.5">rag_collections</text>
+<text class="tableLabel" x="527" y="408.5" text-anchor="end">知识集合</text>
+<rect x="72" y="422" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="82" y="434.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="97" y="434.5">collection_name</text>
+<text class="colComment" x="223.5" y="434.5">集合名称</text>
+<text class="colType" x="528" y="434.5" text-anchor="end">varchar(128) ?</text>
+<rect x="61" y="440" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="454.5">description</text>
+<text class="colComment" x="172.5" y="454.5">集合说明</text>
+<text class="colType" x="528" y="454.5" text-anchor="end">varchar(512) ?</text>
+<text class="colName" x="76" y="474.5">embedding_provider</text>
+<text class="colComment" x="225.0" y="474.5">向量模型提供方</text>
+<text class="colType" x="528" y="474.5" text-anchor="end">varchar(128) ?</text>
+<rect x="61" y="480" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="494.5">embedding_model</text>
+<text class="colComment" x="202.5" y="494.5">向量模型名称</text>
+<text class="colType" x="528" y="494.5" text-anchor="end">varchar(256) ?</text>
+<text class="colName" x="76" y="514.5">embedding_dimension</text>
+<text class="colComment" x="232.5" y="514.5">向量维度</text>
+<text class="colType" x="528" y="514.5" text-anchor="end">integer ?</text>
+<rect x="61" y="520" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="534.5">embedding_normalize</text>
+<text class="colComment" x="232.5" y="534.5">是否归一化</text>
+<text class="colType" x="528" y="534.5" text-anchor="end">bool ?</text>
+<text class="colName" x="76" y="554.5">status</text>
+<text class="colComment" x="135.0" y="554.5">状态</text>
+<text class="colType" x="528" y="554.5" text-anchor="end">varchar(32) ?</text>
+<rect x="61" y="560" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="574.5">created_at</text>
+<text class="colComment" x="165.0" y="574.5">创建时间</text>
+<text class="colType" x="528" y="574.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="76" y="594.5">updated_at</text>
+<text class="colComment" x="165.0" y="594.5">更新时间</text>
+<text class="colType" x="528" y="594.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="740" y="168" width="480" height="214" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#17365d"/>
+<text class="tableName" x="753" y="190.5">knowledge_document_elements</text>
+<text class="tableLabel" x="1207" y="190.5" text-anchor="end">解析元素</text>
+<rect x="752" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="773" y="204" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="783" y="216.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="798" y="216.5">document_id</text>
+<text class="colComment" x="894.5" y="216.5">文档标识</text>
+<text class="colType" x="1208" y="216.5" text-anchor="end">varchar(128) ?</text>
+<rect x="741" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="224" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="236.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="773" y="224" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="783" y="236.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="798" y="236.5">version</text>
+<text class="colComment" x="864.5" y="236.5">文档版本</text>
+<text class="colType" x="1208" y="236.5" text-anchor="end">varchar(64) ?</text>
+<rect x="752" y="244" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="256.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="256.5">sequence_no</text>
+<text class="colComment" x="873.5" y="256.5">解析顺序号</text>
+<text class="colType" x="1208" y="256.5" text-anchor="end">integer ?</text>
+<rect x="741" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="276.5">element_type</text>
+<text class="colComment" x="860.0" y="276.5">元素类型</text>
+<text class="colType" x="1208" y="276.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="756" y="296.5">section_path</text>
+<text class="colComment" x="860.0" y="296.5">章节路径</text>
+<text class="colType" x="1208" y="296.5" text-anchor="end">varchar(512) ?</text>
+<rect x="741" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="316.5">raw_text</text>
+<text class="colComment" x="830.0" y="316.5">原始文本</text>
+<text class="colType" x="1208" y="316.5" text-anchor="end">text ?</text>
+<text class="colName" x="756" y="336.5">cleaned_text</text>
+<text class="colComment" x="860.0" y="336.5">清洗后文本</text>
+<text class="colType" x="1208" y="336.5" text-anchor="end">text ?</text>
+<rect x="741" y="342" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="356.5">table_index</text>
+<text class="colComment" x="852.5" y="356.5">表格序号</text>
+<text class="colType" x="1208" y="356.5" text-anchor="end">integer ?</text>
+<text class="colName" x="756" y="376.5">row_index</text>
+<text class="colComment" x="837.5" y="376.5">表格内行号</text>
+<text class="colType" x="1208" y="376.5" text-anchor="end">integer ?</text>
+</g>
+<g class="table">
+<rect x="740" y="426" width="480" height="234" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 460 V435 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V460 Z" fill="#17365d"/>
+<text class="tableName" x="753" y="448.5">knowledge_document_chunks</text>
+<text class="tableLabel" x="1207" y="448.5" text-anchor="end">解析分片</text>
+<rect x="752" y="462" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="474.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="474.5">chunk_id</text>
+<text class="colComment" x="851.0" y="474.5">分片标识</text>
+<text class="colType" x="1208" y="474.5" text-anchor="end">varchar(256) ?</text>
+<rect x="741" y="480" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="482" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="494.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="777" y="494.5">document_id</text>
+<text class="colComment" x="873.5" y="494.5">文档标识</text>
+<text class="colType" x="1208" y="494.5" text-anchor="end">varchar(128) ?</text>
+<rect x="752" y="502" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="514.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="777" y="514.5">version</text>
+<text class="colComment" x="843.5" y="514.5">文档版本</text>
+<text class="colType" x="1208" y="514.5" text-anchor="end">varchar(64) ?</text>
+<rect x="741" y="520" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="534.5">section_path</text>
+<text class="colComment" x="860.0" y="534.5">章节路径</text>
+<text class="colType" x="1208" y="534.5" text-anchor="end">varchar(512) ?</text>
+<text class="colName" x="756" y="554.5">content</text>
+<text class="colComment" x="822.5" y="554.5">分片正文</text>
+<text class="colType" x="1208" y="554.5" text-anchor="end">text ?</text>
+<rect x="741" y="560" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="574.5">first_sequence</text>
+<text class="colComment" x="875.0" y="574.5">起始元素序号</text>
+<text class="colType" x="1208" y="574.5" text-anchor="end">integer ?</text>
+<text class="colName" x="756" y="594.5">last_sequence</text>
+<text class="colComment" x="867.5" y="594.5">结束元素序号</text>
+<text class="colType" x="1208" y="594.5" text-anchor="end">integer ?</text>
+<rect x="741" y="600" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="614.5">table_index</text>
+<text class="colComment" x="852.5" y="614.5">表格序号</text>
+<text class="colType" x="1208" y="614.5" text-anchor="end">integer ?</text>
+<text class="colName" x="756" y="634.5">row_index</text>
+<text class="colComment" x="837.5" y="634.5">表格内行号</text>
+<text class="colType" x="1208" y="634.5" text-anchor="end">integer ?</text>
+<rect x="741" y="640" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="654.5">metadata</text>
+<text class="colComment" x="830.0" y="654.5">元数据</text>
+<text class="colType" x="1208" y="654.5" text-anchor="end">jsonb ?</text>
+</g>
+<g class="table">
+<rect x="740" y="704" width="480" height="154" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 738 V713 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V738 Z" fill="#17365d"/>
+<text class="tableName" x="753" y="726.5">knowledge_index_tasks</text>
+<text class="tableLabel" x="1207" y="726.5" text-anchor="end">索引任务</text>
+<rect x="752" y="740" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="752.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="752.5">task_id</text>
+<text class="colComment" x="843.5" y="752.5">任务标识</text>
+<text class="colType" x="1208" y="752.5" text-anchor="end">uuid ?</text>
+<rect x="741" y="758" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="760" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="772.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<rect x="773" y="760" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="783" y="772.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colNameKey" x="798" y="772.5">document_id</text>
+<text class="colComment" x="894.5" y="772.5">文档标识</text>
+<text class="colType" x="1208" y="772.5" text-anchor="end">varchar(128) ?</text>
+<rect x="752" y="780" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="792.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<rect x="773" y="780" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="783" y="792.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colNameKey" x="798" y="792.5">version</text>
+<text class="colComment" x="864.5" y="792.5">文档版本</text>
+<text class="colType" x="1208" y="792.5" text-anchor="end">varchar(64) ?</text>
+<rect x="741" y="798" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="812.5">status</text>
+<text class="colComment" x="815.0" y="812.5">索引任务状态</text>
+<text class="colType" x="1208" y="812.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="756" y="832.5">error_message</text>
+<text class="colComment" x="867.5" y="832.5">失败原因</text>
+<text class="colType" x="1208" y="832.5" text-anchor="end">text</text>
+<rect x="741" y="838" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="852.5">updated_at</text>
+<text class="colComment" x="845.0" y="852.5">更新时间</text>
+<text class="colType" x="1208" y="852.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="740" y="902" width="480" height="454" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 936 V911 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V936 Z" fill="#17365d"/>
+<text class="tableName" x="753" y="924.5">knowledge_chunks</text>
+<text class="tableLabel" x="1207" y="924.5" text-anchor="end">向量分片</text>
+<rect x="752" y="938" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="950.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="950.5">chunk_id</text>
+<text class="colComment" x="851.0" y="950.5">分片标识</text>
+<text class="colType" x="1208" y="950.5" text-anchor="end">varchar(256) ?</text>
+<rect x="741" y="956" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="958" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="970.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="777" y="970.5">collection_name</text>
+<text class="colComment" x="903.5" y="970.5">集合名称</text>
+<text class="colType" x="1208" y="970.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="756" y="990.5">document</text>
+<text class="colComment" x="830.0" y="990.5">所属接口文档</text>
+<text class="colType" x="1208" y="990.5" text-anchor="end">varchar(512) ?</text>
+<rect x="741" y="996" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1010.5">content</text>
+<text class="colComment" x="822.5" y="1010.5">分片正文</text>
+<text class="colType" x="1208" y="1010.5" text-anchor="end">text ?</text>
+<text class="colName" x="756" y="1030.5">embedding</text>
+<text class="colComment" x="837.5" y="1030.5">向量值</text>
+<text class="colType" x="1208" y="1030.5" text-anchor="end">vector(512) ?</text>
+<rect x="741" y="1036" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1050.5">metadata</text>
+<text class="colComment" x="830.0" y="1050.5">元数据</text>
+<text class="colType" x="1208" y="1050.5" text-anchor="end">jsonb ?</text>
+<text class="colName" x="756" y="1070.5">document_id</text>
+<text class="colComment" x="852.5" y="1070.5">文档标识</text>
+<text class="colType" x="1208" y="1070.5" text-anchor="end">varchar(128) ?</text>
+<rect x="741" y="1076" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1090.5">document_version</text>
+<text class="colComment" x="890.0" y="1090.5">文档版本</text>
+<text class="colType" x="1208" y="1090.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="756" y="1110.5">institution</text>
+<text class="colComment" x="852.5" y="1110.5">合成资方</text>
+<text class="colType" x="1208" y="1110.5" text-anchor="end">varchar(128)</text>
+<rect x="741" y="1116" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1130.5">product_code</text>
+<text class="colComment" x="860.0" y="1130.5">产品编码</text>
+<text class="colType" x="1208" y="1130.5" text-anchor="end">varchar(128)</text>
+<text class="colName" x="756" y="1150.5">operation</text>
+<text class="colComment" x="837.5" y="1150.5">业务动作</text>
+<text class="colType" x="1208" y="1150.5" text-anchor="end">varchar(128)</text>
+<rect x="741" y="1156" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1170.5">content_type</text>
+<text class="colComment" x="860.0" y="1170.5">内容类型</text>
+<text class="colType" x="1208" y="1170.5" text-anchor="end">varchar(64)</text>
+<text class="colName" x="756" y="1190.5">source_type</text>
+<text class="colComment" x="852.5" y="1190.5">来源类型</text>
+<text class="colType" x="1208" y="1190.5" text-anchor="end">varchar(64)</text>
+<rect x="741" y="1196" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1210.5">block_type</text>
+<text class="colComment" x="845.0" y="1210.5">块类型</text>
+<text class="colType" x="1208" y="1210.5" text-anchor="end">varchar(64)</text>
+<text class="colName" x="756" y="1230.5">locator</text>
+<text class="colComment" x="822.5" y="1230.5">证据定位符</text>
+<text class="colType" x="1208" y="1230.5" text-anchor="end">varchar(512) ?</text>
+<rect x="741" y="1236" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1250.5">embedding_provider</text>
+<text class="colComment" x="905.0" y="1250.5">向量模型提供方</text>
+<text class="colType" x="1208" y="1250.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="756" y="1270.5">embedding_model</text>
+<text class="colComment" x="882.5" y="1270.5">向量模型名称</text>
+<text class="colType" x="1208" y="1270.5" text-anchor="end">varchar(256) ?</text>
+<rect x="741" y="1276" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1290.5">embedding_dimension</text>
+<text class="colComment" x="912.5" y="1290.5">向量维度</text>
+<text class="colType" x="1208" y="1290.5" text-anchor="end">integer ?</text>
+<text class="colName" x="756" y="1310.5">embedding_normalize</text>
+<text class="colComment" x="912.5" y="1310.5">是否归一化</text>
+<text class="colType" x="1208" y="1310.5" text-anchor="end">bool ?</text>
+<rect x="741" y="1316" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1330.5">created_at</text>
+<text class="colComment" x="845.0" y="1330.5">创建时间</text>
+<text class="colType" x="1208" y="1330.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="756" y="1350.5">updated_at</text>
+<text class="colComment" x="845.0" y="1350.5">更新时间</text>
+<text class="colType" x="1208" y="1350.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="740" y="1400" width="480" height="174" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 1434 V1409 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V1434 Z" fill="#17365d"/>
+<text class="tableName" x="753" y="1422.5">rag_evaluation_sets</text>
+<text class="tableLabel" x="1207" y="1422.5" text-anchor="end">评测集</text>
+<rect x="752" y="1436" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="1448.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="1448.5">set_id</text>
+<text class="colComment" x="836.0" y="1448.5">评测集标识</text>
+<text class="colType" x="1208" y="1448.5" text-anchor="end">uuid ?</text>
+<rect x="741" y="1454" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="1456" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="762" y="1468.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="777" y="1468.5">name</text>
+<text class="colComment" x="821.0" y="1468.5">评测集名称</text>
+<text class="colType" x="1208" y="1468.5" text-anchor="end">varchar(256) ?</text>
+<rect x="752" y="1476" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="1488.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="777" y="1488.5">collection_name</text>
+<text class="colComment" x="903.5" y="1488.5">集合名称</text>
+<text class="colType" x="1208" y="1488.5" text-anchor="end">varchar(128) ?</text>
+<rect x="741" y="1494" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="1496" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="762" y="1508.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="777" y="1508.5">document_id</text>
+<text class="colComment" x="873.5" y="1508.5">文档标识</text>
+<text class="colType" x="1208" y="1508.5" text-anchor="end">varchar(128) ?</text>
+<rect x="752" y="1516" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="762" y="1528.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="777" y="1528.5">document_version</text>
+<text class="colComment" x="911.0" y="1528.5">文档版本</text>
+<text class="colType" x="1208" y="1528.5" text-anchor="end">varchar(64) ?</text>
+<rect x="741" y="1534" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="1548.5">top_k</text>
+<text class="colComment" x="807.5" y="1548.5">召回条数上限</text>
+<text class="colType" x="1208" y="1548.5" text-anchor="end">integer ?</text>
+<text class="colName" x="756" y="1568.5">created_at</text>
+<text class="colComment" x="845.0" y="1568.5">创建时间</text>
+<text class="colType" x="1208" y="1568.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="1420" y="168" width="480" height="194" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M1420 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#17365d"/>
+<text class="tableName" x="1433" y="190.5">rag_evaluation_cases</text>
+<text class="tableLabel" x="1887" y="190.5" text-anchor="end">评测题</text>
+<rect x="1432" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="1457" y="216.5">case_id</text>
+<text class="colComment" x="1523.5" y="216.5">评测题标识</text>
+<text class="colType" x="1888" y="216.5" text-anchor="end">uuid ?</text>
+<rect x="1421" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="224" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="1442" y="236.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<rect x="1453" y="224" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="1463" y="236.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colNameKey" x="1478" y="236.5">set_id</text>
+<text class="colComment" x="1537.0" y="236.5">评测集标识</text>
+<text class="colType" x="1888" y="236.5" text-anchor="end">uuid ?</text>
+<text class="colName" x="1436" y="256.5">question</text>
+<text class="colComment" x="1510.0" y="256.5">评测问题</text>
+<text class="colType" x="1888" y="256.5" text-anchor="end">text ?</text>
+<rect x="1421" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="276.5">expected_keyword</text>
+<text class="colComment" x="1570.0" y="276.5">标准证据关键词</text>
+<text class="colType" x="1888" y="276.5" text-anchor="end">varchar(256)</text>
+<text class="colName" x="1436" y="296.5">expected_chunk_id</text>
+<text class="colComment" x="1577.5" y="296.5">标准分片标识</text>
+<text class="colType" x="1888" y="296.5" text-anchor="end">varchar(256)</text>
+<rect x="1421" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="316.5">expected_locator</text>
+<text class="colComment" x="1570.0" y="316.5">标准定位符</text>
+<text class="colType" x="1888" y="316.5" text-anchor="end">varchar(512)</text>
+<text class="colName" x="1436" y="336.5">refusal_expected</text>
+<text class="colComment" x="1570.0" y="336.5">是否应拒答</text>
+<text class="colType" x="1888" y="336.5" text-anchor="end">bool ?</text>
+<rect x="1421" y="342" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="344" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="1442" y="356.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="1457" y="356.5">case_order</text>
+<text class="colComment" x="1546.0" y="356.5">题目顺序</text>
+<text class="colType" x="1888" y="356.5" text-anchor="end">integer ?</text>
+</g>
+<g class="table">
+<rect x="1420" y="406" width="480" height="234" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M1420 440 V415 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V440 Z" fill="#17365d"/>
+<text class="tableName" x="1433" y="428.5">rag_evaluation_runs</text>
+<text class="tableLabel" x="1887" y="428.5" text-anchor="end">评测运行</text>
+<rect x="1432" y="442" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="454.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="1457" y="454.5">run_id</text>
+<text class="colComment" x="1516.0" y="454.5">运行标识</text>
+<text class="colType" x="1888" y="454.5" text-anchor="end">uuid ?</text>
+<rect x="1421" y="460" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="462" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="1442" y="474.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="1457" y="474.5">set_id</text>
+<text class="colComment" x="1516.0" y="474.5">评测集标识</text>
+<text class="colType" x="1888" y="474.5" text-anchor="end">uuid ?</text>
+<text class="colName" x="1436" y="494.5">status</text>
+<text class="colComment" x="1495.0" y="494.5">运行状态</text>
+<text class="colType" x="1888" y="494.5" text-anchor="end">varchar(32) ?</text>
+<rect x="1421" y="500" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="514.5">recall_at_k</text>
+<text class="colComment" x="1532.5" y="514.5">召回率 Recall@K</text>
+<text class="colType" x="1888" y="514.5" text-anchor="end">numeric(10,6)</text>
+<text class="colName" x="1436" y="534.5">mean_reciprocal_rank</text>
+<text class="colComment" x="1600.0" y="534.5">平均倒数排名 MRR</text>
+<text class="colType" x="1888" y="534.5" text-anchor="end">numeric(10,6)</text>
+<rect x="1421" y="540" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="554.5">citation_accuracy</text>
+<text class="colComment" x="1577.5" y="554.5">引用准确率</text>
+<text class="colType" x="1888" y="554.5" text-anchor="end">numeric(10,6)</text>
+<text class="colName" x="1436" y="574.5">refusal_accuracy</text>
+<text class="colComment" x="1570.0" y="574.5">拒答准确率</text>
+<text class="colType" x="1888" y="574.5" text-anchor="end">numeric(10,6)</text>
+<rect x="1421" y="580" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="594.5">error_message</text>
+<text class="colComment" x="1547.5" y="594.5">失败原因</text>
+<text class="colType" x="1888" y="594.5" text-anchor="end">text</text>
+<text class="colName" x="1436" y="614.5">started_at</text>
+<text class="colComment" x="1525.0" y="614.5">开始时间</text>
+<text class="colType" x="1888" y="614.5" text-anchor="end">timestamptz ?</text>
+<rect x="1421" y="620" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="634.5">completed_at</text>
+<text class="colComment" x="1540.0" y="634.5">结束时间</text>
+<text class="colType" x="1888" y="634.5" text-anchor="end">timestamptz</text>
+</g>
+<g class="table">
+<rect x="2100" y="168" width="480" height="174" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M2100 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#17365d"/>
+<text class="tableName" x="2113" y="190.5">rag_evaluation_results</text>
+<text class="tableLabel" x="2567" y="190.5" text-anchor="end">评测逐题结果</text>
+<rect x="2112" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="2122" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="2133" y="204" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="2143" y="216.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="2158" y="216.5">run_id</text>
+<text class="colComment" x="2217.0" y="216.5">运行标识</text>
+<text class="colType" x="2568" y="216.5" text-anchor="end">uuid ?</text>
+<rect x="2101" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="2112" y="224" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="2122" y="236.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="2133" y="224" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="2143" y="236.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="2158" y="236.5">case_id</text>
+<text class="colComment" x="2224.5" y="236.5">评测题标识</text>
+<text class="colType" x="2568" y="236.5" text-anchor="end">uuid ?</text>
+<text class="colName" x="2116" y="256.5">hit</text>
+<text class="colComment" x="2152.5" y="256.5">是否命中标准证据</text>
+<text class="colType" x="2568" y="256.5" text-anchor="end">bool ?</text>
+<rect x="2101" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="276.5">actual_rank</text>
+<text class="colComment" x="2212.5" y="276.5">实际命中排名</text>
+<text class="colType" x="2568" y="276.5" text-anchor="end">integer ?</text>
+<text class="colName" x="2116" y="296.5">citation_matched</text>
+<text class="colComment" x="2250.0" y="296.5">引用是否匹配</text>
+<text class="colType" x="2568" y="296.5" text-anchor="end">bool ?</text>
+<rect x="2101" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="316.5">retrieval_status</text>
+<text class="colComment" x="2250.0" y="316.5">检索结论</text>
+<text class="colType" x="2568" y="316.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="2116" y="336.5">candidates_json</text>
+<text class="colComment" x="2242.5" y="336.5">候选证据快照</text>
+<text class="colType" x="2568" y="336.5" text-anchor="end">jsonb ?</text>
+</g>
+<g class="table">
+<rect x="2100" y="386" width="480" height="294" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M2100 420 V395 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V420 Z" fill="#17365d"/>
+<text class="tableName" x="2113" y="408.5">rag_query_audits</text>
+<text class="tableLabel" x="2567" y="408.5" text-anchor="end">检索审计</text>
+<rect x="2112" y="422" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="2122" y="434.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="2137" y="434.5">query_id</text>
+<text class="colComment" x="2211.0" y="434.5">检索标识</text>
+<text class="colType" x="2568" y="434.5" text-anchor="end">uuid ?</text>
+<rect x="2101" y="440" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="454.5">collection_name</text>
+<text class="colComment" x="2242.5" y="454.5">集合名称</text>
+<text class="colType" x="2568" y="454.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="2116" y="474.5">document_id</text>
+<text class="colComment" x="2212.5" y="474.5">限定文档标识</text>
+<text class="colType" x="2568" y="474.5" text-anchor="end">varchar(128)</text>
+<rect x="2101" y="480" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="494.5">document_version</text>
+<text class="colComment" x="2250.0" y="494.5">限定文档版本</text>
+<text class="colType" x="2568" y="494.5" text-anchor="end">varchar(64)</text>
+<text class="colName" x="2116" y="514.5">question</text>
+<text class="colComment" x="2190.0" y="514.5">检索问题</text>
+<text class="colType" x="2568" y="514.5" text-anchor="end">text ?</text>
+<rect x="2101" y="520" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="534.5">keywords</text>
+<text class="colComment" x="2190.0" y="534.5">门禁关键词</text>
+<text class="colType" x="2568" y="534.5" text-anchor="end">jsonb ?</text>
+<text class="colName" x="2116" y="554.5">top_k</text>
+<text class="colComment" x="2167.5" y="554.5">本次召回条数</text>
+<text class="colType" x="2568" y="554.5" text-anchor="end">integer ?</text>
+<rect x="2101" y="560" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="574.5">status</text>
+<text class="colComment" x="2175.0" y="574.5">检索结论</text>
+<text class="colType" x="2568" y="574.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="2116" y="594.5">indexed_chunks</text>
+<text class="colComment" x="2235.0" y="594.5">参与检索的分片数</text>
+<text class="colType" x="2568" y="594.5" text-anchor="end">integer ?</text>
+<rect x="2101" y="600" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="614.5">duration_ms</text>
+<text class="colComment" x="2212.5" y="614.5">耗时（毫秒）</text>
+<text class="colType" x="2568" y="614.5" text-anchor="end">bigint ?</text>
+<text class="colName" x="2116" y="634.5">missing_keywords</text>
+<text class="colComment" x="2250.0" y="634.5">未命中的关键词</text>
+<text class="colType" x="2568" y="634.5" text-anchor="end">jsonb ?</text>
+<rect x="2101" y="640" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="654.5">candidates_json</text>
+<text class="colComment" x="2242.5" y="654.5">候选证据快照</text>
+<text class="colType" x="2568" y="654.5" text-anchor="end">jsonb ?</text>
+<text class="colName" x="2116" y="674.5">queried_at</text>
+<text class="colComment" x="2205.0" y="674.5">检索时间</text>
+<text class="colType" x="2568" y="674.5" text-anchor="end">timestamptz ?</text>
+</g>
+</svg>

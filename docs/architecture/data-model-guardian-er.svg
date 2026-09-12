@@ -1,0 +1,372 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2640" height="1024" viewBox="0 0 2640 1024">
+  <defs>
+    <style>
+      text{font-family:-apple-system,BlinkMacSystemFont,Arial,'PingFang SC','Microsoft YaHei',sans-serif}
+      .title{font-size:27px;font-weight:700;fill:#17365d}
+      .subtitle{font-size:14.5px;fill:#41556b}
+      .source{font-size:12px;fill:#7b8794}
+      .tableName{font-size:14px;font-weight:700;fill:#ffffff}
+      .tableLabel{font-size:11.5px;fill:#cfe0f5}
+      .colName{font-size:12.5px;fill:#233044}
+      .colNameKey{font-size:12.5px;font-weight:700;fill:#17365d}
+      .colComment{font-size:11.5px;fill:#7b8794}
+      .colType{font-size:11.5px;fill:#6b7a8d}
+      .badge{font-size:9.5px;font-weight:700}
+      .relLabel{font-size:10.5px;fill:#4a5b70;paint-order:stroke;stroke:#f5f7fa;stroke-width:3.4;stroke-linejoin:round}
+      .legendText{font-size:12px;fill:#41556b}
+      .noteText{font-size:12px;fill:#5b6b7f}
+    </style>
+    <filter id="boxShadow" x="-6%" y="-6%" width="112%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="#1b2b45" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+<rect width="2640" height="1024" fill="#f5f7fa"/>
+<text class="title" x="60" y="58">FG-ADC 数据模型 · guardian schema</text>
+<text class="subtitle" x="60" y="82">智能守护的风险诊断、人工闸门与审计</text>
+<text class="source" x="60" y="104">来源：PostgreSQL 16 + pgvector 库 fund_integration 真实结构快照</text>
+<g class="legend">
+<rect x="60" y="122" width="1010" height="52" rx="8" fill="#ffffff" stroke="#d7dfe9" stroke-width="1"/>
+<text class="legendText" x="74" y="143">标记：</text>
+<rect x="116" y="132" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="126" y="144.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="legendText" x="142" y="146">主键</text>
+<rect x="196" y="132" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="206" y="144.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="legendText" x="222" y="146">外键</text>
+<rect x="276" y="132" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="286" y="144.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="legendText" x="302" y="146">唯一约束</text>
+<line x1="530" y1="148" x2="620" y2="148" stroke="#56758f" stroke-width="2"/>
+<line x1="530" y1="141" x2="530" y2="155" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="141" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="148" stroke="#56758f" stroke-width="2"/>
+<line x1="620" y1="148" x2="631" y2="155" stroke="#56758f" stroke-width="2"/>
+<text class="legendText" x="496" y="152">1</text>
+<text class="legendText" x="626" y="152">N</text>
+<text class="legendText" x="642" y="152">一对多（父表 1 : 子表 N），线标签为外键字段</text>
+<text class="legendText" x="74" y="166">字段行：字段名 · 中文注释 · 数据类型；"?" 表示该字段可空　|　虚线表示逻辑关联，未建立数据库外键约束</text>
+</g>
+<g class="relations">
+<path d="M1220 390.0 H1332 V410.0 H1420" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="410.0" x2="1431" y2="403.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="410.0" x2="1431" y2="410.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="410.0" x2="1431" y2="417.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1230" y1="383.0" x2="1230" y2="397.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1239" y="396.0" text-anchor="start">task_id</text>
+<path d="M1220 390.0 H1362 V212.0 H1420" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="212.0" x2="1431" y2="205.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="212.0" x2="1431" y2="212.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="212.0" x2="1431" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1230" y1="383.0" x2="1230" y2="397.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1239" y="297.0" text-anchor="start">task_id</text>
+<path d="M540 212.0 H652 V232.0 H740" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="232.0" x2="751" y2="225.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="232.0" x2="751" y2="232.0" stroke="#56758f" stroke-width="2"/>
+<line x1="740" y1="232.0" x2="751" y2="239.0" stroke="#56758f" stroke-width="2"/>
+<line x1="550" y1="205.0" x2="550" y2="219.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="559" y="218.0" text-anchor="start">risk_fingerprint</text>
+<path d="M1220 390.0 H1392 V628.0 H1420" fill="none" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="628.0" x2="1431" y2="621.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="628.0" x2="1431" y2="628.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1420" y1="628.0" x2="1431" y2="635.0" stroke="#56758f" stroke-width="2"/>
+<line x1="1230" y1="383.0" x2="1230" y2="397.0" stroke="#56758f" stroke-width="2"/>
+<text class="relLabel" x="1239" y="505.0" text-anchor="start">task_id</text>
+</g>
+<g class="table">
+<rect x="60" y="168" width="480" height="274" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M60 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#14524a"/>
+<text class="tableName" x="73" y="190.5">risk_events</text>
+<text class="tableLabel" x="527" y="190.5" text-anchor="end">风险事件</text>
+<rect x="72" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="82" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="97" y="216.5">risk_fingerprint</text>
+<text class="colComment" x="231.0" y="216.5">风险指纹</text>
+<text class="colType" x="528" y="216.5" text-anchor="end">varchar(64) ?</text>
+<rect x="61" y="222" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="236.5">service_name</text>
+<text class="colComment" x="180.0" y="236.5">服务名</text>
+<text class="colType" x="528" y="236.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="76" y="256.5">interface_path</text>
+<text class="colComment" x="195.0" y="256.5">接口路径</text>
+<text class="colType" x="528" y="256.5" text-anchor="end">varchar(512) ?</text>
+<rect x="61" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="276.5">severity</text>
+<text class="colComment" x="150.0" y="276.5">严重级别</text>
+<text class="colType" x="528" y="276.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="76" y="296.5">rule_ids</text>
+<text class="colComment" x="150.0" y="296.5">命中规则</text>
+<text class="colType" x="528" y="296.5" text-anchor="end">text ?</text>
+<rect x="61" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="316.5">window_start</text>
+<text class="colComment" x="180.0" y="316.5">统计窗口开始</text>
+<text class="colType" x="528" y="316.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="76" y="336.5">window_end</text>
+<text class="colComment" x="165.0" y="336.5">统计窗口结束</text>
+<text class="colType" x="528" y="336.5" text-anchor="end">timestamptz ?</text>
+<rect x="61" y="342" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="356.5">occurrence_count</text>
+<text class="colComment" x="210.0" y="356.5">窗口内出现次数</text>
+<text class="colType" x="528" y="356.5" text-anchor="end">bigint ?</text>
+<text class="colName" x="76" y="376.5">first_seen_at</text>
+<text class="colComment" x="187.5" y="376.5">首次出现时间</text>
+<text class="colType" x="528" y="376.5" text-anchor="end">timestamptz ?</text>
+<rect x="61" y="382" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="396.5">last_seen_at</text>
+<text class="colComment" x="180.0" y="396.5">最近出现时间</text>
+<text class="colType" x="528" y="396.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="76" y="416.5">payload_json</text>
+<text class="colComment" x="180.0" y="416.5">触发指标快照</text>
+<text class="colType" x="528" y="416.5" text-anchor="end">jsonb ?</text>
+<rect x="61" y="422" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="76" y="436.5">created_at</text>
+<text class="colComment" x="165.0" y="436.5">创建时间</text>
+<text class="colType" x="528" y="436.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="740" y="168" width="480" height="134" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#14524a"/>
+<text class="tableName" x="753" y="190.5">diagnostic_tasks</text>
+<text class="tableLabel" x="1207" y="190.5" text-anchor="end">简易诊断任务（历史）</text>
+<rect x="752" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="216.5">task_id</text>
+<text class="colComment" x="843.5" y="216.5">任务标识</text>
+<text class="colType" x="1208" y="216.5" text-anchor="end">uuid ?</text>
+<rect x="741" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="224" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="762" y="236.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<rect x="773" y="224" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="783" y="236.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colNameKey" x="798" y="236.5">risk_fingerprint</text>
+<text class="colComment" x="932.0" y="236.5">风险指纹</text>
+<text class="colType" x="1208" y="236.5" text-anchor="end">varchar(64) ?</text>
+<rect x="752" y="244" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="762" y="256.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="777" y="256.5">window_start</text>
+<text class="colComment" x="881.0" y="256.5">统计窗口开始</text>
+<text class="colType" x="1208" y="256.5" text-anchor="end">timestamptz ?</text>
+<rect x="741" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="276.5">status</text>
+<text class="colComment" x="815.0" y="276.5">任务状态</text>
+<text class="colType" x="1208" y="276.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="756" y="296.5">created_at</text>
+<text class="colComment" x="845.0" y="296.5">创建时间</text>
+<text class="colType" x="1208" y="296.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="740" y="346" width="480" height="254" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M740 380 V355 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V380 Z" fill="#14524a"/>
+<text class="tableName" x="753" y="368.5">diagnosis_workflow_tasks</text>
+<text class="tableLabel" x="1207" y="368.5" text-anchor="end">诊断工作流任务</text>
+<rect x="752" y="382" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="762" y="394.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="777" y="394.5">task_id</text>
+<text class="colComment" x="843.5" y="394.5">任务标识</text>
+<text class="colType" x="1208" y="394.5" text-anchor="end">uuid ?</text>
+<rect x="741" y="400" width="478" height="20" fill="#f7f9fb"/>
+<rect x="752" y="402" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="762" y="414.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="777" y="414.5">creation_key</text>
+<text class="colComment" x="881.0" y="414.5">创建幂等键</text>
+<text class="colType" x="1208" y="414.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="756" y="434.5">snapshot_id</text>
+<text class="colComment" x="852.5" y="434.5">指标快照标识</text>
+<text class="colType" x="1208" y="434.5" text-anchor="end">varchar(128) ?</text>
+<rect x="741" y="440" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="454.5">risk_fingerprint</text>
+<text class="colComment" x="890.0" y="454.5">风险指纹</text>
+<text class="colType" x="1208" y="454.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="756" y="474.5">status</text>
+<text class="colComment" x="815.0" y="474.5">任务状态</text>
+<text class="colType" x="1208" y="474.5" text-anchor="end">varchar(32) ?</text>
+<rect x="741" y="480" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="494.5">gate_status</text>
+<text class="colComment" x="852.5" y="494.5">门禁结论</text>
+<text class="colType" x="1208" y="494.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="756" y="514.5">gate_reason</text>
+<text class="colComment" x="852.5" y="514.5">门禁理由</text>
+<text class="colType" x="1208" y="514.5" text-anchor="end">text ?</text>
+<rect x="741" y="520" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="534.5">report_json</text>
+<text class="colComment" x="852.5" y="534.5">诊断报告</text>
+<text class="colType" x="1208" y="534.5" text-anchor="end">jsonb ?</text>
+<text class="colName" x="756" y="554.5">created_at</text>
+<text class="colComment" x="845.0" y="554.5">创建时间</text>
+<text class="colType" x="1208" y="554.5" text-anchor="end">timestamptz ?</text>
+<rect x="741" y="560" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="756" y="574.5">updated_at</text>
+<text class="colComment" x="845.0" y="574.5">更新时间</text>
+<text class="colType" x="1208" y="574.5" text-anchor="end">timestamptz ?</text>
+<text class="colName" x="756" y="594.5">review_deadline</text>
+<text class="colComment" x="882.5" y="594.5">审核截止时间</text>
+<text class="colType" x="1208" y="594.5" text-anchor="end">timestamptz</text>
+</g>
+<g class="table">
+<rect x="1420" y="168" width="480" height="154" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M1420 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#14524a"/>
+<text class="tableName" x="1433" y="190.5">diagnosis_timeline</text>
+<text class="tableLabel" x="1887" y="190.5" text-anchor="end">诊断时间线</text>
+<rect x="1432" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="1453" y="204" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="1463" y="216.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="1478" y="216.5">task_id</text>
+<text class="colComment" x="1544.5" y="216.5">任务标识</text>
+<text class="colType" x="1888" y="216.5" text-anchor="end">uuid ?</text>
+<rect x="1421" y="222" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="224" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="236.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="1457" y="236.5">event_sequence</text>
+<text class="colComment" x="1576.0" y="236.5">事件序号</text>
+<text class="colType" x="1888" y="236.5" text-anchor="end">bigint ?</text>
+<text class="colName" x="1436" y="256.5">event_type</text>
+<text class="colComment" x="1525.0" y="256.5">事件类型</text>
+<text class="colType" x="1888" y="256.5" text-anchor="end">varchar(64) ?</text>
+<rect x="1421" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="276.5">operator_name</text>
+<text class="colComment" x="1547.5" y="276.5">操作人</text>
+<text class="colType" x="1888" y="276.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="1436" y="296.5">detail</text>
+<text class="colComment" x="1495.0" y="296.5">事件详情</text>
+<text class="colType" x="1888" y="296.5" text-anchor="end">text ?</text>
+<rect x="1421" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="316.5">occurred_at</text>
+<text class="colComment" x="1532.5" y="316.5">发生时间</text>
+<text class="colType" x="1888" y="316.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="1420" y="366" width="480" height="154" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M1420 400 V375 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V400 Z" fill="#14524a"/>
+<text class="tableName" x="1433" y="388.5">diagnosis_approvals</text>
+<text class="tableLabel" x="1887" y="388.5" text-anchor="end">人工审批</text>
+<rect x="1432" y="402" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="414.5" text-anchor="middle" fill="#8a6100">PK</text>
+<rect x="1453" y="402" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="1463" y="414.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<text class="colNameKey" x="1478" y="414.5">task_id</text>
+<text class="colComment" x="1544.5" y="414.5">任务标识</text>
+<text class="colType" x="1888" y="414.5" text-anchor="end">uuid ?</text>
+<rect x="1421" y="420" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="422" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="1442" y="434.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="1457" y="434.5">operation_id</text>
+<text class="colComment" x="1561.0" y="434.5">操作编号</text>
+<text class="colType" x="1888" y="434.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="1436" y="454.5">action</text>
+<text class="colComment" x="1495.0" y="454.5">审批动作</text>
+<text class="colType" x="1888" y="454.5" text-anchor="end">varchar(32) ?</text>
+<rect x="1421" y="460" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="474.5">reviewer</text>
+<text class="colComment" x="1510.0" y="474.5">审批人</text>
+<text class="colType" x="1888" y="474.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="1436" y="494.5">comment</text>
+<text class="colComment" x="1502.5" y="494.5">审批意见</text>
+<text class="colType" x="1888" y="494.5" text-anchor="end">text ?</text>
+<rect x="1421" y="500" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="514.5">reviewed_at</text>
+<text class="colComment" x="1532.5" y="514.5">审批时间</text>
+<text class="colType" x="1888" y="514.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="1420" y="564" width="480" height="194" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M1420 598 V573 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V598 Z" fill="#14524a"/>
+<text class="tableName" x="1433" y="586.5">governance_simulations</text>
+<text class="tableLabel" x="1887" y="586.5" text-anchor="end">模拟治理</text>
+<rect x="1432" y="600" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="1442" y="612.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="1457" y="612.5">simulation_id</text>
+<text class="colComment" x="1568.5" y="612.5">模拟记录标识</text>
+<text class="colType" x="1888" y="612.5" text-anchor="end">uuid ?</text>
+<rect x="1421" y="618" width="478" height="20" fill="#f7f9fb"/>
+<rect x="1432" y="620" width="20" height="17" rx="4" fill="#dbeafe"/><text class="badge" x="1442" y="632.5" text-anchor="middle" fill="#1d4ed8">FK</text>
+<rect x="1453" y="620" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="1463" y="632.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colNameKey" x="1478" y="632.5">task_id</text>
+<text class="colComment" x="1544.5" y="632.5">任务标识</text>
+<text class="colType" x="1888" y="632.5" text-anchor="end">uuid ?</text>
+<rect x="1432" y="640" width="20" height="17" rx="4" fill="#dcfce7"/><text class="badge" x="1442" y="652.5" text-anchor="middle" fill="#15803d">U</text>
+<text class="colName" x="1457" y="652.5">operation_id</text>
+<text class="colComment" x="1561.0" y="652.5">操作编号</text>
+<text class="colType" x="1888" y="652.5" text-anchor="end">varchar(128) ?</text>
+<rect x="1421" y="658" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="672.5">action_type</text>
+<text class="colComment" x="1532.5" y="672.5">治理动作类型</text>
+<text class="colType" x="1888" y="672.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="1436" y="692.5">parameters_json</text>
+<text class="colComment" x="1562.5" y="692.5">治理参数</text>
+<text class="colType" x="1888" y="692.5" text-anchor="end">jsonb ?</text>
+<rect x="1421" y="698" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="712.5">result</text>
+<text class="colComment" x="1495.0" y="712.5">模拟执行结果</text>
+<text class="colType" x="1888" y="712.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="1436" y="732.5">operator_name</text>
+<text class="colComment" x="1547.5" y="732.5">操作人</text>
+<text class="colType" x="1888" y="732.5" text-anchor="end">varchar(128) ?</text>
+<rect x="1421" y="738" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="1436" y="752.5">simulated_at</text>
+<text class="colComment" x="1540.0" y="752.5">模拟时间</text>
+<text class="colType" x="1888" y="752.5" text-anchor="end">timestamptz ?</text>
+</g>
+<g class="table">
+<rect x="2100" y="168" width="480" height="454" rx="9" fill="#ffffff" stroke="#c9d4e0" stroke-width="1.3" filter="url(#boxShadow)"/>
+<path d="M2100 202 V177 a9 9 0 0 1 9 -9 h462 a9 9 0 0 1 9 9 V202 Z" fill="#14524a"/>
+<text class="tableName" x="2113" y="190.5">model_call_audits</text>
+<text class="tableLabel" x="2567" y="190.5" text-anchor="end">模型调用审计</text>
+<rect x="2112" y="204" width="20" height="17" rx="4" fill="#fff2cc"/><text class="badge" x="2122" y="216.5" text-anchor="middle" fill="#8a6100">PK</text>
+<text class="colNameKey" x="2137" y="216.5">call_id</text>
+<text class="colComment" x="2203.5" y="216.5">调用标识</text>
+<text class="colType" x="2568" y="216.5" text-anchor="end">varchar(128) ?</text>
+<rect x="2101" y="222" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="236.5">trace_id</text>
+<text class="colComment" x="2190.0" y="236.5">链路追踪标识</text>
+<text class="colType" x="2568" y="236.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="2116" y="256.5">domain</text>
+<text class="colComment" x="2175.0" y="256.5">业务域</text>
+<text class="colType" x="2568" y="256.5" text-anchor="end">varchar(64) ?</text>
+<rect x="2101" y="262" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="276.5">stage</text>
+<text class="colComment" x="2167.5" y="276.5">处理阶段</text>
+<text class="colType" x="2568" y="276.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="2116" y="296.5">provider</text>
+<text class="colComment" x="2190.0" y="296.5">模型提供方</text>
+<text class="colType" x="2568" y="296.5" text-anchor="end">varchar(64) ?</text>
+<rect x="2101" y="302" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="316.5">model</text>
+<text class="colComment" x="2167.5" y="316.5">模型名称</text>
+<text class="colType" x="2568" y="316.5" text-anchor="end">varchar(128) ?</text>
+<text class="colName" x="2116" y="336.5">prompt_version</text>
+<text class="colComment" x="2235.0" y="336.5">提示词版本</text>
+<text class="colType" x="2568" y="336.5" text-anchor="end">varchar(64) ?</text>
+<rect x="2101" y="342" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="356.5">input_tokens</text>
+<text class="colComment" x="2220.0" y="356.5">输入 token 数</text>
+<text class="colType" x="2568" y="356.5" text-anchor="end">bigint ?</text>
+<text class="colName" x="2116" y="376.5">output_tokens</text>
+<text class="colComment" x="2227.5" y="376.5">输出 token 数</text>
+<text class="colType" x="2568" y="376.5" text-anchor="end">bigint ?</text>
+<rect x="2101" y="382" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="396.5">total_tokens</text>
+<text class="colComment" x="2220.0" y="396.5">总 token 数</text>
+<text class="colType" x="2568" y="396.5" text-anchor="end">bigint ?</text>
+<text class="colName" x="2116" y="416.5">latency_ms</text>
+<text class="colComment" x="2205.0" y="416.5">调用耗时（毫秒）</text>
+<text class="colType" x="2568" y="416.5" text-anchor="end">bigint ?</text>
+<rect x="2101" y="422" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="436.5">status</text>
+<text class="colComment" x="2175.0" y="436.5">调用状态</text>
+<text class="colType" x="2568" y="436.5" text-anchor="end">varchar(32) ?</text>
+<text class="colName" x="2116" y="456.5">retry_count</text>
+<text class="colComment" x="2212.5" y="456.5">重试次数</text>
+<text class="colType" x="2568" y="456.5" text-anchor="end">integer ?</text>
+<rect x="2101" y="462" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="476.5">price_version</text>
+<text class="colComment" x="2227.5" y="476.5">价格版本</text>
+<text class="colType" x="2568" y="476.5" text-anchor="end">varchar(64) ?</text>
+<text class="colName" x="2116" y="496.5">input_price_per_million</text>
+<text class="colComment" x="2302.5" y="496.5">输入单价/百万 token</text>
+<text class="colType" x="2568" y="496.5" text-anchor="end">numeric(20,10) ?</text>
+<rect x="2101" y="502" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="516.5">output_price_per_million</text>
+<text class="colComment" x="2310.0" y="516.5">输出单价/百万 token</text>
+<text class="colType" x="2568" y="516.5" text-anchor="end">numeric(20,10) ?</text>
+<text class="colName" x="2116" y="536.5">estimated_cost</text>
+<text class="colComment" x="2235.0" y="536.5">预估费用</text>
+<text class="colType" x="2568" y="536.5" text-anchor="end">numeric(20,10) ?</text>
+<rect x="2101" y="542" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="556.5">currency</text>
+<text class="colComment" x="2190.0" y="556.5">币种</text>
+<text class="colType" x="2568" y="556.5" text-anchor="end">varchar(16) ?</text>
+<text class="colName" x="2116" y="576.5">raw_request</text>
+<text class="colComment" x="2212.5" y="576.5">请求原文</text>
+<text class="colType" x="2568" y="576.5" text-anchor="end">text ?</text>
+<rect x="2101" y="582" width="478" height="20" fill="#f7f9fb"/>
+<text class="colName" x="2116" y="596.5">raw_response</text>
+<text class="colComment" x="2220.0" y="596.5">响应原文</text>
+<text class="colType" x="2568" y="596.5" text-anchor="end">text ?</text>
+<text class="colName" x="2116" y="616.5">called_at</text>
+<text class="colComment" x="2197.5" y="616.5">调用时间</text>
+<text class="colType" x="2568" y="616.5" text-anchor="end">timestamptz ?</text>
+</g>
+</svg>

@@ -1,0 +1,270 @@
+// FG-ADC 数据模型（DBML）
+// 依据 PostgreSQL fund_integration 当前真实结构整理；字段注释和约束以各模块 schema.sql 为准。
+// 可导入 dbdiagram.io / DataGrip / DBeaver；这是模型快照，不是数据库迁移脚本。
+
+// ---------- knowledge ----------
+Table knowledge.knowledge_documents {
+  document_id varchar(128) [pk, note: '文档标识']
+  version varchar(64) [pk, note: '文档版本']
+  file_path varchar(1024) [not null, note: '文件存放路径']
+  file_sha256 character(64) [not null, unique, note: '文件 SHA-256 校验值']
+  status varchar(32) [not null, note: '文档状态']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: `now()`, note: '更新时间']
+}
+
+Table knowledge.knowledge_document_elements {
+  document_id varchar(128) [pk, note: '文档标识']
+  version varchar(64) [pk, note: '文档版本']
+  sequence_no integer [pk, note: '解析顺序号']
+  element_type varchar(32) [not null, note: '元素类型']
+  section_path varchar(512) [not null, note: '章节路径']
+  raw_text text [not null, note: '原始文本']
+  cleaned_text text [not null, note: '清洗后文本']
+  table_index integer [not null, default: `-1`, note: '表格序号']
+  row_index integer [not null, default: `-1`, note: '表格内行号']
+}
+
+Table knowledge.knowledge_document_chunks {
+  chunk_id varchar(256) [pk, note: '分片标识']
+  document_id varchar(128) [not null, note: '文档标识']
+  version varchar(64) [not null, note: '文档版本']
+  section_path varchar(512) [not null, note: '章节路径']
+  content text [not null, note: '分片正文']
+  first_sequence integer [not null, note: '起始元素序号']
+  last_sequence integer [not null, note: '结束元素序号']
+  table_index integer [not null, default: `-1`, note: '表格序号']
+  row_index integer [not null, default: `-1`, note: '表格内行号']
+  metadata jsonb [not null, default: `'{}'::jsonb`, note: '元数据']
+}
+
+Table knowledge.rag_collections {
+  collection_name varchar(128) [pk, note: '集合名称']
+  description varchar(512) [not null, note: '集合说明']
+  embedding_provider varchar(128) [not null, note: '向量模型提供方']
+  embedding_model varchar(256) [not null, note: '向量模型名称']
+  embedding_dimension integer [not null, note: '向量维度']
+  embedding_normalize boolean [not null, note: '是否归一化']
+  status varchar(32) [not null, default: `'STAGING'`, note: '集合状态']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: `now()`, note: '更新时间']
+}
+
+Table knowledge.knowledge_chunks {
+  chunk_id varchar(256) [pk, note: '分片标识']
+  collection_name varchar(128) [not null, note: '集合名称']
+  document varchar(512) [not null, note: '所属接口文档']
+  content text [not null, note: '分片正文']
+  embedding vector(512) [not null, note: '向量值']
+  metadata jsonb [not null, note: '元数据']
+  document_id varchar(128) [not null, note: '文档标识']
+  document_version varchar(64) [not null, note: '文档版本']
+  institution varchar(128) [note: '合成资方']
+  product_code varchar(128) [note: '产品编码']
+  operation varchar(128) [note: '业务动作']
+  content_type varchar(64) [note: '内容类型']
+  source_type varchar(64) [note: '来源类型']
+  block_type varchar(64) [note: '块类型']
+  locator varchar(512) [not null, note: '证据定位符']
+  embedding_provider varchar(128) [not null, note: '向量模型提供方']
+  embedding_model varchar(256) [not null, note: '向量模型名称']
+  embedding_dimension integer [not null, note: '向量维度']
+  embedding_normalize boolean [not null, note: '是否归一化']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: `now()`, note: '更新时间']
+}
+
+Table knowledge.knowledge_index_tasks {
+  task_id uuid [pk, note: '索引任务标识']
+  document_id varchar(128) [not null, note: '文档标识']
+  version varchar(64) [not null, note: '文档版本']
+  status varchar(32) [not null, note: '索引任务状态']
+  error_message text [note: '失败原因']
+  updated_at timestamptz [not null, default: `now()`, note: '更新时间']
+  indexes {
+    (document_id, version) [unique, name: 'uk_knowledge_index_tasks_document_version']
+  }
+}
+
+Table knowledge.rag_evaluation_sets {
+  set_id uuid [pk, note: '评测集标识']
+  name varchar(256) [not null, note: '评测集名称']
+  collection_name varchar(128) [not null, note: '集合名称']
+  document_id varchar(128) [not null, note: '文档标识']
+  document_version varchar(64) [not null, note: '文档版本']
+  top_k integer [not null, note: '召回条数上限']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  indexes {
+    (name, document_id, document_version) [unique, name: 'rag_evaluation_sets_name_document_id_document_version_key']
+  }
+}
+
+Table knowledge.rag_evaluation_cases {
+  case_id uuid [pk, note: '评测题标识']
+  set_id uuid [not null, note: '评测集标识']
+  question text [not null, note: '评测问题']
+  expected_keyword varchar(256) [note: '标准证据关键词']
+  expected_chunk_id varchar(256) [note: '标准分片标识']
+  expected_locator varchar(512) [note: '标准定位符']
+  refusal_expected boolean [not null, default: `false`, note: '是否应拒答']
+  case_order integer [not null, note: '题目顺序']
+  indexes {
+    (set_id, case_order) [unique, name: 'rag_evaluation_cases_set_id_case_order_key']
+  }
+}
+
+Table knowledge.rag_evaluation_runs {
+  run_id uuid [pk, note: '评测运行标识']
+  set_id uuid [not null, note: '评测集标识']
+  status varchar(32) [not null, note: '运行状态']
+  recall_at_k numeric(10,6) [note: '召回率 Recall@K']
+  mean_reciprocal_rank numeric(10,6) [note: '平均倒数排名 MRR']
+  citation_accuracy numeric(10,6) [note: '引用准确率']
+  refusal_accuracy numeric(10,6) [note: '拒答准确率']
+  error_message text [note: '失败原因']
+  started_at timestamptz [not null, note: '开始时间']
+  completed_at timestamptz [note: '结束时间']
+}
+
+Table knowledge.rag_evaluation_results {
+  run_id uuid [pk, note: '运行标识']
+  case_id uuid [pk, note: '评测题标识']
+  hit boolean [not null, note: '是否命中标准证据']
+  actual_rank integer [not null, note: '实际命中排名']
+  citation_matched boolean [not null, note: '引用是否匹配']
+  retrieval_status varchar(32) [not null, note: '检索结论']
+  candidates_json jsonb [not null, note: '候选证据快照']
+}
+
+Table knowledge.rag_query_audits {
+  query_id uuid [pk, note: '检索标识']
+  collection_name varchar(128) [not null, note: '集合名称']
+  document_id varchar(128) [note: '限定文档标识']
+  document_version varchar(64) [note: '限定文档版本']
+  question text [not null, note: '检索问题']
+  keywords jsonb [not null, note: '门禁关键词']
+  top_k integer [not null, note: '本次召回条数']
+  status varchar(32) [not null, note: '检索结论']
+  indexed_chunks integer [not null, note: '参与检索的分片数']
+  duration_ms bigint [not null, note: '耗时（毫秒）']
+  missing_keywords jsonb [not null, note: '未命中的关键词']
+  candidates_json jsonb [not null, note: '候选证据快照']
+  queried_at timestamptz [not null, note: '检索时间']
+}
+
+Ref: knowledge.knowledge_document_elements.(document_id, version) > knowledge.knowledge_documents.(document_id, version)
+Ref: knowledge.knowledge_document_chunks.(document_id, version) > knowledge.knowledge_documents.(document_id, version)
+Ref: knowledge.knowledge_index_tasks.(document_id, version) > knowledge.knowledge_documents.(document_id, version)
+Ref: knowledge.knowledge_chunks.collection_name > knowledge.rag_collections.collection_name
+Ref: knowledge.rag_evaluation_sets.collection_name > knowledge.rag_collections.collection_name
+Ref: knowledge.rag_evaluation_cases.set_id > knowledge.rag_evaluation_sets.set_id
+Ref: knowledge.rag_evaluation_runs.set_id > knowledge.rag_evaluation_sets.set_id
+Ref: knowledge.rag_evaluation_results.run_id > knowledge.rag_evaluation_runs.run_id
+Ref: knowledge.rag_evaluation_results.case_id > knowledge.rag_evaluation_cases.case_id
+
+// knowledge_chunks.document_id/document_version 与 knowledge_documents 是逻辑关联，当前数据库未建立外键。
+// rag_evaluation_sets.document_id/document_version 同样是逻辑绑定，集合外键只约束 collection_name。
+
+// ---------- guardian ----------
+Table guardian.risk_events {
+  risk_fingerprint varchar(64) [pk, note: '风险指纹']
+  service_name varchar(128) [not null, note: '服务名']
+  interface_path varchar(512) [not null, note: '接口路径']
+  severity varchar(32) [not null, note: '严重级别']
+  rule_ids text [not null, note: '命中规则']
+  window_start timestamptz [not null, note: '统计窗口开始']
+  window_end timestamptz [not null, note: '统计窗口结束']
+  occurrence_count bigint [not null, default: `1`, note: '窗口内出现次数']
+  first_seen_at timestamptz [not null, note: '首次出现时间']
+  last_seen_at timestamptz [not null, note: '最近出现时间']
+  payload_json jsonb [not null, note: '触发指标快照']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+}
+
+Table guardian.diagnostic_tasks {
+  task_id uuid [pk, note: '历史任务标识']
+  risk_fingerprint varchar(64) [not null, note: '风险指纹']
+  window_start timestamptz [not null, note: '统计窗口开始']
+  status varchar(32) [not null, note: '任务状态']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  indexes {
+    (risk_fingerprint, window_start) [unique, name: 'diagnostic_tasks_risk_fingerprint_window_start_key']
+  }
+}
+
+Table guardian.diagnosis_workflow_tasks {
+  task_id uuid [pk, note: '诊断工作流任务标识']
+  creation_key varchar(128) [not null, unique, note: '创建幂等键']
+  snapshot_id varchar(128) [not null, note: '指标快照标识']
+  risk_fingerprint varchar(128) [not null, note: '风险指纹']
+  status varchar(32) [not null, note: '任务状态']
+  gate_status varchar(32) [not null, note: '门禁结论']
+  gate_reason text [not null, note: '门禁理由']
+  report_json jsonb [not null, note: '诊断报告']
+  created_at timestamptz [not null, note: '创建时间']
+  updated_at timestamptz [not null, note: '更新时间']
+  review_deadline timestamptz [note: '审核截止时间']
+}
+
+Table guardian.diagnosis_timeline {
+  task_id uuid [pk, note: '任务标识']
+  event_sequence bigint [pk, note: '事件序号']
+  event_type varchar(64) [not null, note: '事件类型']
+  operator_name varchar(128) [not null, note: '操作人']
+  detail text [not null, note: '事件详情']
+  occurred_at timestamptz [not null, note: '发生时间']
+}
+
+Table guardian.diagnosis_approvals {
+  task_id uuid [pk, note: '任务标识']
+  operation_id varchar(128) [not null, unique, note: '操作编号']
+  action varchar(32) [not null, note: '审批动作']
+  reviewer varchar(128) [not null, note: '审批人']
+  comment text [not null, note: '审批意见']
+  reviewed_at timestamptz [not null, note: '审批时间']
+}
+
+Table guardian.governance_simulations {
+  simulation_id uuid [pk, note: '模拟记录标识']
+  task_id uuid [not null, note: '任务标识']
+  operation_id varchar(128) [not null, note: '操作编号']
+  action_type varchar(64) [not null, note: '治理动作类型']
+  parameters_json jsonb [not null, note: '治理参数']
+  result varchar(64) [not null, note: '模拟执行结果']
+  operator_name varchar(128) [not null, note: '操作人']
+  simulated_at timestamptz [not null, note: '模拟时间']
+  indexes {
+    (task_id, operation_id) [unique, name: 'governance_simulations_task_id_operation_id_key']
+  }
+}
+
+Table guardian.model_call_audits {
+  call_id varchar(128) [pk, note: '调用标识']
+  trace_id varchar(128) [not null, note: '链路追踪标识']
+  domain varchar(64) [not null, note: '业务域']
+  stage varchar(64) [not null, note: '处理阶段']
+  provider varchar(64) [not null, note: '模型提供方']
+  model varchar(128) [not null, note: '模型名称']
+  prompt_version varchar(64) [not null, note: '提示词版本']
+  input_tokens bigint [not null, note: '输入 token 数']
+  output_tokens bigint [not null, note: '输出 token 数']
+  total_tokens bigint [not null, note: '总 token 数']
+  latency_ms bigint [not null, note: '调用耗时（毫秒）']
+  status varchar(32) [not null, note: '调用状态']
+  retry_count integer [not null, note: '重试次数']
+  price_version varchar(64) [not null, note: '价格版本']
+  input_price_per_million numeric(20,10) [not null, note: '输入单价/百万 token']
+  output_price_per_million numeric(20,10) [not null, note: '输出单价/百万 token']
+  estimated_cost numeric(20,10) [not null, note: '预估费用']
+  currency varchar(16) [not null, note: '币种']
+  raw_request text [not null, note: '请求原文']
+  raw_response text [not null, note: '响应原文']
+  called_at timestamptz [not null, note: '调用时间']
+}
+
+Ref: guardian.diagnostic_tasks.risk_fingerprint > guardian.risk_events.risk_fingerprint
+Ref: guardian.diagnosis_timeline.task_id > guardian.diagnosis_workflow_tasks.task_id
+Ref: guardian.diagnosis_approvals.task_id > guardian.diagnosis_workflow_tasks.task_id
+Ref: guardian.governance_simulations.task_id > guardian.diagnosis_workflow_tasks.task_id
+
+// diagnosis_workflow_tasks.risk_fingerprint 与 risk_events 是逻辑关联，当前未建立外键。

@@ -199,6 +199,54 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-125] 2026-09-12 · Codex
+
+**做了什么**
+- 修正 `docs/architecture/data-model.dbml`：补齐真实可空性，恢复联合唯一约束，保留实际外键，并明确文档版本字段的逻辑关联。
+- 删除违反项目约束的 `docs/architecture/generate-data-model-er.py`，将架构索引和两张 SVG 的来源说明改为 PostgreSQL 真实结构快照。
+- 更新 `data-model-column-comments.sql` 的来源说明；依据修正后的 SVG 重新生成两张 PNG；未修改数据库结构和数据。
+
+**结果**
+- DBML 不再把可空字段错误标为 `not null`，联合约束已按数据库真实组合表达。
+- `git diff --check` 通过；架构目录不再包含 Python 生成脚本或其文档引用。
+
+**发现的坑**
+- ER 图是数据库快照，后续 schema 变更后需要重新生成图和 DBML；当前项目不再保留 Python 自动生成器。
+
+**新产生的决策**
+- 无。
+
+**下一步唯一动作**
+- 用 DBML 导入建模工具做一次语法和渲染检查，确认联合索引在工具中显示正确。
+
+**需要用户裁决的问题**
+- 无。
+
+### [C-124] 2026-09-12 · Codex
+
+**做了什么**
+- 只读核对 `docs/architecture/data-model-column-comments.sql`、`data-model.dbml`、knowledge/guardian 两套 ER 图与运行中的 PostgreSQL 元数据。
+- 查询了表字段、表级/字段级中文注释、主键、唯一约束和外键关系，并人工检查 ER 图布局与关系连线。
+
+**结果**
+- 运行库的 176 个业务字段均已有中文注释，两个 schema 的表级注释也完整；注释内容与字段职责基本一致。
+- 两张 SVG/PNG ER 图的表、字段和真实外键关系基本准确；`diagnosis_workflow_tasks.risk_fingerprint` 的虚拟关联已明确标注为逻辑关联。
+- `data-model.dbml` 存在准确性问题：多个可空字段被标为 `not null`，联合唯一约束被错误拆成多个单列 `unique`，包括 `knowledge_index_tasks(document_id,version)`、`rag_evaluation_sets(name,document_id,document_version)`、`rag_evaluation_cases(set_id,case_order)`、`diagnostic_tasks(risk_fingerprint,window_start)` 和 `governance_simulations(task_id,operation_id)`。
+- `generate-data-model-er.py` 是新增 Python 生成脚本，与项目只使用 Java/Maven/必要 Shell 的硬约束冲突；本轮未删除或修改。
+
+**发现的坑**
+- 当前 ER 图比 DBML 更接近真实数据库；DBML 在修正前不能作为导入建模工具或评审依据。
+- `knowledge_chunks`、`rag_evaluation_sets` 的文档标识目前是逻辑关联而非外键，图中没有连线；这不是当前实现错误，但应在模型说明中明确，避免误解为完整引用约束。
+
+**新产生的决策**
+- 无。本轮仅做准确性审查，没有执行 schema 变更。
+
+**下一步唯一动作**
+- 修正 DBML 的可空性和联合约束表达，并移除或改写 Python 生成脚本后再重新生成 ER 产物。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-123] 2026-09-12 · Codex
 
 **做了什么**
