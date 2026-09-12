@@ -16,6 +16,12 @@ public class PgvectorRetriever {
 
     /** 由 pgvector 计算余弦距离并返回最相近的候选。 */
     public List<RetrievedChunk> search(String collectionName, float[] queryVector, int topK) {
+        return search(collectionName, null, null, queryVector, topK);
+    }
+
+    /** 在指定文档版本范围内执行向量检索；文档为空时检索整个集合。 */
+    public List<RetrievedChunk> search(String collectionName, String documentId, String documentVersion,
+                                       float[] queryVector, int topK) {
         if (queryVector == null || queryVector.length == 0) {
             throw new IllegalArgumentException("查询向量不能为空");
         }
@@ -23,12 +29,17 @@ public class PgvectorRetriever {
             throw new IllegalArgumentException("Top-K 必须大于零");
         }
         String vectorLiteral = toVectorLiteral(queryVector);
+        boolean documentScoped = documentId != null && !documentId.isBlank();
         String sql = "SELECT chunk_id, content, document_id, document_version, locator, "
                 + "metadata->>'sectionPath' AS section_path, metadata->>'tableIndex' AS table_index, "
                 + "metadata->>'rowIndex' AS row_index, 1 - (embedding <=> ?::vector) AS score "
                 + "FROM knowledge.knowledge_chunks c JOIN knowledge.rag_collections r ON r.collection_name=c.collection_name "
                 + "WHERE c.collection_name = ? AND r.status='PUBLISHED' "
+                + (documentScoped ? "AND c.document_id = ? AND c.document_version = ? " : "")
                 + "ORDER BY embedding <=> ?::vector LIMIT ?";
+        Object[] arguments = documentScoped
+                ? new Object[]{vectorLiteral, collectionName, documentId, documentVersion, vectorLiteral, topK}
+                : new Object[]{vectorLiteral, collectionName, vectorLiteral, topK};
         return jdbcTemplate.query(sql,
                 (resultSet, rowNumber) -> new RetrievedChunk(
                         resultSet.getString("chunk_id"),
@@ -39,8 +50,7 @@ public class PgvectorRetriever {
                         resultSet.getString("section_path"),
                         integerOrDefault(resultSet.getString("table_index"), -1),
                         integerOrDefault(resultSet.getString("row_index"), -1),
-                        resultSet.getString("locator")),
-                vectorLiteral, collectionName, vectorLiteral, topK);
+                        resultSet.getString("locator")), arguments);
     }
 
     /** 把 Java 向量转换为 pgvector 接受的文本表示。 */

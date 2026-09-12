@@ -220,7 +220,7 @@ public class GuardianConsoleService {
                     "接口 QPS 上限为 100，超时时间为 1000 毫秒。", "synthetic", "v1", "授信申请"));
         }
         try {
-            var response = ragService.query(new ConsoleModels.RagQueryRequest(null,
+            var response = ragService.query(new ConsoleModels.RagQueryRequest(null, null, null,
                     "授信申请金额字段的类型和必填要求是什么？", List.of("applyAmt", "BigDecimal", "必填"), 3));
             if (!"ACCEPTED".equals(response.status())) {
                 return List.of();

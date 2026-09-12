@@ -25,7 +25,8 @@ public final class ConsoleModels {
     }
 
     /** RAG 查询参数。 */
-    public record RagQueryRequest(String collectionName, String question, List<String> keywords, Integer topK) {
+    public record RagQueryRequest(String collectionName, String documentId, String documentVersion,
+                                  String question, List<String> keywords, Integer topK) {
     }
 
     /** RAG 查询结果。 */
@@ -35,8 +36,13 @@ public final class ConsoleModels {
     }
 
     /** 可供在线检索选择的已发布知识集合。 */
-    public record PublishedCollection(String collectionName, String documentId, String documentVersion,
-                                      int chunkCount, String embeddingModel, int embeddingDimension) {
+    public record PublishedCollection(String collectionName, int documentCount, int chunkCount,
+                                      String embeddingModel, int embeddingDimension,
+                                      List<PublishedDocument> documents) {
+    }
+
+    /** 已发布集合内可供限定检索范围的文档版本。 */
+    public record PublishedDocument(String documentId, String documentVersion, int chunkCount) {
     }
 
     /** 固定问题集评测结果，指标由每次检索结果复算。 */

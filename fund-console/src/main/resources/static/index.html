@@ -291,6 +291,7 @@
                 <div class="card-head"><h2>检索实验</h2><p>问题会先生成 512 维向量，再由 pgvector 与关键词融合排序。</p></div>
                 <div class="card-body">
                     <div class="field"><label for="collectionName">已发布知识集合</label><select id="collectionName"><option value="">正在读取已发布集合…</option></select></div>
+                    <div class="field"><label for="documentScope">检索范围</label><select id="documentScope"><option value="">全部文档</option></select></div>
                     <div class="field"><label for="question">业务问题</label><textarea id="question">授信申请金额字段是否必填，数据类型是什么？</textarea></div>
                     <div class="field"><label for="keywords">证据关键词，用逗号分隔</label><input id="keywords" value="applyAmt,BigDecimal,必填"></div>
                     <div class="field"><label for="topK">返回候选数量</label><select id="topK"><option>3</option><option>5</option><option>8</option></select></div>
@@ -411,6 +412,8 @@
         try {
             const result = await request('/api/console/rag/query', {method: 'POST', body: JSON.stringify({
                 collectionName: byId('collectionName').value || null,
+                documentId: byId('documentScope').value ? byId('documentScope').value.split('@')[0] : null,
+                documentVersion: byId('documentScope').value ? byId('documentScope').value.split('@')[1] : null,
                 question: byId('question').value,
                 keywords: byId('keywords').value.split(',').map(item => item.trim()).filter(Boolean),
                 topK: Number(byId('topK').value)
@@ -537,17 +540,31 @@
         }
     }
 
+    let publishedCollections = [];
+
+    /** 根据当前知识集合刷新可选的文档检索范围。 */
+    function loadDocumentScopes() {
+        const collection = publishedCollections.find(item => item.collectionName === byId('collectionName').value);
+        const documents = collection ? collection.documents : [];
+        byId('documentScope').innerHTML = '<option value="">全部文档</option>'
+            + documents.map(item => `<option value="${escapeHtml(item.documentId)}@${escapeHtml(item.documentVersion)}">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${number(item.chunkCount)} 个分片</option>`).join('');
+    }
+
+    /** 加载已发布知识集合及其文档版本。 */
     async function loadCollections() {
         try {
-            const collections = await request('/api/console/rag/collections');
-            byId('collectionName').innerHTML = collections.length
-                ? collections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${number(item.chunkCount)} 个分片</option>`).join('')
+            publishedCollections = await request('/api/console/rag/collections');
+            byId('collectionName').innerHTML = publishedCollections.length
+                ? publishedCollections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.collectionName)} · ${number(item.documentCount)} 份文档 · ${number(item.chunkCount)} 个分片</option>`).join('')
                 : '<option value="">暂无已发布集合</option>';
+            loadDocumentScopes();
         } catch (error) {
             byId('collectionName').innerHTML = `<option value="">集合读取失败</option>`;
             byId('ragError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         }
     }
+
+    byId('collectionName').addEventListener('change', loadDocumentScopes);
 
     const taskBadge = status => ['APPROVED', 'DIAGNOSED', 'SIMULATED'].includes(status) ? 'ok'
         : ['REJECTED', 'EXPIRED'].includes(status) ? 'bad' : 'pending';

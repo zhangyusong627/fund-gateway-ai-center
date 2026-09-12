@@ -22,6 +22,12 @@ public class HybridPgvectorRetriever {
     /** 先扩大向量候选集，再按关键词命中重新排序。 */
     public List<HybridRetrievedChunk> search(String collectionName, float[] queryVector,
                                              Set<String> keywords, int topK) {
+        return search(collectionName, null, null, queryVector, keywords, topK);
+    }
+
+    /** 在可选文档版本范围内完成向量召回和关键词融合排序。 */
+    public List<HybridRetrievedChunk> search(String collectionName, String documentId, String documentVersion,
+                                             float[] queryVector, Set<String> keywords, int topK) {
         if (keywords == null || keywords.isEmpty()) {
             throw new IllegalArgumentException("关键词集合不能为空");
         }
@@ -29,7 +35,8 @@ public class HybridPgvectorRetriever {
             throw new IllegalArgumentException("Top-K 必须大于零");
         }
         List<PgvectorRetriever.RetrievedChunk> candidates =
-                vectorRetriever.search(collectionName, queryVector, Math.max(topK * 10, 50));
+                vectorRetriever.search(collectionName, documentId, documentVersion,
+                        queryVector, Math.max(topK * 10, 50));
         Set<String> normalizedKeywords = keywords.stream()
                 .filter(keyword -> keyword != null && !keyword.isBlank())
                 .map(String::toLowerCase)

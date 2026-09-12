@@ -13,6 +13,7 @@ import org.practice.fundgateway.console.ConsoleModels.RagCandidate;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
+import org.practice.fundgateway.console.ConsoleModels.PublishedDocument;
 import org.practice.fundgateway.console.ConsoleModels.RagEvaluationCase;
 import org.practice.fundgateway.console.ConsoleModels.RagEvaluationResponse;
 import org.practice.fundgateway.knowledge.embedding.LocalBgeEmbeddingModel;
@@ -46,7 +47,8 @@ public class ConsoleRagService {
         Set<String> keywords = new TreeSet<>(request.keywords());
         float[] queryVector = model().embed(request.question());
         List<HybridPgvectorRetriever.HybridRetrievedChunk> candidates =
-                new HybridPgvectorRetriever(jdbcTemplate).search(collectionName, queryVector, keywords, topK);
+                new HybridPgvectorRetriever(jdbcTemplate).search(collectionName, request.documentId(),
+                        request.documentVersion(), queryVector, keywords, topK);
         EvidenceAcceptanceGate.AcceptanceResult acceptance =
                 new EvidenceAcceptanceGate().evaluate(candidates, keywords);
         List<RagCandidate> mapped = java.util.stream.IntStream.range(0, candidates.size())
@@ -57,8 +59,7 @@ public class ConsoleRagService {
                             candidate.keywordScore(), candidate.finalScore(), chunk.documentId(),
                             chunk.documentVersion(), chunk.locator());
                 }).toList();
-        int indexedChunks = jdbcTemplate.queryForObject(
-                "select count(*) from knowledge.knowledge_chunks where collection_name=?", Integer.class, collectionName);
+        int indexedChunks = countIndexedChunks(collectionName, request.documentId(), request.documentVersion());
         return new RagQueryResponse(acceptance.accepted() ? "ACCEPTED" : "INSUFFICIENT_EVIDENCE",
                 collectionName, request.question(), topK, Duration.ofNanos(System.nanoTime() - startedAt).toMillis(),
                 indexedChunks, acceptance.missingKeywords(), mapped);
@@ -66,16 +67,20 @@ public class ConsoleRagService {
 
     /** 查询全部已发布集合，页面只能从这些不可见半成品之外的集合中选择。 */
     public List<PublishedCollection> publishedCollections() {
-        return jdbcTemplate.query("select r.collection_name, min(c.document_id) document_id, "
-                        + "min(c.document_version) document_version, count(c.chunk_id) chunk_count, "
+        List<PublishedCollection> collections = jdbcTemplate.query("select r.collection_name, "
+                        + "count(distinct (c.document_id, c.document_version)) document_count, "
+                        + "count(c.chunk_id) chunk_count, "
                         + "r.embedding_model, r.embedding_dimension from knowledge.rag_collections r "
                         + "join knowledge.knowledge_chunks c on c.collection_name=r.collection_name "
                         + "where r.status='PUBLISHED' group by r.collection_name, r.embedding_model, "
                         + "r.embedding_dimension order by r.updated_at desc",
                 (resultSet, rowNumber) -> new PublishedCollection(resultSet.getString("collection_name"),
-                        resultSet.getString("document_id"), resultSet.getString("document_version"),
-                        resultSet.getInt("chunk_count"), resultSet.getString("embedding_model"),
-                        resultSet.getInt("embedding_dimension")));
+                        resultSet.getInt("document_count"), resultSet.getInt("chunk_count"),
+                        resultSet.getString("embedding_model"), resultSet.getInt("embedding_dimension"),
+                        List.of()));
+        return collections.stream().map(collection -> new PublishedCollection(collection.collectionName(),
+                collection.documentCount(), collection.chunkCount(), collection.embeddingModel(),
+                collection.embeddingDimension(), publishedDocuments(collection.collectionName()))).toList();
     }
 
     /** 执行固定三题评测，验证字段、条件和证据不足三类行为。 */
@@ -90,7 +95,7 @@ public class ConsoleRagService {
         int citationHits = 0;
         int refusalCorrect = 0;
         for (EvaluationCase definition : definitions) {
-            RagQueryResponse response = query(new RagQueryRequest(null, definition.question(),
+            RagQueryResponse response = query(new RagQueryRequest(null, null, null, definition.question(),
                     List.of(definition.expectedKeyword()), 3));
             int rank = 0;
             for (RagCandidate candidate : response.candidates()) {
@@ -161,6 +166,26 @@ public class ConsoleRagService {
                         "知识集合不存在或尚未发布：" + requestedCollection)).collectionName();
     }
 
+    /** 查询集合内的已发布文档版本及各自分片数。 */
+    private List<PublishedDocument> publishedDocuments(String collectionName) {
+        return jdbcTemplate.query("select document_id, document_version, count(*) chunk_count "
+                        + "from knowledge.knowledge_chunks where collection_name=? "
+                        + "group by document_id, document_version order by document_id, document_version",
+                (resultSet, rowNumber) -> new PublishedDocument(resultSet.getString("document_id"),
+                        resultSet.getString("document_version"), resultSet.getInt("chunk_count")), collectionName);
+    }
+
+    /** 统计本次集合或文档范围内实际参与检索的向量分片。 */
+    private int countIndexedChunks(String collectionName, String documentId, String documentVersion) {
+        if (documentId == null || documentId.isBlank()) {
+            return jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                    + "where collection_name=?", Integer.class, collectionName);
+        }
+        return jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                        + "where collection_name=? and document_id=? and document_version=?",
+                Integer.class, collectionName, documentId, documentVersion);
+    }
+
     /** 固定问题集定义。 */
     private record EvaluationCase(String question, String expectedKeyword, boolean refusalExpected) {
     }
@@ -190,6 +215,11 @@ public class ConsoleRagService {
         }
         if (request.topK() != null && (request.topK() < 1 || request.topK() > 10)) {
             throw new IllegalArgumentException("Top-K 必须在 1 到 10 之间");
+        }
+        boolean hasDocumentId = request.documentId() != null && !request.documentId().isBlank();
+        boolean hasDocumentVersion = request.documentVersion() != null && !request.documentVersion().isBlank();
+        if (hasDocumentId != hasDocumentVersion) {
+            throw new IllegalArgumentException("文档标识和版本必须同时提供");
         }
     }
 
