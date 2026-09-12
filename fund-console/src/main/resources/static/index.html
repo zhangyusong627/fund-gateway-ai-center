@@ -189,6 +189,9 @@
         .status-pill.pending { color: var(--orange); background: rgba(198,106,0,.1); }
         .status-pill.ok { color: var(--green); background: rgba(30,142,90,.1); }
         .status-pill.bad { color: var(--red); background: rgba(214,59,53,.1); }
+        .status-pill.expired { color: var(--red); background: rgba(214,59,53,.1); }
+        .countdown { color: var(--orange); font-variant-numeric: tabular-nums; font-weight: 650; }
+        .countdown.expired { color: var(--red); }
         .flow-line { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; margin-top: 18px; }
         .flow-node { position: relative; padding: 15px 10px; border-radius: 16px; background: #f5f5f7; text-align: center; font-size: 11px; }
         .flow-node b { display: block; margin-bottom: 5px; font-size: 15px; }
@@ -198,6 +201,23 @@
         .toolbar { display: flex; gap: 9px; align-items: center; }
         .secondary { border: 1px solid var(--line); background: rgba(255,255,255,.85); border-radius: 11px; padding: 9px 13px; color: var(--ink); cursor: pointer; }
         .tiny-button { margin-left: 8px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); cursor: pointer; font-size: 12px; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 4px; }
+        .filter-bar select, .filter-bar input { width: auto; min-width: 128px; padding: 8px 10px; border-radius: 10px; font-size: 12px; }
+        .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 14px; color: var(--muted); font-size: 12px; }
+        .pager .toolbar { gap: 5px; }
+        .pager button { padding: 6px 9px; }
+        .audit-meta { display: flex; flex-wrap: wrap; gap: 7px 14px; align-items: center; margin-top: 9px; color: var(--muted); font-size: 11px; }
+        .audit-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 13px; }
+        .audit-summary div { padding: 10px; border-radius: 12px; background: rgba(245,245,247,.82); font-size: 11px; }
+        .audit-summary b { display: block; margin-top: 4px; color: var(--ink); font-size: 12px; }
+        .copy-button { margin-left: 8px; }
+        .toast-host { position: fixed; z-index: 100; right: 22px; bottom: 22px; display: grid; gap: 8px; width: min(360px, calc(100vw - 44px)); }
+        .toast { padding: 12px 14px; border: 1px solid rgba(255,255,255,.9); border-radius: 14px; background: rgba(30,30,34,.92); color: white; box-shadow: 0 12px 30px rgba(0,0,0,.2); font-size: 13px; line-height: 1.45; animation: reveal .2s ease both; }
+        .toast.error { margin: 0; background: rgba(166,42,37,.95); color: white; }
+        .toast.success { background: rgba(30,142,90,.95); }
+        .retry-button { margin-top: 10px; }
+        .audit-item summary { line-height: 1.5; }
+        @media (max-width: 620px) { .audit-summary { grid-template-columns: 1fr; } .filter-bar select, .filter-bar input { flex: 1; min-width: 0; } }
         .progress { height: 7px; overflow: hidden; border-radius: 99px; background: #e9e9ed; }
         .progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#0071e3,#64a9ff); }
         .workspace .grid { grid-template-columns: 390px minmax(0,1fr); }
@@ -337,7 +357,7 @@
 
         <section id="diagnosis" class="workspace">
             <div class="page-heading"><div><h1>诊断任务</h1><p>按任务标识还原诊断报告、门禁决定、人工审批和模拟治理时间线。</p></div><button id="refreshDiagnosis" class="secondary">刷新任务</button></div>
-            <div class="page-grid"><div class="panel"><h2>任务列表</h2><p>真实模型完成诊断后，任务会按更新时间倒序出现在这里。</p><div id="diagnosisList" class="placeholder"><div><b>正在读取诊断任务</b></div></div></div><div class="panel"><h2>诊断时间线</h2><p>选择任务后展示完整状态变化，不只展示模型最终结论。</p><div id="diagnosisDetail" class="placeholder"><div><b>选择一条诊断任务</b><span>报告、门禁、审批和模拟治理将按顺序展开。</span></div></div></div></div>
+            <div class="page-grid"><div class="panel"><h2>任务列表</h2><p>真实模型完成诊断后，任务会按更新时间倒序出现在这里。</p><div class="filter-bar"><select id="diagnosisStatusFilter"><option value="">全部状态</option><option>PENDING_APPROVAL</option><option>APPROVED</option><option>REJECTED</option><option>RETURNED</option><option>SIMULATED</option><option>EXPIRED</option></select><select id="diagnosisRiskFilter"><option value="">全部风险</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select><input id="diagnosisKeywordFilter" placeholder="搜索风险指纹或摘要"></div><div id="diagnosisList" class="placeholder"><div><b>正在读取诊断任务</b></div></div></div><div class="panel"><h2>诊断时间线</h2><p>选择任务后展示完整状态变化，不只展示模型最终结论。</p><div id="diagnosisDetail" class="placeholder"><div><b>选择一条诊断任务</b><span>报告、门禁、审批和模拟治理将按顺序展开。</span></div></div></div></div>
         </section>
 
         <section id="approval" class="workspace">
@@ -348,16 +368,96 @@
         <section id="observability" class="workspace">
             <div class="page-heading"><div><h1>模型成本与审计</h1><p>统一查看 DeepSeek 调用、本地 Embedding、工具执行和系统依赖状态。</p></div><button id="refreshAudit" class="secondary">刷新审计</button></div>
             <div id="auditSummary" class="kpi-grid"><div class="kpi"><span>模型调用</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>输入 Token</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>输出 Token</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>估算费用</span><strong>—</strong><small>按调用时价格快照</small></div></div>
-            <div class="panel"><h2>DeepSeek 调用明细</h2><p>每次调用保存完整请求、响应、状态、Token 和价格版本；本地 Embedding 费用为零。</p><div id="auditList" class="placeholder"><div><b>正在读取模型审计</b></div></div></div>
+            <div class="panel"><h2>DeepSeek 调用明细</h2><p>先看摘要和调用链，再按需展开完整报文；原始请求与响应仍可复制用于复盘。</p><div class="filter-bar"><select id="auditStatusFilter"><option value="">全部状态</option><option>COMPLETED</option><option>FAILED</option><option>REJECTED</option></select><input id="auditTraceFilter" placeholder="搜索模型、traceId 或价格版本"></div><div id="auditList" class="placeholder"><div><b>正在读取模型审计</b></div></div></div>
         </section>
     </main>
 </div>
+<div id="toastHost" class="toast-host" aria-live="polite"></div>
 <script>
     const byId = id => document.getElementById(id);
     const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
     const number = value => new Intl.NumberFormat('zh-CN').format(value ?? 0);
     const percent = value => `${((value ?? 0) * 100).toFixed(1)}%`;
     const score = value => Number(value ?? 0).toFixed(4);
+    const pageSize = 8;
+    const pageState = {diagnosis: 1, audit: 1};
+    let diagnosisCache = [];
+    let auditCache = [];
+
+    /** 显示短暂的操作反馈，避免用户在异步请求期间失去上下文。 */
+    function showToast(message, kind = 'success') {
+        const host = byId('toastHost');
+        const item = document.createElement('div');
+        item.className = `toast ${kind}`;
+        item.textContent = message;
+        host.appendChild(item);
+        window.setTimeout(() => item.remove(), 3600);
+    }
+
+    /** 在读取失败时提供可直接执行的重试入口。 */
+    function renderRetry(container, message, retry) {
+        container.innerHTML = `<div class="error">${escapeHtml(message)}<br><button class="secondary retry-button">重新加载</button></div>`;
+        container.querySelector('.retry-button').addEventListener('click', retry);
+    }
+
+    /** 复制审计原始报文，并向用户反馈浏览器权限结果。 */
+    async function copyText(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast('原始报文已复制');
+        } catch (error) {
+            showToast('复制失败，请展开报文后手动复制', 'error');
+        }
+    }
+
+    /** 渲染通用分页控件。 */
+    function renderPager(container, total, page, onChange) {
+        const pages = Math.max(1, Math.ceil(total / pageSize));
+        const current = Math.min(page, pages);
+        container.innerHTML = `<div class="pager"><span>共 ${number(total)} 条 · 第 ${current}/${pages} 页</span><div class="toolbar"><button class="secondary" data-page="prev" ${current <= 1 ? 'disabled' : ''}>上一页</button><button class="secondary" data-page="next" ${current >= pages ? 'disabled' : ''}>下一页</button></div></div>`;
+        container.querySelector('[data-page="prev"]').addEventListener('click', () => onChange(current - 1));
+        container.querySelector('[data-page="next"]').addEventListener('click', () => onChange(current + 1));
+    }
+    let lastGuardianReplayRequest = null;
+    let approvalRefreshTimer = null;
+    let diagnosisRefreshTimer = null;
+    const formatDeadline = deadline => deadline ? new Date(deadline).toLocaleString('zh-CN') : '—';
+    const remainingText = deadline => {
+        if (!deadline) return '无需审批期限';
+        const remaining = new Date(deadline).getTime() - Date.now();
+        if (remaining <= 0) return '已过期';
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor(remaining / 1000) % 60;
+        return `剩余 ${minutes}分 ${String(seconds).padStart(2, '0')}秒`;
+    };
+    const taskBadge = status => ['APPROVED', 'DIAGNOSED', 'SIMULATED'].includes(status) ? 'ok'
+        : ['REJECTED', 'EXPIRED'].includes(status) ? 'bad' : 'pending';
+
+    /** 根据状态、风险和关键词筛选并分页显示诊断任务。 */
+    function renderDiagnosticTasks() {
+        const status = byId('diagnosisStatusFilter').value;
+        const risk = byId('diagnosisRiskFilter').value;
+        const keyword = byId('diagnosisKeywordFilter').value.trim().toLowerCase();
+        const filtered = diagnosisCache.filter(task => {
+            const report = task.report || {};
+            const searchable = `${task.riskFingerprint || ''} ${report.summary || ''}`.toLowerCase();
+            return (!status || task.status === status) && (!risk || report.riskLevel === risk) && (!keyword || searchable.includes(keyword));
+        });
+        const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        pageState.diagnosis = Math.min(pageState.diagnosis, pages);
+        const start = (pageState.diagnosis - 1) * pageSize;
+        const visible = filtered.slice(start, start + pageSize);
+        const list = byId('diagnosisList');
+        list.className = '';
+        list.innerHTML = visible.length ? visible.map(task => `
+            <button class="mini-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;cursor:pointer" data-diagnostic-id="${escapeHtml(task.taskId)}">
+                <span>${escapeHtml(task.riskFingerprint)}<small style="display:block;color:var(--muted)">${escapeHtml((task.report || {}).summary || '暂无诊断摘要')} · ${escapeHtml(formatDeadline(task.reviewDeadline))}</small></span><span class="status-pill ${taskBadge(task.status)}">${escapeHtml(task.status)}</span>
+            </button>`).join('') : '<div class="placeholder"><div><b>没有匹配的诊断任务</b><span>调整筛选条件后重试。</span></div></div>';
+        document.querySelectorAll('[data-diagnostic-id]').forEach(item => item.addEventListener('click', () => loadDiagnosticDetail(item.dataset.diagnosticId)));
+        const pager = document.createElement('div');
+        list.appendChild(pager);
+        renderPager(pager, filtered.length, pageState.diagnosis, page => { pageState.diagnosis = page; renderDiagnosticTasks(); });
+    }
 
     document.querySelectorAll('.nav-item').forEach(button => button.addEventListener('click', () => {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item === button));
@@ -368,19 +468,13 @@
         if (button.dataset.tab === 'evaluation') loadEvaluationSets();
         if (button.dataset.tab === 'diagnosis') loadDiagnosticTasks();
         if (button.dataset.tab === 'approval') loadApprovalTasks();
+        if (button.dataset.tab === 'diagnosis' || button.dataset.tab === 'approval') startWorkflowRefresh(button.dataset.tab);
         if (button.dataset.tab === 'observability') loadAudit();
         window.scrollTo({top: 0, behavior: 'smooth'});
     }));
 
     async function request(url, options = {}) {
         const response = await fetch(url, {headers: {'Content-Type': 'application/json'}, ...options});
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.message || `请求失败：${response.status}`);
-        return body;
-    }
-
-    async function uploadRequest(url, formData) {
-        const response = await fetch(url, {method: 'POST', body: formData});
         const body = await response.json();
         if (!response.ok) throw new Error(body.message || `请求失败：${response.status}`);
         return body;
@@ -598,22 +692,20 @@
 
     byId('collectionName').addEventListener('change', loadDocumentScopes);
 
-    const taskBadge = status => ['APPROVED', 'DIAGNOSED', 'SIMULATED'].includes(status) ? 'ok'
-        : ['REJECTED', 'EXPIRED'].includes(status) ? 'bad' : 'pending';
-
     async function loadDiagnosticTasks() {
         try {
-            const tasks = await request('/api/console/guardian/diagnostics');
-            byId('diagnosisList').className = '';
-            byId('diagnosisList').innerHTML = tasks.length ? tasks.map(task => `
-                <button class="mini-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;cursor:pointer" data-diagnostic-id="${escapeHtml(task.taskId)}">
-                    <span>${escapeHtml(task.riskFingerprint)}</span><span class="status-pill ${taskBadge(task.status)}">${escapeHtml(task.status)}</span>
-                </button>`).join('') : '<div class="placeholder"><div><b>当前没有诊断任务</b><span>在智能守护页面启用 DeepSeek 并完成一次风险回放后生成。</span></div></div>';
-            document.querySelectorAll('[data-diagnostic-id]').forEach(item => item.addEventListener('click', () => loadDiagnosticDetail(item.dataset.diagnosticId)));
+            diagnosisCache = await request('/api/console/guardian/diagnostics');
+            pageState.diagnosis = 1;
+            renderDiagnosticTasks();
         } catch (error) {
-            byId('diagnosisList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+            renderRetry(byId('diagnosisList'), error.message, loadDiagnosticTasks);
         }
     }
+
+    ['diagnosisStatusFilter', 'diagnosisRiskFilter', 'diagnosisKeywordFilter'].forEach(id => byId(id).addEventListener('input', () => {
+        pageState.diagnosis = 1;
+        renderDiagnosticTasks();
+    }));
 
     async function loadDiagnosticDetail(taskId) {
         try {
@@ -621,12 +713,17 @@
             byId('diagnosisDetail').className = '';
             byId('diagnosisDetail').innerHTML = `
                 <div class="mini-row"><span>当前状态</span><span class="status-pill ${taskBadge(task.status)}">${escapeHtml(task.status)}</span></div>
+                <div class="mini-row"><span>审批截止时间</span><span>${escapeHtml(formatDeadline(task.reviewDeadline))} <b class="countdown ${task.status === 'EXPIRED' ? 'expired' : ''}" data-deadline="${escapeHtml(task.reviewDeadline || '')}">${escapeHtml(remainingText(task.reviewDeadline))}</b></span></div>
                 <div class="mini-row"><span>Java 门禁</span><b>${escapeHtml(task.gateStatus)} · ${escapeHtml(task.gateReason)}</b></div>
+                ${task.status === 'EXPIRED' ? `<div class="error">该任务已过审批截止时间。${lastGuardianReplayRequest ? '<button class="tiny-button" id="replayExpired">重新发起最近一次诊断</button>' : '请在智能守护页面重新运行一次回放。'}</div>` : ''}
                 <details open><summary>结构化诊断报告</summary><pre>${escapeHtml(JSON.stringify(task.report, null, 2))}</pre></details>
                 <details open><summary>状态时间线</summary><pre>${escapeHtml(JSON.stringify(task.timeline, null, 2))}</pre></details>
                 <details><summary>审批与模拟治理</summary><pre>${escapeHtml(JSON.stringify({review: task.review, simulations: task.simulations}, null, 2))}</pre></details>`;
+            const replayButton = byId('replayExpired');
+            if (replayButton) replayButton.addEventListener('click', replayLastGuardianRun);
         } catch (error) {
-            byId('diagnosisDetail').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+            byId('diagnosisDetail').innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button class="tiny-button" id="retryDiagnosisDetail">重试</button></div>`;
+            byId('retryDiagnosisDetail').addEventListener('click', () => loadDiagnosticDetail(taskId));
         }
     }
 
@@ -636,11 +733,12 @@
             byId('approvalList').className = '';
             byId('approvalList').innerHTML = tasks.length ? tasks.map(task => `
                 <button class="mini-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;cursor:pointer" data-approval-id="${escapeHtml(task.taskId)}">
-                    <span>${escapeHtml(task.report.summary)}</span><span class="status-pill pending">待审批</span>
+                    <span>${escapeHtml(task.report.summary)}<small style="display:block;color:var(--muted)">截止 ${escapeHtml(formatDeadline(task.reviewDeadline))}</small></span><span class="status-pill pending" data-approval-status="${escapeHtml(task.taskId)}">待审批</span>
                 </button>`).join('') : '<div class="placeholder"><div><b>当前没有待审批任务</b><span>只有模型与规则冲突或模型主动请求人工介入时进入这里。</span></div></div>';
             document.querySelectorAll('[data-approval-id]').forEach(item => item.addEventListener('click', () => renderApproval(tasks.find(task => task.taskId === item.dataset.approvalId))));
         } catch (error) {
-            byId('approvalList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+            byId('approvalList').innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button class="tiny-button" id="retryApproval">重试</button></div>`;
+            byId('retryApproval').addEventListener('click', loadApprovalTasks);
         }
     }
 
@@ -649,7 +747,9 @@
         byId('approvalDetail').innerHTML = `
             <div class="mini-row"><span>模型风险级别</span><b>${escapeHtml(task.report.riskLevel)}</b></div>
             <div class="mini-row"><span>门禁原因</span><b>${escapeHtml(task.gateReason)}</b></div>
+            <div class="mini-row"><span>审批截止</span><span>${escapeHtml(formatDeadline(task.reviewDeadline))} <b class="countdown" data-deadline="${escapeHtml(task.reviewDeadline || '')}">${escapeHtml(remainingText(task.reviewDeadline))}</b></span></div>
             <details open><summary>模型报告与证据</summary><pre>${escapeHtml(JSON.stringify(task.report, null, 2))}</pre></details>
+            <div class="field" style="margin-top:14px"><label for="reviewerName">审核人</label><input id="reviewerName" value="local-admin" maxlength="80" placeholder="请输入当前审核人"></div>
             <div class="field" style="margin-top:14px"><label for="reviewComment">审核意见</label><textarea id="reviewComment">已核对模型报告、规则和引用证据。</textarea></div>
             <div class="toolbar"><button class="secondary" data-review="APPROVE">批准</button><button class="secondary" data-review="REJECT">拒绝</button><button class="secondary" data-review="RETURN">退回</button></div>
             <div id="reviewError"></div>`;
@@ -657,20 +757,58 @@
     }
 
     async function submitReview(taskId, action) {
+        const buttons = [...document.querySelectorAll('[data-review]')];
+        const reviewer = byId('reviewerName').value.trim();
+        if (!reviewer) { byId('reviewError').innerHTML = '<div class="error">审核人不能为空。</div>'; return; }
+        if (!window.confirm(`确认${action === 'APPROVE' ? '批准' : action === 'REJECT' ? '拒绝' : '退回'}这条诊断任务？`)) return;
+        buttons.forEach(button => button.disabled = true);
         try {
             const task = await request(`/api/console/guardian/diagnostics/${taskId}/reviews`, {
                 method: 'POST', body: JSON.stringify({operationId: crypto.randomUUID(), action,
-                    reviewer: 'local-admin', comment: byId('reviewComment').value})
+                    reviewer, comment: byId('reviewComment').value})
             });
             byId('approvalDetail').innerHTML = `<div class="placeholder"><div><b>审批已完成：${escapeHtml(task.status)}</b><span>审批结果已写入任务时间线。</span></div></div>`;
             loadApprovalTasks();
         } catch (error) {
             byId('reviewError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+            buttons.forEach(button => button.disabled = false);
+        }
+    }
+
+    /** 重新执行最近一次回放，为已过期任务生成新的审批任务。 */
+    function replayLastGuardianRun() {
+        if (!lastGuardianReplayRequest) return;
+        document.querySelector('[data-tab="guardian"]').click();
+        byId('scenario').value = lastGuardianReplayRequest.scenario;
+        byId('messageCount').value = String(lastGuardianReplayRequest.messageCount);
+        byId('invokeModel').checked = Boolean(lastGuardianReplayRequest.invokeModel);
+        byId('guardianRun').click();
+    }
+
+    /** 更新页面上的审批倒计时，不重新提交审批请求。 */
+    function refreshCountdowns() {
+        document.querySelectorAll('[data-deadline]').forEach(item => {
+            const value = item.dataset.deadline;
+            item.textContent = remainingText(value);
+            item.classList.toggle('expired', value && new Date(value).getTime() <= Date.now());
+        });
+    }
+
+    /** 为诊断与审批队列启用轻量轮询，及时发现新的待办任务。 */
+    function startWorkflowRefresh(tab) {
+        if (tab === 'diagnosis') {
+            if (diagnosisRefreshTimer) clearInterval(diagnosisRefreshTimer);
+            diagnosisRefreshTimer = setInterval(loadDiagnosticTasks, 15000);
+        }
+        if (tab === 'approval') {
+            if (approvalRefreshTimer) clearInterval(approvalRefreshTimer);
+            approvalRefreshTimer = setInterval(loadApprovalTasks, 15000);
         }
     }
 
     byId('refreshDiagnosis').addEventListener('click', loadDiagnosticTasks);
     byId('refreshApproval').addEventListener('click', loadApprovalTasks);
+    setInterval(refreshCountdowns, 1000);
     byId('refreshAudit').addEventListener('click', loadAudit);
     async function loadEvaluationSets() {
         try {
@@ -736,6 +874,40 @@
         }
     });
 
+    /** 按筛选条件分层展示模型审计：摘要先行，原始报文按需展开。 */
+    function renderAudit() {
+        const status = byId('auditStatusFilter').value;
+        const keyword = byId('auditTraceFilter').value.trim().toLowerCase();
+        const filtered = auditCache.filter(call => {
+            const searchable = `${call.model || ''} ${call.traceId || ''} ${call.priceVersion || ''}`.toLowerCase();
+            return (!status || call.status === status) && (!keyword || searchable.includes(keyword));
+        });
+        const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        pageState.audit = Math.min(pageState.audit, pages);
+        const start = (pageState.audit - 1) * pageSize;
+        const visible = filtered.slice(start, start + pageSize);
+        const list = byId('auditList');
+        list.className = '';
+        list.innerHTML = visible.length ? visible.map((call, index) => {
+            const requestText = String(call.rawRequest || '');
+            const responseText = String(call.rawResponse || '');
+            const key = `${start + index}`;
+            return `<details class="audit-item"><summary>${escapeHtml(call.model)} · ${escapeHtml(call.status)} · ${number(call.totalTokens)} tokens · ${escapeHtml(call.calledAt)}</summary>
+                <div class="audit-meta"><span>traceId：${escapeHtml(call.traceId || '—')}</span><span>价格版本：${escapeHtml(call.priceVersion || '—')}</span><span>费用：${escapeHtml(call.estimatedCost)} ${escapeHtml(call.currency || '')}</span></div>
+                <div class="audit-summary"><div>输入 Token<b>${number(call.inputTokens)}</b></div><div>输出 Token<b>${number(call.outputTokens)}</b></div><div>调用结果<b>${escapeHtml(call.status)}</b></div></div>
+                <details><summary>原始请求 <button type="button" class="tiny-button copy-button" data-copy-audit="request-${key}">复制</button></summary><pre id="request-${key}">${escapeHtml(requestText)}</pre></details>
+                <details><summary>原始响应 <button type="button" class="tiny-button copy-button" data-copy-audit="response-${key}">复制</button></summary><pre id="response-${key}">${escapeHtml(responseText)}</pre></details></details>`;
+        }).join('') : '<div class="placeholder"><div><b>暂无匹配的模型调用</b><span>调整筛选条件或先执行一次真实模型回放。</span></div></div>';
+        document.querySelectorAll('[data-copy-audit]').forEach(button => button.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            copyText(byId(button.dataset.copyAudit).textContent);
+        }));
+        const pager = document.createElement('div');
+        list.appendChild(pager);
+        renderPager(pager, filtered.length, pageState.audit, page => { pageState.audit = page; renderAudit(); });
+    }
+
     async function loadAudit() {
         try {
             const [summary, calls] = await Promise.all([
@@ -749,18 +921,30 @@
                 estimatedCost: acc.estimatedCost + Number(item.estimatedCost || 0)
             }), {callCount: 0, inputTokens: 0, outputTokens: 0, estimatedCost: 0});
             byId('auditSummary').innerHTML = `<div class="kpi"><span>模型调用</span><strong>${number(total.callCount)}</strong><small>DeepSeek</small></div><div class="kpi"><span>输入 Token</span><strong>${number(total.inputTokens)}</strong><small>审计快照</small></div><div class="kpi"><span>输出 Token</span><strong>${number(total.outputTokens)}</strong><small>审计快照</small></div><div class="kpi"><span>估算费用</span><strong>${total.estimatedCost.toFixed(6)}</strong><small>按币种分别汇总</small></div>`;
-            byId('auditList').className = '';
-            byId('auditList').innerHTML = calls.length ? calls.map(call => `<details class="audit-item"><summary>${escapeHtml(call.model)} · ${escapeHtml(call.status)} · ${number(call.totalTokens)} tokens · ${escapeHtml(call.calledAt)}</summary><div class="source">${escapeHtml(call.traceId)} · ${escapeHtml(call.priceVersion)} · ${escapeHtml(call.estimatedCost)} ${escapeHtml(call.currency)}</div><pre>${escapeHtml(JSON.stringify({rawRequest: call.rawRequest, rawResponse: call.rawResponse}, null, 2))}</pre></details>`).join('') : '<div class="placeholder"><div><b>暂无模型调用</b><span>在智能守护回放中启用 DeepSeek 后，这里会记录完整审计。</span></div></div>';
+            auditCache = calls;
+            pageState.audit = 1;
+            renderAudit();
+            showToast(`已加载 ${number(calls.length)} 条模型审计`);
         } catch (error) {
-            byId('auditList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+            renderRetry(byId('auditList'), error.message, loadAudit);
         }
     }
+
+    ['auditStatusFilter', 'auditTraceFilter'].forEach(id => byId(id).addEventListener('input', () => {
+        pageState.audit = 1;
+        renderAudit();
+    }));
 
     byId('guardianRun').addEventListener('click', async () => {
         const button = byId('guardianRun');
         byId('guardianError').innerHTML = '';
         button.disabled = true; button.textContent = '正在聚合并诊断…';
         try {
+            lastGuardianReplayRequest = {
+                scenario: byId('scenario').value,
+                messageCount: Number(byId('messageCount').value),
+                invokeModel: byId('invokeModel').checked
+            };
             const result = await request('/api/console/guardian/simulate', {method: 'POST', body: JSON.stringify({
                 scenario: byId('scenario').value,
                 messageCount: Number(byId('messageCount').value),
