@@ -199,6 +199,54 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-127] 2026-09-12 · Codex
+
+**做了什么**
+- 修正 `docker-compose.yml`：`fund-console` 改为从仓库外的 `$HOME/.config/fund-gateway-ai-center/deepseek.env` 读取 DeepSeek 密钥，不再依赖启动 Shell 是否加载 `~/.zshrc`。
+- 在 `AGENTS.md` 记录本机密钥文件位置、权限和禁止入库规则；未把密钥值写入仓库。
+- 用 `env -u DEEPSEEK_API_KEY docker compose up -d --force-recreate fund-console` 模拟普通环境重建容器。
+
+**结果**
+- 普通环境变量为空时，Compose 仍能从外部密钥文件注入变量。
+- 重建后 `GET /api/console/status` 返回 `deepSeekAvailable=true`，五个服务均为 running。
+- 外部密钥文件权限为 600，工作区未出现密钥文件或密钥内容。
+
+**发现的坑**
+- 之前的空值回退配置会把“密钥未注入”静默表现为按钮禁用；现在外部文件缺失会让 Compose 明确失败，便于及时发现。
+
+**新产生的决策**
+- 本地 Compose 的模型密钥统一使用仓库外 `~/.config/fund-gateway-ai-center/deepseek.env` 注入。
+
+**下一步唯一动作**
+- 提交并推送本次密钥注入方式修正。
+
+**需要用户裁决的问题**
+- 无。
+
+### [C-126] 2026-09-12 · Codex
+
+**做了什么**
+- 排查智能守护总览中“同时真实调用一次 DeepSeek”开关无法切换问题。
+- 核对前端开关禁用条件、`GET /api/console/status`、Docker 容器环境变量和 Compose 启动方式。
+- 使用交互式登录 Shell 重新创建 `fund-console` 容器，使现有 `DEEPSEEK_API_KEY` 环境变量注入容器。
+
+**结果**
+- 修复前状态接口为 `deepSeekAvailable=false`，容器变量为空，前端因此禁用开关。
+- 修复后 `GET /api/console/status` 返回 `deepSeekAvailable=true`，容器变量存在，五个 Docker 服务均正常运行。
+- 未修改代码、密钥文件或 `.env`；用户刷新控制台页面后开关应可切换。
+
+**发现的坑**
+- 普通 Shell 启动 Compose 不会读取 `~/.zshrc` 中的环境变量；需要通过交互式登录 Shell 启动，或在 IDEA/Compose 的运行配置中显式注入变量。
+
+**新产生的决策**
+- 无。
+
+**下一步唯一动作**
+- 刷新智能守护总览页面，确认开关显示为可用并按需执行一次真实调用。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-125] 2026-09-12 · Codex
 
 **做了什么**
