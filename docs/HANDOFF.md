@@ -199,6 +199,33 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-128] 2026-09-12 · Codex
+
+**做了什么**
+- 修复 `fund-console/src/main/java/org/practice/fundgateway/console/GuardianConsoleService.java` 的智能守护回放幂等键：每次回放追加唯一 UUID，同一次请求仍保持幂等，避免复用已经过期的旧诊断任务。
+- 深度检查 `fund-console/src/main/resources/static/index.html` 的知识库、RAG 检索、智能守护、人工审批和模型审计交互。
+- 记录后台后续优化项：审批倒计时和过期重发、审批二次确认与防重复提交、审核人身份、列表自动刷新与筛选分页、任务摘要和门禁原因、审计报文折叠复制、统一 Toast/链路 ID、加载失败重试、评测输入校验、回放结果自动刷新、模型调用成本与审计 ID展示。
+
+**结果**
+- `mvn -B -pl fund-console -am verify`：BUILD SUCCESS；fund-knowledge 19 个测试（跳过 2 个外部数据库测试）、fund-guardian 31 个测试、fund-console 5 个测试全部通过。
+- Docker Compose 服务正常：console、guardian、integration、postgres、redpanda 均为运行状态；`GET /api/console/status` 返回 `READY` 和 `deepSeekAvailable=true`。
+- 已有真实回放证据显示：DeepSeek 调用完成后创建新的 `PENDING_APPROVAL` 任务，审批后进入 `SIMULATED`，审批记录和治理模拟均落库；不再复用历史 `EXPIRED` 任务。
+- `git diff --check` 通过；本轮未修改测试、依赖版本、数据库结构或密钥文件。
+
+**发现的坑**
+- 审批期限是后端真实 15 分钟，但前端没有显示截止时间和倒计时，过期后也没有直接重发入口。
+- 管理后台仍有重复的 `uploadRequest` 函数定义，当前行为不受影响但增加维护噪音。
+- 诊断、审批和审计列表依赖手动刷新，且缺少筛选、分页和统一操作反馈。
+
+**新产生的决策**
+- 无；本轮只修复诊断任务创建幂等键，不改变审批状态机和期限策略。
+
+**下一步唯一动作**
+- 由用户从后台优化清单中确定下一批交互增强优先级。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-127] 2026-09-12 · Codex
 
 **做了什么**

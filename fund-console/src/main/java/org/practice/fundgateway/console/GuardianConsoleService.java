@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationRequest;
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationResponse;
@@ -111,7 +112,8 @@ public class GuardianConsoleService {
         DiagnosisResult deterministic = deterministicDiagnosis(representative, scenario);
         ModelOutcome model = invokeModelIfRequested(request, representative, deterministic,
                 riskFingerprint, diagnosticTasks);
-        DiagnosticTaskView diagnosticTask = createWorkflowTask(scenario, model, representative, representativeHits);
+        DiagnosticTaskView diagnosticTask = createWorkflowTask(scenario, model, representative, representativeHits,
+                UUID.randomUUID().toString());
         return new GuardianSimulationResponse(scenario.name(), messageCount, windows.size(), riskWindows,
                 diagnosticTasks, Math.max(0, riskWindows - diagnosticTasks), model.actualCalls(),
                 Duration.ofNanos(System.nanoTime() - startedAt).toMillis(), representative,
@@ -123,7 +125,7 @@ public class GuardianConsoleService {
     /** 先落风险事件再创建工作流，保证 PostgreSQL 外键和审计链完整。 */
     private DiagnosticTaskView createWorkflowTask(Scenario scenario, ModelOutcome model,
                                                    MetricWindowAggregate aggregate,
-                                                   List<RiskRuleHit> hits) throws Exception {
+                                                   List<RiskRuleHit> hits, String replayId) throws Exception {
         if (model.report() == null) {
             return null;
         }
@@ -133,7 +135,7 @@ public class GuardianConsoleService {
                     hits.stream().map(RiskRuleHit::ruleId).toList(), aggregate.windowStart(),
                     aggregate.windowStart().plus(WINDOW_SIZE), Instant.now(), mapper.writeValueAsString(aggregate)));
         }
-        return workflowService.create("console-" + scenario.name() + "-" + BASE_TIME,
+        return workflowService.create("console-" + scenario.name() + "-" + BASE_TIME + "-" + replayId,
                 model.snapshot(), model.report());
     }
 
