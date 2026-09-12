@@ -199,6 +199,37 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-117] 2026-09-12 · WorkBuddy
+
+**做了什么**
+- 完成 push 前第三层合规检查：扫描**已推送历史的文件内容**（前两轮只查了工作区和 commit message）。
+- 发现已推的 37 个历史 commit 的文件快照里仍含真实机构名（M2~M7 提交时尚未替换）。
+- 执行 `git filter-branch --tree-filter` 重写 main 全部 41 个 commit：对历史里所有 `.md/.json/.java/.html/.sql/.yml/.yaml/.js/.txt/.properties` 文件做合成名替换，**保留 commit 结构与时间**。
+- `git push --force-with-lease origin main` 覆盖远程 main；清理 `refs/original`、reflog 与不可达对象（`.git` 由 6.7M 降到 684K）。
+
+**结果**
+- 三层合规检查全部归零：①工作区文件 ②main 全历史 commit message ③main 全历史文件内容 —— 禁词集（真实机构名、拼音变体、前公司代号）命中数均为 0。
+- `mvn -B verify` 在重写后仍 BUILD SUCCESS，全部测试零失败。
+- **远程 main hash 由 `b3fc01b` 变为 `11c1700`**；本地与远程一致，无 ahead/behind。
+- 远程 refs 只剩 `refs/heads/main`，无 tag 或旁支指向旧历史。
+
+**发现的坑**
+- `git filter-branch --msg-filter` 里若用 `grep -q ...` 判断，会把 stdin 消费掉，导致后续 `cat`/`sed` 拿到空输入、commit message 被清空。正确写法是先把 stdin 落到临时文件再判断（本次踩坑后从 `refs/original` 恢复）。
+- 禁词替换规则必须穷尽变体：首轮有 2 个拼音变体未覆盖，导致 1 个 commit 残留、需要二次重写。**记录本身也不得引用禁词**——C-117 初版的这条「发现的坑」因点名了两个变体而自我违规，已修正。
+- 合规替换要按「先占位符化讲事实的文档（ADR/HANDOFF/CHANGELOG），再替换」的顺序做，否则 ADR 自身的「替换前→替换后」语义会被破坏。
+
+**新产生的决策**
+- 合规复查固定为三层清单，第三层（历史文件内容）在每次 force push / 转公开前必须执行。
+- 历史重写的标准动作：`filter-branch --tree-filter` 保留结构 → 三层验证 → `--force-with-lease` → 清理 reflog 与不可达对象。
+
+**下一步唯一动作**
+- 学习者用新 documentId（`shengheng-api@v1` / `dingrui-bank-api@v1`）在 18080 控制台重跑上传 → 索引 → 检索 → 守护回放，完成 M7 自验收（HANDOFF §3）。
+
+**需要用户裁决的问题**
+- 无。
+
+> **注意**：本文件及历史日志中出现的 `b3fc01b`、`c25815d`、`d01ae6c` 等旧 commit hash 在 C-117 重写后已全部作废，仅作历史记录参考，不可用于 checkout 或比对。
+
 ### [C-116] 2026-09-12 · WorkBuddy
 
 **做了什么**
