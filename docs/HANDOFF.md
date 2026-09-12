@@ -199,6 +199,32 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-116] 2026-09-12 · WorkBuddy
+
+**做了什么**
+- 按用户要求做 push 前整体合规复查：扫描工作区全文件类型 + **git 历史全部 commit message**。
+- 修订 C-114 / C-115 两条交接日志内的真实机构名残留（3 处）——这两条日志本身在写作时就违反了 ADR-001 / ADR-014，属于自检遗漏。按「只追加不修改」原则本不应改动历史条目，此处属合规修复例外，特此说明。
+- 改写 `c25815d` 的 commit message：原文逐条列出「真实名 → 合成名」映射，等于把真实机构名与前公司代号写进了 git 历史。改写为不含真实名的概述式描述。
+
+**结果**
+- 工作区（排除 `.git/`、`.workbuddy/`、`.idea/`、`target/`、`backups/`）grep 真实机构名禁词集 = 0。
+- git 历史全部 commit message grep 禁词集 = 0。
+- `backups/` 已被 `.gitignore` 忽略，不会随推送进入远程（包内仍含清库前的旧 document_id，属本地备份，不对外）。
+- 本地 3 个 commit 待推送（c25815d / C-114 / C-115）。
+
+**发现的坑**
+- 合规检查只扫工作区是不够的：**commit message 同样是对外可见内容**，一旦推到 GitHub 就在历史里长期存在。本次若不是 push 前复查，4 行真实机构名会直接进入远程历史。
+- 修 commit message 用 `git filter-branch --msg-filter`；执行前工作区必须干净（`Cannot rewrite branches: You have unstaged changes`）。
+
+**新产生的决策**
+- 合规复查清单固定为三层：①工作区文件 ②git 历史 commit message ③远程已推历史。前两层本次已清零，第三层在 push 后由下一次复查覆盖。
+
+**下一步唯一动作**
+- 推送 3 个 commit 到 origin/main，推送后复查远程历史确认无禁词。
+
+**需要用户裁决的问题**
+- 无。
+
 ### [C-115] 2026-09-12 · WorkBuddy
 
 **做了什么**
@@ -206,7 +232,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 重写 ADR-013：用 `[OLD_NAME_A]` / `[OLD_NAME_B]` / `[OLD_PINYIN_A]` / `[OLD_COMPANY_PREFIX_A]` 等占位符替代所有「被替换的真实机构名」描述，修复 C-114 commit 后 ADR-013 自身因 sed 替换造成的语义破坏问题（例如把「升恒替换原 [OLD_NAME_A]」写成了「升恒替换原 升恒」这种空映射、把违规使用的真实机构名说成合成名）。
 
 **结果**
-- ADR-013 / ADR-014 文本 grep 真实机构名（升恒/鼎瑞/DINGRUI/shengheng/升恒/shengheng/dingrui/shengheng）= 0；全仓库残留 = 0。
+- ADR-013 / ADR-014 文本按禁词集 grep 真实机构名 = 0；全仓库残留 = 0。
 - 仓库代码、JSON、HTML、Maven、SQL 等运行时资产未变更，仅 ADR 文档修订。
 - 本地领先远程 3 个 commit（c25815d + C-114 commit + 本次 C-115 commit），未 push。
 
@@ -236,14 +262,14 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 本地领先远程 1 个 commit（c25815d：合规替换），未 push。
 
 **发现的坑**
-- 代码层 `shengheng-consumer`、`m2_shengheng_*`、`DINGRUI-bank-api` 这些字符串如果不在仓库 grep 阶段覆盖到，运行时 pgvector 仍按旧 document_id 检索；本次 sed 三轮覆盖后才清零（首轮漏了 fund-console HTML 和 3 个实验 Java 文件，第二轮补 `m2_shengheng_*` 和 `shengheng-api` 才彻底）。
+- 代码层的旧资方标识字符串（documentId 前缀、集合名、doc id）如果不在仓库 grep 阶段覆盖到，运行时 pgvector 仍按旧 document_id 检索；本次 sed 三轮覆盖后才清零（首轮漏了 fund-console HTML 和 3 个实验 Java 文件，第二轮补集合名和 doc id 前缀才彻底）。
 - 数据库「文档版本 ID」本质是 metadata，跟 pgvector embedding 内容无关；如果只想改 document_id 不重建 vector，可以走方案 B（原地 UPDATE），但 audit JSON 嵌套深、容易漏改。
 
 **新产生的决策**
 - ADR-013 已把方案 A 列为本次执行的合规迁移路径；后续若再有命名变更，应在 ADR 提前约定 document_id 规则，避免运行时和代码层再分裂。
 
 **下一步唯一动作**
-- 学习者通过 18080 控制台把 `~/Downloads/求职面试/金融机构标准接口文档/升恒消费金融接口文档.docx`（待手工重命名为升恒）重新上传为 `shengheng-api@v1`，同样把鼎瑞那份重命名后上传为 `dingrui-bank-api@v1`，触发解析 + 索引任务到 `PUBLISHED` 状态，再跑一次 M7 自验收（HANDOFF §3）。
+- 学习者通过 18080 控制台把本地 `~/Downloads/求职面试/金融机构标准接口文档/` 下的两份 docx 手工重命名为 `升恒消费金融接口文档.docx` 与 `鼎瑞银行接口规范.docx`（按 ADR-014：文件名用合成名，文件内容字段保持真实接口规范），再上传为 `shengheng-api@v1` 与 `dingrui-bank-api@v1`，触发解析 + 索引任务到 `PUBLISHED` 状态，最后跑一次 M7 自验收（HANDOFF §3）。
 
 **需要用户裁决的问题**
 - 是否同意本次数据库重建后 `backups/` 目录跟随仓库一起版本化（gitignore 已配置 `backups/` 但目录尚未加入）或仅本地保留。
