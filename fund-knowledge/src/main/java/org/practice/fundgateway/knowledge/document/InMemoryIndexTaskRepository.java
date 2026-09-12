@@ -18,6 +18,34 @@ public class InMemoryIndexTaskRepository implements IndexTaskRepository {
         return task;
     }
 
+    /** 在内存模式下幂等创建同一文档版本的唯一任务。 */
+    @Override
+    public synchronized IndexTask create(IndexTask task) {
+        return tasks.values().stream()
+                .filter(existing -> existing.documentId().equals(task.documentId())
+                        && existing.version().equals(task.version()))
+                .findFirst()
+                .orElseGet(() -> save(task));
+    }
+
+    /** 使用 ConcurrentHashMap 的原子计算抢占任务。 */
+    @Override
+    public Optional<IndexTask> claim(UUID taskId) {
+        java.util.concurrent.atomic.AtomicReference<IndexTask> claimed = new java.util.concurrent.atomic.AtomicReference<>();
+        tasks.computeIfPresent(taskId, (ignored, current) -> {
+            IndexTaskStatus target = current.status() == IndexTaskStatus.CREATED ? IndexTaskStatus.PARSING
+                    : current.status() == IndexTaskStatus.PARSED ? IndexTaskStatus.INDEXING : null;
+            if (target == null) {
+                return current;
+            }
+            IndexTask next = new IndexTask(current.taskId(), current.documentId(), current.version(),
+                    target, null, java.time.Instant.now());
+            claimed.set(next);
+            return next;
+        });
+        return Optional.ofNullable(claimed.get());
+    }
+
     /** 读取任务状态。 */
     @Override
     public Optional<IndexTask> find(UUID taskId) {

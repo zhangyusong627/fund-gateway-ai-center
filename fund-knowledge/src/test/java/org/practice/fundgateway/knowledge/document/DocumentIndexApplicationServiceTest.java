@@ -29,7 +29,7 @@ class DocumentIndexApplicationServiceTest {
                 .index(task.taskId(), "contracts", new EmbeddingDescriptor("test", "test-model", 2, true));
         assertEquals(IndexTaskStatus.INDEXED, result.status());
         assertEquals(DocumentIndexStatus.INDEXED, documents.find("doc-1", "v1").orElseThrow().status());
-        assertEquals(1, store.saved.size());
+        assertEquals(1, store.published.size());
     }
 
     /** 验证向量生成失败时不写入分片，并保留 FAILED 状态。 */
@@ -47,13 +47,26 @@ class DocumentIndexApplicationServiceTest {
         assertEquals(IndexTaskStatus.FAILED, result.status());
         assertEquals(DocumentIndexStatus.INDEX_FAILED, documents.find("doc-1", "v1").orElseThrow().status());
         assertEquals(0, store.saved.size());
-        assertEquals(1, store.discarded);
+        assertEquals(0, store.published.size());
+    }
+
+    /** 验证同一任务只能被一个执行请求原子抢占。 */
+    @Test
+    void shouldAllowOnlyOneClaimForSameTask() {
+        InMemoryDocumentVersionRepository documents = new InMemoryDocumentVersionRepository();
+        InMemoryIndexTaskRepository tasks = new InMemoryIndexTaskRepository();
+        IndexTask task = tasks.create(IndexTask.created("doc-1", "v1"));
+        DocumentIndexApplicationService service = new DocumentIndexApplicationService(
+                documents, tasks, text -> new float[] {1F, 0F}, new RecordingStore());
+
+        assertEquals(IndexTaskStatus.PARSING, service.claim(task.taskId()).orElseThrow().status());
+        assertEquals(true, !service.claim(task.taskId()).isPresent());
     }
 
     /** 记录向量写入调用的测试替身。 */
     private static class RecordingStore implements KnowledgeVectorStore {
         private final List<KnowledgeChunk> saved = new ArrayList<>();
-        private int discarded;
+        private final List<KnowledgeChunk> published = new ArrayList<>();
 
         /** 接受集合配置。 */
         @Override
@@ -66,10 +79,11 @@ class DocumentIndexApplicationServiceTest {
             saved.add(chunk);
         }
 
-        /** 记录失败集合清理。 */
+        /** 记录一次原子发布收到的全部分块。 */
         @Override
-        public void discardStagingCollection(String collectionName) {
-            discarded++;
+        public void publishDocument(String collectionName, String description, List<KnowledgeChunk> chunks,
+                                    List<float[]> vectors, EmbeddingDescriptor descriptor) {
+            published.addAll(chunks);
         }
     }
 }

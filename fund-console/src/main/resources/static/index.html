@@ -257,17 +257,17 @@
 
         <section id="overview" class="workspace active">
             <div class="page-heading"><div><h1>运行总览</h1><p>从一份文档到一次有证据的智能诊断，所有核心步骤都可以追溯。</p></div><span class="status-pill pending">第一版工作台</span></div>
-            <div class="kpi-grid">
-                <div class="kpi"><span>有效文档版本</span><strong>1</strong><small>演示数据</small></div>
-                <div class="kpi"><span>已索引分片</span><strong>10</strong><small>真实 pgvector</small></div>
-                <div class="kpi"><span>今日诊断任务</span><strong>2</strong><small>回放结果</small></div>
-                <div class="kpi"><span>待人工审批</span><strong>0</strong><small>后端待接入</small></div>
+            <div id="overviewKpi" class="kpi-grid">
+                <div class="kpi"><span>有效文档版本</span><strong>—</strong><small>正在读取</small></div>
+                <div class="kpi"><span>已索引分片</span><strong>—</strong><small>正在读取</small></div>
+                <div class="kpi"><span>今日诊断任务</span><strong>—</strong><small>正在读取</small></div>
+                <div class="kpi"><span>待人工审批</span><strong>—</strong><small>正在读取</small></div>
             </div>
             <div class="page-grid">
-                <div class="panel"><h2>资方知识库</h2><p>离线索引链路将在这里展示每一步输入、输出、耗时和失败原因。</p><div class="flow-line"><div class="flow-node done"><b>上传</b>DOCX</div><div class="flow-node done"><b>解析</b>905 分片</div><div class="flow-node"><b>确认</b>索引范围</div><div class="flow-node"><b>向量化</b>BGE 512 维</div><div class="flow-node"><b>发布</b>版本可查询</div></div></div>
-                <div class="panel"><h2>运行环境</h2><p id="techSummary">正在读取本地模型和基础设施状态…</p><div class="mini-row"><span>PostgreSQL + pgvector</span><span class="status-pill ok">已连接</span></div><div class="mini-row"><span>Redpanda</span><span class="status-pill ok">已连接</span></div><div class="mini-row"><span>DeepSeek</span><span class="status-pill pending">按需调用</span></div></div>
+                <div class="panel"><h2>资方知识库</h2><p>当前数据来自已发布文档版本；没有数据时不会显示预置分片数字。</p><div id="overviewKnowledgeFlow" class="flow-line"><div class="flow-node"><b>等待</b>真实文档</div></div></div>
+                <div class="panel"><h2>运行环境</h2><p id="techSummary">正在读取本地模型和基础设施状态…</p><div id="overviewDependencies"></div></div>
             </div>
-            <div class="panel" style="margin-top:16px"><h2>智能守护处理链</h2><p>大量指标先由 Java 完成窗口聚合和低成本筛选，只有形成诊断任务时才允许调用模型。</p><div class="flow-line"><div class="flow-node done"><b>10,000</b>指标消息</div><div class="flow-node done"><b>10</b>聚合窗口</div><div class="flow-node done"><b>10</b>风险窗口</div><div class="flow-node done"><b>2</b>诊断任务</div><div class="flow-node done"><b>≤ 1</b>模型调用</div></div></div>
+            <div class="panel" style="margin-top:16px"><h2>智能守护处理链</h2><p>处理链统计来自真实诊断任务；容量比例请到智能守护页面运行合成回放查看。</p><div id="overviewGuardianFlow" class="flow-line"><div class="flow-node"><b>0</b>今日诊断任务</div></div></div>
         </section>
 
         <section id="documents" class="workspace">
@@ -303,14 +303,15 @@
             <div class="card">
                 <div id="ragEmpty" class="empty"><div><div class="empty-icon">⌁</div><b>等待一次真实检索</b><p>结果会显示向量分数、关键词分数、融合分数和原文位置。</p></div></div>
                 <div id="ragResult" class="result"></div>
+                <div class="panel" style="margin-top:16px"><h2>最近检索审计</h2><p>保存真实问题、文档范围、门禁状态、耗时和候选证据，便于复盘。</p><div id="ragAuditHistory" class="placeholder"><div><b>正在读取检索历史</b></div></div></div>
             </div>
         </div>
         </section>
 
         <section id="evaluation" class="workspace">
-            <div class="page-heading"><div><h1>RAG 评测中心</h1><p>用固定问题集衡量检索质量，而不是凭一次看起来正确的回答判断效果。</p></div><button id="runEvaluation" class="secondary">运行固定评测</button></div>
+            <div class="page-heading"><div><h1>RAG 评测中心</h1><p>评测集绑定集合和文档版本，运行结果保存后可复查和比较。</p></div><div class="toolbar"><select id="evaluationSet"><option value="">选择评测集</option></select><button id="runEvaluation" class="secondary">运行评测</button></div></div>
             <div id="evaluationSummary" class="kpi-grid"><div class="kpi"><span>Recall@3</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>MRR</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>引用命中率</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>拒答准确率</span><strong>—</strong><small>点击运行评测</small></div></div>
-            <div class="panel"><h2>评测问题集</h2><p>每道题保存预期关键词、实际命中排名和证据门禁结果。</p><div id="evaluationList" class="placeholder"><div><b>尚未运行固定评测</b></div></div></div>
+            <div class="page-grid"><div class="panel"><h2>创建评测集版本</h2><p>评测集创建后不可覆盖；题目 JSON 中每题填写 question、expectedKeyword、expectedChunkId 或 expectedLocator，拒答题填写 refusalExpected:true。</p><div class="field"><label for="evaluationName">评测集名称</label><input id="evaluationName" value="授信申请接口合成基线 v2"></div><div class="field"><label for="evaluationCollection">已发布集合</label><select id="evaluationCollection"><option value="">正在读取集合…</option></select></div><div class="field"><label for="evaluationDocument">文档版本</label><select id="evaluationDocument"><option value="">请先选择集合</option></select></div><div class="field"><label for="evaluationTopK">Top-K</label><select id="evaluationTopK"><option>3</option><option>5</option><option>8</option></select></div><div class="field"><label for="evaluationCasesJson">评测题 JSON 数组</label><textarea id="evaluationCasesJson" rows="7">[{"question":"授信申请金额字段是什么类型，是否必填？","expectedKeyword":"applyAmt","expectedChunkId":"shengheng-api:v1:117","refusalExpected":false}]</textarea></div><button id="createEvaluationSet" class="secondary">创建不可变评测集</button><div id="evaluationCreateError"></div></div><div class="panel"><h2>当前评测结果</h2><div id="evaluationList" class="placeholder"><div><b>请选择评测集并运行</b></div></div><h2 style="margin-top:20px">历史运行</h2><div id="evaluationHistory" class="placeholder"><div><b>正在读取历史运行</b></div></div></div></div>
         </section>
 
         <section id="guardian" class="workspace">
@@ -364,6 +365,7 @@
         if (button.dataset.tab === 'documents') loadDocuments();
         if (button.dataset.tab === 'indexing') loadIndexTasks();
         if (button.dataset.tab === 'rag') loadCollections();
+        if (button.dataset.tab === 'evaluation') loadEvaluationSets();
         if (button.dataset.tab === 'diagnosis') loadDiagnosticTasks();
         if (button.dataset.tab === 'approval') loadApprovalTasks();
         if (button.dataset.tab === 'observability') loadAudit();
@@ -405,6 +407,23 @@
         }
     }
 
+    /** 加载首页真实计数和依赖状态。 */
+    async function loadOverview() {
+        try {
+            const overview = await request('/api/console/overview');
+            byId('overviewKpi').innerHTML = `<div class="kpi"><span>有效文档版本</span><strong>${number(overview.indexedDocumentVersions)}</strong><small>真实已索引版本</small></div><div class="kpi"><span>已索引分片</span><strong>${number(overview.indexedChunks)}</strong><small>真实 pgvector</small></div><div class="kpi"><span>今日诊断任务</span><strong>${number(overview.diagnosticTasksToday)}</strong><small>真实工作流任务</small></div><div class="kpi"><span>待人工审批</span><strong>${number(overview.pendingApprovals)}</strong><small>真实审批队列</small></div>`;
+            const dependencyItems = [overview.postgres, overview.redpanda, overview.embedding, overview.deepSeek];
+            byId('overviewDependencies').innerHTML = dependencyItems.map(item => `<div class="mini-row"><span>${escapeHtml(item.label)}</span><span class="status-pill ${item.available ? 'ok' : 'pending'}">${item.available ? '已连接' : '未就绪'}</span></div>`).join('');
+            const flow = overview.documentVersions === 0
+                ? '<div class="flow-node"><b>0</b>已登记文档</div>'
+                : `<div class="flow-node done"><b>${number(overview.documentVersions)}</b>已登记</div><div class="flow-node done"><b>${number(overview.indexedDocumentVersions)}</b>已索引</div><div class="flow-node done"><b>${number(overview.indexedChunks)}</b>向量分片</div>`;
+            byId('overviewKnowledgeFlow').innerHTML = flow;
+            byId('overviewGuardianFlow').innerHTML = `<div class="flow-node done"><b>${number(overview.diagnosticTasksToday)}</b>今日诊断任务</div><div class="flow-node done"><b>${number(overview.modelCallsToday)}</b>今日模型调用</div>`;
+        } catch (error) {
+            byId('overviewKpi').innerHTML = `<div class="error">运行总览读取失败：${escapeHtml(error.message)}</div>`;
+        }
+    }
+
     byId('ragRun').addEventListener('click', async () => {
         const button = byId('ragRun');
         byId('ragError').innerHTML = '';
@@ -426,6 +445,7 @@
                 <div class="section-title"><h3>召回证据</h3><span class="source">融合分 = 向量 70% + 关键词 30%</span></div>
                 ${result.candidates.map(item => `<article class="candidate"><div class="candidate-top"><span class="rank">TOP ${item.rank}</span><span class="score">向量 ${score(item.vectorScore)} · 关键词 ${score(item.keywordScore)} · 融合 ${score(item.finalScore)}</span></div><p>${escapeHtml(item.content)}</p><div class="source">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${escapeHtml(item.locator)}</div></article>`).join('')}`;
             byId('ragResult').classList.add('visible');
+            loadRagAuditHistory();
         } catch (error) {
             byId('ragError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         } finally {
@@ -558,9 +578,21 @@
                 ? publishedCollections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.collectionName)} · ${number(item.documentCount)} 份文档 · ${number(item.chunkCount)} 个分片</option>`).join('')
                 : '<option value="">暂无已发布集合</option>';
             loadDocumentScopes();
+            loadRagAuditHistory();
         } catch (error) {
             byId('collectionName').innerHTML = `<option value="">集合读取失败</option>`;
             byId('ragError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    /** 加载最近在线检索审计记录。 */
+    async function loadRagAuditHistory() {
+        try {
+            const audits = await request('/api/console/rag/query-audits');
+            byId('ragAuditHistory').className = '';
+            byId('ragAuditHistory').innerHTML = audits.length ? audits.map(item => `<details class="audit-item"><summary>${escapeHtml(item.status)} · ${escapeHtml(item.question)} · ${number(item.durationMs)} ms</summary><div class="source">${escapeHtml(item.collectionName)} · ${escapeHtml(item.documentId || '全部文档')}@${escapeHtml(item.documentVersion || '')} · Top-${item.topK} · ${escapeHtml(item.queriedAt)}</div><pre>${escapeHtml(JSON.stringify({missingKeywords: item.missingKeywords, candidates: item.candidates}, null, 2))}</pre></details>`).join('') : '<div class="placeholder"><div><b>暂无检索历史</b><span>执行一次在线检索后会自动记录。</span></div></div>';
+        } catch (error) {
+            byId('ragAuditHistory').innerHTML = `<div class="error">检索历史读取失败：${escapeHtml(error.message)}</div>`;
         }
     }
 
@@ -640,19 +672,67 @@
     byId('refreshDiagnosis').addEventListener('click', loadDiagnosticTasks);
     byId('refreshApproval').addEventListener('click', loadApprovalTasks);
     byId('refreshAudit').addEventListener('click', loadAudit);
+    async function loadEvaluationSets() {
+        try {
+            const sets = await request('/api/console/rag/evaluation-sets');
+            byId('evaluationSet').innerHTML = sets.length ? sets.map(item => `<option value="${item.setId}">${escapeHtml(item.name)} · ${escapeHtml(item.documentId)}@${escapeHtml(item.documentVersion)} · ${item.caseCount} 题</option>`).join('') : '<option value="">暂无评测集</option>';
+            loadEvaluationHistory();
+        } catch (error) {
+            byId('evaluationList').innerHTML = `<div class="error">评测集读取失败：${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    /** 根据集合刷新评测集创建表单的文档版本选项。 */
+    function loadEvaluationDocuments() {
+        const collection = publishedCollections.find(item => item.collectionName === byId('evaluationCollection').value);
+        byId('evaluationDocument').innerHTML = collection && collection.documents.length
+            ? collection.documents.map(item => `<option value="${escapeHtml(item.documentId)}@${escapeHtml(item.documentVersion)}">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${number(item.chunkCount)} 个分片</option>`).join('')
+            : '<option value="">暂无已发布文档</option>';
+    }
+
+    /** 读取评测批次历史。 */
+    async function loadEvaluationHistory() {
+        try {
+            const runs = await request('/api/console/rag/evaluation-runs');
+            byId('evaluationHistory').className = '';
+            byId('evaluationHistory').innerHTML = runs.length ? runs.map(item => `<div class="mini-row"><span>${escapeHtml(item.setName)}<br><small>${escapeHtml(item.startedAt)}</small></span><span class="status-pill ${item.status === 'COMPLETED' ? 'ok' : 'bad'}">${escapeHtml(item.status)} · ${item.recallAtK == null ? '—' : percent(item.recallAtK)}</span></div>`).join('') : '<div class="placeholder"><div><b>暂无历史运行</b><span>运行评测后会保留本次指标和时间。</span></div></div>';
+        } catch (error) {
+            byId('evaluationHistory').innerHTML = `<div class="error">历史运行读取失败：${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    byId('evaluationCollection').addEventListener('change', loadEvaluationDocuments);
+    byId('createEvaluationSet').addEventListener('click', async () => {
+        try {
+            const scope = byId('evaluationDocument').value.split('@');
+            const cases = JSON.parse(byId('evaluationCasesJson').value);
+            await request('/api/console/rag/evaluation-sets', {method: 'POST', body: JSON.stringify({
+                name: byId('evaluationName').value, collectionName: byId('evaluationCollection').value,
+                documentId: scope[0], documentVersion: scope[1], topK: Number(byId('evaluationTopK').value), cases
+            })});
+            byId('evaluationCreateError').innerHTML = '<div class="success">评测集已创建，请选择后运行。</div>';
+            await loadEvaluationSets();
+        } catch (error) {
+            byId('evaluationCreateError').innerHTML = `<div class="error">创建失败：${escapeHtml(error.message)}</div>`;
+        }
+    });
+
     byId('runEvaluation').addEventListener('click', async () => {
         const button = byId('runEvaluation');
+        const setId = byId('evaluationSet').value;
+        if (!setId) { byId('evaluationList').innerHTML = '<div class="error">请先选择评测集</div>'; return; }
         button.disabled = true; button.textContent = '正在评测…';
         try {
-            const result = await request('/api/console/rag/evaluate', {method: 'POST'});
+            const result = await request(`/api/console/rag/evaluation-sets/${setId}/runs`, {method: 'POST'});
             const metric = value => `${(Number(value) * 100).toFixed(1)}%`;
-            byId('evaluationSummary').innerHTML = `<div class="kpi"><span>Recall@3</span><strong>${metric(result.recallAt3)}</strong><small>固定问题集</small></div><div class="kpi"><span>MRR</span><strong>${Number(result.meanReciprocalRank).toFixed(3)}</strong><small>平均倒数排名</small></div><div class="kpi"><span>引用命中率</span><strong>${metric(result.citationHitRate)}</strong><small>来源可追溯</small></div><div class="kpi"><span>拒答准确率</span><strong>${metric(result.refusalAccuracy)}</strong><small>证据不足门禁</small></div>`;
+            byId('evaluationSummary').innerHTML = `<div class="kpi"><span>Recall@${result.topK}</span><strong>${metric(result.recallAtK)}</strong><small>标准证据命中</small></div><div class="kpi"><span>MRR</span><strong>${Number(result.meanReciprocalRank).toFixed(3)}</strong><small>真实倒数排名</small></div><div class="kpi"><span>引用准确率</span><strong>${metric(result.citationAccuracy)}</strong><small>chunkId / locator</small></div><div class="kpi"><span>拒答准确率</span><strong>${metric(result.refusalAccuracy)}</strong><small>证据不足门禁</small></div>`;
             byId('evaluationList').className = '';
-            byId('evaluationList').innerHTML = result.cases.map(item => `<div class="mini-row"><span>${escapeHtml(item.question)}<br><small>预期：${escapeHtml(item.expectedKeyword)} · 实际排名：${item.actualRank || '未命中'}</small></span><span class="status-pill ${item.hit || item.status === 'INSUFFICIENT_EVIDENCE' ? 'ok' : 'bad'}">${escapeHtml(item.status)}</span></div>`).join('');
+            byId('evaluationList').innerHTML = result.cases.map(item => `<div class="mini-row"><span>${escapeHtml(item.question)}<br><small>标准：${escapeHtml(item.expectedChunkId || item.expectedLocator || '应拒答')} · 实际排名：${item.actualRank || '未命中'}</small></span><span class="status-pill ${item.hit || (item.refusalExpected && item.status === 'INSUFFICIENT_EVIDENCE') ? 'ok' : 'bad'}">${escapeHtml(item.status)}${item.citationMatched ? ' · 引用正确' : ''}</span></div>`).join('');
+            loadEvaluationHistory();
         } catch (error) {
             byId('evaluationList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         } finally {
-            button.disabled = false; button.textContent = '运行固定评测';
+            button.disabled = false; button.textContent = '运行评测';
         }
     });
 
@@ -710,7 +790,14 @@
     });
 
     loadStatus();
-    loadCollections();
+    loadOverview();
+    loadCollections().then(() => {
+        byId('evaluationCollection').innerHTML = publishedCollections.length
+            ? publishedCollections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.collectionName)} · ${number(item.documentCount)} 份文档</option>`).join('')
+            : '<option value="">暂无已发布集合</option>';
+        loadEvaluationDocuments();
+        loadEvaluationSets();
+    });
 </script>
 </body>
 </html>

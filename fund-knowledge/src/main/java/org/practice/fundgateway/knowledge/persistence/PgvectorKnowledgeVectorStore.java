@@ -4,15 +4,25 @@ import org.practice.fundgateway.knowledge.chunk.KnowledgeChunk;
 import org.practice.fundgateway.knowledge.embedding.EmbeddingDescriptor;
 import org.practice.fundgateway.knowledge.embedding.EmbeddingVectorValidator;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.List;
 
 /** 使用现有 knowledge_chunks 表保存可追溯的 pgvector 知识分块。 */
 public class PgvectorKnowledgeVectorStore implements KnowledgeVectorStore {
 
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     /** 创建 PostgreSQL 向量存储适配器。 */
     public PgvectorKnowledgeVectorStore(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        if (jdbcTemplate.getDataSource() == null) {
+            throw new IllegalArgumentException("JdbcTemplate 必须配置 DataSource");
+        }
+        this.transactionTemplate = new TransactionTemplate(
+                new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
     }
 
     /** 注册集合，并拒绝覆盖已有集合的模型配置。 */
@@ -57,39 +67,32 @@ public class PgvectorKnowledgeVectorStore implements KnowledgeVectorStore {
                 locator, descriptor.provider(), descriptor.model(), descriptor.dimension(), descriptor.normalized());
     }
 
-    /** 创建状态为 STAGING 的集合，未发布前检索器会忽略其分片。 */
+    /** 在一个数据库事务中替换并发布指定文档版本，不改变其他文档的可见性。 */
     @Override
-    public void beginStagingCollection(String collectionName, String description,
-                                       EmbeddingDescriptor descriptor) {
-        requireCollectionName(collectionName);
-        String sql = "INSERT INTO knowledge.rag_collections "
-                + "(collection_name, description, embedding_provider, embedding_model, embedding_dimension, embedding_normalize, status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, 'STAGING') "
-                + "ON CONFLICT (collection_name) DO UPDATE SET status='STAGING', updated_at=now() "
-                + "WHERE knowledge.rag_collections.embedding_provider=EXCLUDED.embedding_provider "
-                + "AND knowledge.rag_collections.embedding_model=EXCLUDED.embedding_model "
-                + "AND knowledge.rag_collections.embedding_dimension=EXCLUDED.embedding_dimension "
-                + "AND knowledge.rag_collections.embedding_normalize=EXCLUDED.embedding_normalize";
-        if (jdbcTemplate.update(sql, collectionName, description, descriptor.provider(), descriptor.model(),
-                descriptor.dimension(), descriptor.normalized()) == 0) {
-            throw new IllegalStateException("向量集合模型配置不一致：" + collectionName);
+    public void publishDocument(String collectionName, String description,
+                                List<KnowledgeChunk> chunks, List<float[]> vectors,
+                                EmbeddingDescriptor descriptor) {
+        if (chunks.size() != vectors.size()) {
+            throw new IllegalArgumentException("分块数量与向量数量不一致");
         }
-    }
-
-    /** 只改变集合可见状态，保证失败批次不会进入在线检索。 */
-    @Override
-    public void publishStagingCollection(String collectionName) {
-        int updated = jdbcTemplate.update("update knowledge.rag_collections set status='PUBLISHED', updated_at=now() where collection_name=? and status='STAGING'", collectionName);
-        if (updated != 1) {
-            throw new IllegalStateException("暂存集合发布失败：" + collectionName);
+        if (chunks.isEmpty()) {
+            throw new IllegalArgumentException("待发布文档没有可索引分块");
         }
-    }
-
-    /** 删除失败集合和其分片，避免遗留不可见半成品。 */
-    @Override
-    public void discardStagingCollection(String collectionName) {
-        jdbcTemplate.update("delete from knowledge.knowledge_chunks where collection_name=?", collectionName);
-        jdbcTemplate.update("delete from knowledge.rag_collections where collection_name=? and status='STAGING'", collectionName);
+        transactionTemplate.executeWithoutResult(status -> {
+            ensureCollection(collectionName, description, descriptor);
+            KnowledgeChunk first = chunks.get(0);
+            jdbcTemplate.update("delete from knowledge.knowledge_chunks "
+                            + "where collection_name=? and document_id=? and document_version=?",
+                    collectionName, first.source().documentId(), first.source().version());
+            for (int index = 0; index < chunks.size(); index++) {
+                KnowledgeChunk chunk = chunks.get(index);
+                if (!first.source().documentId().equals(chunk.source().documentId())
+                        || !first.source().version().equals(chunk.source().version())) {
+                    throw new IllegalArgumentException("一次发布只能包含同一文档版本的分块");
+                }
+                save(collectionName, chunk, vectors.get(index), descriptor);
+            }
+        });
     }
 
     /** 将 Java 向量转换为 pgvector 文本字面量。 */

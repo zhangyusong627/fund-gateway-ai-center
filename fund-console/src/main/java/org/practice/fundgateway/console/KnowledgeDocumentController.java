@@ -103,12 +103,14 @@ public class KnowledgeDocumentController {
         if (indexApplicationService == null) {
             throw new IllegalStateException("正式索引服务尚未装配");
         }
-        IndexTask task = applicationService.findIndexTask(taskId);
-        if (task.status() == IndexTaskStatus.INDEXED) {
-            return taskResponse(task);
+        java.util.Optional<IndexTask> claimed = indexApplicationService.claim(taskId);
+        if (!claimed.isPresent()) {
+            return taskResponse(applicationService.findIndexTask(taskId));
         }
-        java.util.concurrent.CompletableFuture.runAsync(() -> indexApplicationService.index(
-                taskId, "fund-gateway-contracts", new EmbeddingDescriptor("local", "BAAI/bge-small-zh-v1.5", 512, true)));
+        IndexTask task = claimed.get();
+        java.util.concurrent.CompletableFuture.runAsync(() -> indexApplicationService.indexClaimed(
+                task, "fund-gateway-contracts",
+                new EmbeddingDescriptor("local", "BAAI/bge-small-zh-v1.5", 512, true), 50));
         return new IndexTaskResponse(task.taskId(), task.documentId(), task.version(), "ACCEPTED",
                 null, task.updatedAt().toString());
     }

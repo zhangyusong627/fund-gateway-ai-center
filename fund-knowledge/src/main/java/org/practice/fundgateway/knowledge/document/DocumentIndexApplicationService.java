@@ -3,6 +3,7 @@ package org.practice.fundgateway.knowledge.document;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.practice.fundgateway.knowledge.embedding.EmbeddingDescriptor;
 import org.practice.fundgateway.knowledge.embedding.EmbeddingGenerator;
@@ -37,41 +38,49 @@ public class DocumentIndexApplicationService {
         if (batchSize <= 0) {
             throw new IllegalArgumentException("索引批大小必须大于零");
         }
-        IndexTask task = taskRepository.find(taskId).orElseThrow(() -> new IllegalArgumentException("索引任务不存在"));
-        DocumentVersionRecord document = documentRepository.find(task.documentId(), task.version())
-                .orElseThrow(() -> new IllegalArgumentException("文档版本不存在"));
-        if (document.status() != DocumentIndexStatus.PARSED
-                || (task.status() != IndexTaskStatus.CREATED && task.status() != IndexTaskStatus.PARSED)) {
-            throw new IllegalStateException("只有已解析文档和 CREATED/PARSED 任务可以索引");
+        IndexTask task = claim(taskId).orElseThrow(() -> new IllegalStateException("索引任务已被执行或不可重复执行"));
+        return indexClaimed(task, collectionName, descriptor, batchSize);
+    }
+
+    /** 原子抢占索引任务，供控制器在启动异步线程前完成并发防重。 */
+    public Optional<IndexTask> claim(UUID taskId) {
+        if (!taskRepository.find(taskId).isPresent()) {
+            throw new IllegalArgumentException("索引任务不存在");
         }
-        if (task.status() == IndexTaskStatus.CREATED) {
-            task = transition(task, IndexTaskStatus.PARSING, null);
-            task = transition(task, IndexTaskStatus.PARSED, null);
+        return taskRepository.claim(taskId);
+    }
+
+    /** 执行已经抢占成功的任务，向量全部生成后再原子发布文档版本。 */
+    public IndexTask indexClaimed(IndexTask task, String collectionName,
+                                  EmbeddingDescriptor descriptor, int batchSize) {
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("索引批大小必须大于零");
         }
-        task = transition(task, IndexTaskStatus.INDEXING, null);
         try {
-            vectorStore.beginStagingCollection(collectionName, "资方接口文档知识集合", descriptor);
+            DocumentVersionRecord document = documentRepository.find(task.documentId(), task.version())
+                    .orElseThrow(() -> new IllegalArgumentException("文档版本不存在"));
+            if (document.status() != DocumentIndexStatus.PARSED
+                    || (task.status() != IndexTaskStatus.PARSING && task.status() != IndexTaskStatus.INDEXING)) {
+                throw new IllegalStateException("只有已解析文档和已抢占任务可以索引");
+            }
+            if (task.status() == IndexTaskStatus.PARSING) {
+                task = transition(task, IndexTaskStatus.PARSED, null);
+                task = transition(task, IndexTaskStatus.INDEXING, null);
+            }
+            List<float[]> allVectors = new ArrayList<>(document.chunks().size());
             for (int start = 0; start < document.chunks().size(); start += batchSize) {
                 int end = Math.min(start + batchSize, document.chunks().size());
-                List<float[]> vectors = new ArrayList<>();
                 for (int index = start; index < end; index++) {
-                    vectors.add(embeddingGenerator.embed(document.chunks().get(index).text()));
-                }
-                for (int index = start; index < end; index++) {
-                    vectorStore.save(collectionName, document.chunks().get(index), vectors.get(index - start), descriptor);
+                    allVectors.add(embeddingGenerator.embed(document.chunks().get(index).text()));
                 }
             }
-            vectorStore.publishStagingCollection(collectionName);
+            vectorStore.publishDocument(collectionName, "资方接口文档知识集合",
+                    document.chunks(), allVectors, descriptor);
             documentRepository.updateStatus(task.documentId(), task.version(), DocumentIndexStatus.INDEXED);
             return transition(task, IndexTaskStatus.INDEXED, null);
         } catch (Exception exception) {
             String failureMessage = exception.getMessage() == null
                     ? exception.getClass().getSimpleName() : exception.getMessage();
-            try {
-                vectorStore.discardStagingCollection(collectionName);
-            } catch (Exception cleanupException) {
-                failureMessage = failureMessage + "; 暂存集合清理失败：" + cleanupException.getMessage();
-            }
             try {
                 documentRepository.updateStatus(task.documentId(), task.version(), DocumentIndexStatus.INDEX_FAILED);
             } finally {
@@ -83,7 +92,8 @@ public class DocumentIndexApplicationService {
     /** 按索引任务状态机推进状态。 */
     private IndexTask transition(IndexTask current, IndexTaskStatus target, String errorMessage) {
         boolean legal = current.status() == IndexTaskStatus.CREATED && target == IndexTaskStatus.PARSING
-                || current.status() == IndexTaskStatus.PARSING && target == IndexTaskStatus.PARSED
+                || current.status() == IndexTaskStatus.PARSING
+                && (target == IndexTaskStatus.PARSED || target == IndexTaskStatus.FAILED)
                 || current.status() == IndexTaskStatus.PARSED && target == IndexTaskStatus.INDEXING
                 || current.status() == IndexTaskStatus.INDEXING
                 && (target == IndexTaskStatus.INDEXED || target == IndexTaskStatus.FAILED);

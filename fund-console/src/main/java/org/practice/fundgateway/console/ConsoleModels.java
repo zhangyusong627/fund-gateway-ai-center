@@ -24,6 +24,17 @@ public final class ConsoleModels {
                                 String persistenceMode, int publishedCollections) {
     }
 
+    /** 运行总览的真实业务计数和依赖状态。 */
+    public record ConsoleOverview(int documentVersions, int indexedDocumentVersions, int indexedChunks,
+                                  int diagnosticTasksToday, int pendingApprovals, int modelCallsToday,
+                                  DependencyStatus postgres, DependencyStatus redpanda,
+                                  DependencyStatus embedding, DependencyStatus deepSeek) {
+    }
+
+    /** 单项运行依赖的探测结果。 */
+    public record DependencyStatus(boolean available, String label) {
+    }
+
     /** RAG 查询参数。 */
     public record RagQueryRequest(String collectionName, String documentId, String documentVersion,
                                   String question, List<String> keywords, Integer topK) {
@@ -33,6 +44,13 @@ public final class ConsoleModels {
     public record RagQueryResponse(String status, String collectionName, String question, int topK, long durationMs,
                                    int indexedChunks, Set<String> missingKeywords,
                                    List<RagCandidate> candidates) {
+    }
+
+    /** 在线检索审计记录，保存一次查询的输入、门禁和候选证据。 */
+    public record RagQueryAudit(java.util.UUID queryId, String collectionName, String documentId,
+                                String documentVersion, String question, List<String> keywords, int topK,
+                                String status, int indexedChunks, long durationMs, Set<String> missingKeywords,
+                                List<RagCandidate> candidates, java.time.Instant queriedAt) {
     }
 
     /** 可供在线检索选择的已发布知识集合。 */
@@ -45,15 +63,42 @@ public final class ConsoleModels {
     public record PublishedDocument(String documentId, String documentVersion, int chunkCount) {
     }
 
-    /** 固定问题集评测结果，指标由每次检索结果复算。 */
-    public record RagEvaluationResponse(int caseCount, double recallAt3, double meanReciprocalRank,
-                                        double citationHitRate, double refusalAccuracy,
+    /** 一次可追溯评测运行的汇总指标。 */
+    public record RagEvaluationResponse(java.util.UUID runId, java.util.UUID setId, String setName,
+                                        int topK, int caseCount, double recallAtK, double meanReciprocalRank,
+                                        double citationAccuracy, double refusalAccuracy,
                                         List<RagEvaluationCase> cases) {
     }
 
-    /** 一道评测题的预期关键词和实际召回结果。 */
-    public record RagEvaluationCase(String question, String expectedKeyword, int expectedRank,
-                                    boolean hit, int actualRank, String status) {
+    /** 一道评测题的标准证据和真实召回结果。 */
+    public record RagEvaluationCase(java.util.UUID caseId, String question, String expectedKeyword,
+                                    String expectedChunkId, String expectedLocator, boolean refusalExpected,
+                                    boolean hit, int actualRank, boolean citationMatched, String status) {
+    }
+
+    /** 创建不可变评测集的请求。 */
+    public record CreateEvaluationSetRequest(String name, String collectionName, String documentId,
+                                             String documentVersion, Integer topK,
+                                             List<CreateEvaluationCaseRequest> cases) {
+    }
+
+    /** 创建一道带标准证据的评测题。 */
+    public record CreateEvaluationCaseRequest(String question, String expectedKeyword,
+                                              String expectedChunkId, String expectedLocator,
+                                              Boolean refusalExpected) {
+    }
+
+    /** 可供页面选择的评测集摘要。 */
+    public record EvaluationSetSummary(java.util.UUID setId, String name, String collectionName,
+                                       String documentId, String documentVersion, int topK,
+                                       int caseCount, Instant createdAt) {
+    }
+
+    /** 历史评测运行摘要。 */
+    public record EvaluationRunSummary(java.util.UUID runId, java.util.UUID setId, String setName,
+                                       String status, int topK, Double recallAtK,
+                                       Double meanReciprocalRank, Double citationAccuracy,
+                                       Double refusalAccuracy, Instant startedAt, Instant completedAt) {
     }
 
     /** 一条带来源和分数的 RAG 候选证据。 */

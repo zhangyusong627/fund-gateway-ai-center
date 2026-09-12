@@ -68,7 +68,7 @@ public class KnowledgeDocumentApplicationService {
         if (record.status() != DocumentIndexStatus.PARSED) {
             throw new IllegalStateException("文档尚未解析成功，不能创建索引任务");
         }
-        return taskRepository.save(IndexTask.created(documentId, version));
+        return taskRepository.create(IndexTask.created(documentId, version));
     }
 
     /** 将任务推进到下一个合法状态。 */

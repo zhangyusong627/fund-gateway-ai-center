@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import jakarta.annotation.PreDestroy;
 import org.practice.fundgateway.console.ConsoleModels.RagCandidate;
@@ -14,14 +15,14 @@ import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
 import org.practice.fundgateway.console.ConsoleModels.PublishedDocument;
-import org.practice.fundgateway.console.ConsoleModels.RagEvaluationCase;
-import org.practice.fundgateway.console.ConsoleModels.RagEvaluationResponse;
+import org.practice.fundgateway.console.ConsoleModels.RagQueryAudit;
 import org.practice.fundgateway.knowledge.embedding.LocalBgeEmbeddingModel;
 import org.practice.fundgateway.knowledge.search.EvidenceAcceptanceGate;
 import org.practice.fundgateway.knowledge.search.HybridPgvectorRetriever;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /** 为可视化控制台提供真实 BGE 向量和 pgvector 混合检索。 */
 @Service
@@ -29,13 +30,16 @@ public class ConsoleRagService {
 
     private final JdbcTemplate jdbcTemplate;
     private final Path modelPath;
+    private final ObjectMapper objectMapper;
     private volatile LocalBgeEmbeddingModel embeddingModel;
 
     /** 使用环境配置创建数据库连接和模型路径。 */
     public ConsoleRagService(JdbcTemplate jdbcTemplate,
-                             @Value("${console.embedding.model-path}") String configuredModelPath) {
+                             @Value("${console.embedding.model-path}") String configuredModelPath,
+                             ObjectMapper objectMapper) {
         this.jdbcTemplate = jdbcTemplate;
         this.modelPath = resolveModelPath(configuredModelPath);
+        this.objectMapper = objectMapper;
     }
 
     /** 执行一次真实向量检索并返回各阶段可解释分数。 */
@@ -60,9 +64,51 @@ public class ConsoleRagService {
                             chunk.documentVersion(), chunk.locator());
                 }).toList();
         int indexedChunks = countIndexedChunks(collectionName, request.documentId(), request.documentVersion());
-        return new RagQueryResponse(acceptance.accepted() ? "ACCEPTED" : "INSUFFICIENT_EVIDENCE",
+        RagQueryResponse response = new RagQueryResponse(acceptance.accepted() ? "ACCEPTED" : "INSUFFICIENT_EVIDENCE",
                 collectionName, request.question(), topK, Duration.ofNanos(System.nanoTime() - startedAt).toMillis(),
                 indexedChunks, acceptance.missingKeywords(), mapped);
+        saveAudit(request, response, keywords);
+        return response;
+    }
+
+    /** 将在线检索输入、结果和证据写入审计表；审计失败不改变检索结论。 */
+    private void saveAudit(RagQueryRequest request, RagQueryResponse response, Set<String> keywords) {
+        try {
+            jdbcTemplate.update("insert into knowledge.rag_query_audits "
+                            + "(query_id,collection_name,document_id,document_version,question,keywords,top_k,status,"
+                            + "indexed_chunks,duration_ms,missing_keywords,candidates_json,queried_at) "
+                            + "values (?,?,?,?,?,CAST(? AS jsonb),?,?,?, ?,CAST(? AS jsonb),CAST(? AS jsonb),now())", UUID.randomUUID(),
+                    response.collectionName(), request.documentId(), request.documentVersion(), request.question(),
+                    objectMapper.writeValueAsString(keywords), response.topK(), response.status(), response.indexedChunks(),
+                    response.durationMs(), objectMapper.writeValueAsString(response.missingKeywords()),
+                    objectMapper.writeValueAsString(response.candidates()));
+        } catch (Exception exception) {
+            System.err.println("在线检索审计写入失败：" + exception);
+            exception.printStackTrace(System.err);
+        }
+    }
+
+    /** 查询最近五十条在线检索审计记录。 */
+    public List<RagQueryAudit> queryAudits() {
+        return jdbcTemplate.query("select * from knowledge.rag_query_audits order by queried_at desc limit 50",
+                (resultSet, rowNumber) -> {
+                    try {
+                        List<RagCandidate> candidates = objectMapper.readValue(resultSet.getString("candidates_json"),
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, RagCandidate.class));
+                        List<String> keywords = objectMapper.readValue(resultSet.getString("keywords"),
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                        Set<String> missing = objectMapper.readValue(resultSet.getString("missing_keywords"),
+                                objectMapper.getTypeFactory().constructCollectionType(java.util.TreeSet.class, String.class));
+                        return new RagQueryAudit(resultSet.getObject("query_id", UUID.class),
+                                resultSet.getString("collection_name"), resultSet.getString("document_id"),
+                                resultSet.getString("document_version"), resultSet.getString("question"), keywords,
+                                resultSet.getInt("top_k"), resultSet.getString("status"), resultSet.getInt("indexed_chunks"),
+                                resultSet.getLong("duration_ms"), missing, candidates,
+                                resultSet.getTimestamp("queried_at").toInstant());
+                    } catch (Exception exception) {
+                        throw new IllegalStateException("检索审计 JSON 解析失败", exception);
+                    }
+                });
     }
 
     /** 查询全部已发布集合，页面只能从这些不可见半成品之外的集合中选择。 */
@@ -83,47 +129,6 @@ public class ConsoleRagService {
                 collection.embeddingDimension(), publishedDocuments(collection.collectionName()))).toList();
     }
 
-    /** 执行固定三题评测，验证字段、条件和证据不足三类行为。 */
-    public RagEvaluationResponse evaluate() throws Exception {
-        List<EvaluationCase> definitions = List.of(
-                new EvaluationCase("授信申请金额字段是什么类型，是否必填？", "applyAmt", false),
-                new EvaluationCase("公共请求参数 requestNo 是什么？", "requestNo", false),
-                new EvaluationCase("不存在的火星字段有什么含义？", "火星字段", true));
-        List<RagEvaluationCase> results = new java.util.ArrayList<>();
-        int hitCount = 0;
-        int reciprocalRankSum = 0;
-        int citationHits = 0;
-        int refusalCorrect = 0;
-        for (EvaluationCase definition : definitions) {
-            RagQueryResponse response = query(new RagQueryRequest(null, null, null, definition.question(),
-                    List.of(definition.expectedKeyword()), 3));
-            int rank = 0;
-            for (RagCandidate candidate : response.candidates()) {
-                if (candidate.content().contains(definition.expectedKeyword())) {
-                    rank = candidate.rank();
-                    break;
-                }
-            }
-            boolean hit = rank > 0;
-            boolean refusalExpected = definition.refusalExpected();
-            boolean refusalActual = "INSUFFICIENT_EVIDENCE".equals(response.status());
-            if (hit) {
-                hitCount++;
-                reciprocalRankSum += 1_000 / rank;
-                citationHits++;
-            }
-            if (refusalExpected == refusalActual) {
-                refusalCorrect++;
-            }
-            results.add(new RagEvaluationCase(definition.question(), definition.expectedKeyword(),
-                    1, hit, rank, response.status()));
-        }
-        int count = definitions.size();
-        return new RagEvaluationResponse(count, (double) hitCount / count,
-                (double) reciprocalRankSum / (1000 * count),
-                (double) citationHits / count, (double) refusalCorrect / count, results);
-    }
-
     /** 检查数据库和本地模型是否已具备运行条件。 */
     public boolean ready() {
         try {
@@ -141,6 +146,11 @@ public class ConsoleRagService {
         } catch (RuntimeException exception) {
             return 0;
         }
+    }
+
+    /** 检查本地 Embedding 模型文件是否完整存在。 */
+    public boolean embeddingAvailable() {
+        return Files.isRegularFile(modelPath.resolve("model.onnx"));
     }
 
     /** 关闭常驻的本地 Embedding 模型。 */
@@ -184,10 +194,6 @@ public class ConsoleRagService {
         return jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
                         + "where collection_name=? and document_id=? and document_version=?",
                 Integer.class, collectionName, documentId, documentVersion);
-    }
-
-    /** 固定问题集定义。 */
-    private record EvaluationCase(String question, String expectedKeyword, boolean refusalExpected) {
     }
 
     /** 延迟加载模型，避免应用启动阶段占用大量内存。 */
