@@ -236,7 +236,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-137] 2026-09-13 · Codex
 
 **并行合并内容**
-- 将固定诊断评测基线接入控制台接口 `GET /api/console/guardian/diagnostic-evaluation`，并补页面展示和测试。
+- 将固定诊断评测基线接入控制台接口 `POST /api/console/guardian/evaluation`，并补页面展示和测试。
 - 增加指标消费者的非法消息记录、处理失败记录、幂等状态、Kafka 重投和可重放边界；非法消息不可直接重放。
 
 **验证**

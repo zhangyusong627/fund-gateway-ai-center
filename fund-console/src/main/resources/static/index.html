@@ -983,7 +983,20 @@
         button.disabled = true;
         button.textContent = '评测中…';
         try {
-            const result = await request('/api/console/guardian/diagnostic-evaluation');
+            const result = await request('/api/console/guardian/evaluation', {method: 'POST', body: JSON.stringify({
+                cases: [
+                    {caseId: 'baseline-timeout', providerId: 'synthetic-provider', interfaceId: 'credit-apply',
+                        symptoms: ['上游超时'], expectedConclusion: '上游超时', requiredEvidence: ['metrics', 'incident']},
+                    {caseId: 'baseline-insufficient-evidence', providerId: 'synthetic-provider', interfaceId: 'credit-apply',
+                        symptoms: ['证据缺失'], expectedConclusion: '', requiredEvidence: []}
+                ],
+                observations: [
+                    {caseId: 'baseline-timeout', actualConclusion: '确认上游超时', evidenceIds: ['metrics', 'incident'],
+                        stoppedWithoutEvidence: false, gateStatus: 'ACCEPTED'},
+                    {caseId: 'baseline-insufficient-evidence', actualConclusion: '', evidenceIds: [],
+                        stoppedWithoutEvidence: true, gateStatus: 'HUMAN_REVIEW'}
+                ]
+            })});
             byId('diagnosticEvaluationResult').className = '';
             byId('diagnosticEvaluationResult').innerHTML = `
                 <div class="stats"><div class="stat"><span>结论命中率</span><strong>${percent(result.conclusionAccuracy)}</strong><small>${number(result.conclusionHits)} / ${number(result.totalCases)}</small></div><div class="stat"><span>证据支撑率</span><strong>${percent(result.evidenceSupportRate)}</strong><small>${number(result.evidenceHits)} / ${number(result.totalCases)}</small></div><div class="stat"><span>缺证停止率</span><strong>${percent(result.evidenceStopRate)}</strong><small>${number(result.evidenceStopHits)} 道缺证样例</small></div><div class="stat"><span>人工转审率</span><strong>${percent(result.humanReviewRate)}</strong><small>${number(result.humanReviews)} / ${number(result.totalCases)}</small></div></div>`;
