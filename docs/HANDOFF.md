@@ -199,6 +199,16 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-137] 2026-09-13 · Codex
+
+**并行合并内容**
+- 将固定诊断评测基线接入控制台接口 `GET /api/console/guardian/diagnostic-evaluation`，并补页面展示和测试。
+- 增加指标消费者的非法消息记录、处理失败记录、幂等状态、Kafka 重投和可重放边界；非法消息不可直接重放。
+
+**验证**
+- 合并后执行全量 `mvn -B verify`。
+- 未新增数据库 schema、依赖版本、Redis 或其他中间件；未连接真实生产系统。
+
 ### [C-135] 2026-09-13 · Codex
 
 **并行合并内容**
