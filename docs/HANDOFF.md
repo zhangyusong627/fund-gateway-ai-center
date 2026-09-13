@@ -199,6 +199,18 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-140] 2026-09-13 · Codex
+
+**做了什么**
+- 新增轻量 `PermissionContext`、`PermissionGuard` 和权限拒绝审计记录。
+- 在 RAG、智能守护、只读工具和审批工作流前增加资方/知识范围、工具权限及审批/治理权限校验。
+- 增加越权拒绝和工具权限测试；权限上下文使用合成控制台身份，不承担真实认证职责。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS。
+- Docker Compose 重建 `fund-console` 成功；控制台 `/api/console/status` 返回 `READY`，权限审计接口可用；PostgreSQL/Redpanda 健康。
+- 未引入 OAuth、真实用户中心、数据库 schema 变更或新中间件。
+
 ### [C-139] 2026-09-13 · Codex
 
 **最终收口**
