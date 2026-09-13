@@ -199,6 +199,17 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-133] 2026-09-13 · Codex
+
+**做了什么**
+- 新增 `DiagnosticEvaluationService`，对固定合成诊断样例计算结论命中率、证据支撑率、缺证停止率和人工转审率。
+- 新增 `DiagnosticEvaluationServiceTest`，覆盖正常诊断与证据不足停止场景。
+- 本批不新增数据库表、不调用真实模型、不修改评测数据。
+
+**验证**
+- `mvn -B -pl fund-guardian -am test`：BUILD SUCCESS；33 项通过。
+- 待全量验证通过后提交并推送。
+
 ### [C-132] 2026-09-13 · Codex
 
 **做了什么**
