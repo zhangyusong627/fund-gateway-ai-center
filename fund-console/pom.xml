@@ -10,6 +10,11 @@
     <dependencies>
         <dependency>
             <groupId>org.practice.fundgateway</groupId>
+            <artifactId>fund-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.practice.fundgateway</groupId>
             <artifactId>fund-knowledge</artifactId>
             <version>${project.version}</version>
         </dependency>

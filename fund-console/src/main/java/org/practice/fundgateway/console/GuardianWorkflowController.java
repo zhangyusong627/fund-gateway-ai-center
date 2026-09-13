@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.practice.fundgateway.common.permission.PermissionContext;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskStatus;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskView;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowService;
@@ -22,10 +23,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class GuardianWorkflowController {
 
     private final DiagnosticWorkflowService workflowService;
+    private final PermissionContext permissionContext;
 
     /** 注入智能守护诊断工作流。 */
     public GuardianWorkflowController(DiagnosticWorkflowService workflowService) {
+        this(workflowService, PermissionContext.syntheticConsole());
+    }
+
+    /** 注入当前控制台的显式审批权限上下文。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public GuardianWorkflowController(DiagnosticWorkflowService workflowService,
+                                      PermissionContext permissionContext) {
         this.workflowService = workflowService;
+        this.permissionContext = permissionContext;
     }
 
     /** 查询全部诊断任务，也可按状态过滤。 */
@@ -48,9 +58,9 @@ public class GuardianWorkflowController {
             throw new IllegalArgumentException("审批动作不能为空");
         }
         return switch (request.action()) {
-            case APPROVE -> workflowService.approve(taskId, request.operationId(), request.reviewer(), request.comment());
-            case REJECT -> workflowService.reject(taskId, request.operationId(), request.reviewer(), request.comment());
-            case RETURN -> workflowService.returnForRevision(taskId, request.operationId(), request.reviewer(), request.comment());
+            case APPROVE -> workflowService.approve(taskId, request.operationId(), request.reviewer(), request.comment(), permissionContext);
+            case REJECT -> workflowService.reject(taskId, request.operationId(), request.reviewer(), request.comment(), permissionContext);
+            case RETURN -> workflowService.returnForRevision(taskId, request.operationId(), request.reviewer(), request.comment(), permissionContext);
         };
     }
 

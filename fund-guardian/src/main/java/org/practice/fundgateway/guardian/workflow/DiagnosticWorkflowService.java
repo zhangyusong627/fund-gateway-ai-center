@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionGuard;
 import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate.GateDecision;
@@ -21,31 +24,47 @@ public class DiagnosticWorkflowService {
     private final ModelDiagnosisGate modelGate;
     private final Clock clock;
     private final Duration reviewTtl;
+    private final PermissionGuard permissionGuard;
 
     /** 使用十五分钟审批期限创建诊断工作流服务。 */
     public DiagnosticWorkflowService(DiagnosticTaskRepository repository) {
-        this(repository, new ModelDiagnosisGate(), Clock.systemUTC(), Duration.ofMinutes(15));
+        this(repository, new ModelDiagnosisGate(), Clock.systemUTC(), Duration.ofMinutes(15),
+                new PermissionGuard(PermissionAuditRecorder.noop()));
     }
 
     /** 注入仓储、门禁、时钟和期限，便于确定性测试。 */
     public DiagnosticWorkflowService(DiagnosticTaskRepository repository, ModelDiagnosisGate modelGate,
                                      Clock clock, Duration reviewTtl) {
+        this(repository, modelGate, clock, reviewTtl, new PermissionGuard(PermissionAuditRecorder.noop()));
+    }
+
+    /** 注入权限检查器，令诊断和审批的授权判断与业务状态转换分离。 */
+    public DiagnosticWorkflowService(DiagnosticTaskRepository repository, ModelDiagnosisGate modelGate,
+                                     Clock clock, Duration reviewTtl, PermissionGuard permissionGuard) {
         if (repository == null || modelGate == null || clock == null || reviewTtl == null
-                || reviewTtl.isZero() || reviewTtl.isNegative()) {
+                || reviewTtl.isZero() || reviewTtl.isNegative() || permissionGuard == null) {
             throw new IllegalArgumentException("诊断工作流服务依赖或审批期限无效");
         }
         this.repository = repository;
         this.modelGate = modelGate;
         this.clock = clock;
         this.reviewTtl = reviewTtl;
+        this.permissionGuard = permissionGuard;
     }
 
     /** 根据固定快照和模型报告创建任务，相同创建键返回同一任务。 */
     public DiagnosticTaskView create(String creationKey, DiagnosisSnapshot snapshot,
                                      ModelDiagnosisReport report) {
+        return create(creationKey, snapshot, report, PermissionContext.syntheticConsole());
+    }
+
+    /** 根据授权上下文创建诊断任务，先检查快照涉及的资方和知识证据范围。 */
+    public DiagnosticTaskView create(String creationKey, DiagnosisSnapshot snapshot,
+                                     ModelDiagnosisReport report, PermissionContext context) {
         if (creationKey == null || creationKey.isBlank()) {
             throw new IllegalArgumentException("创建幂等键不能为空");
         }
+        requireSnapshotPermissions(snapshot, creationKey, context);
         Optional<DiagnosticTask> existing = repository.findByCreationKey(creationKey);
         if (existing.isPresent()) {
             return existing.orElseThrow().toView();
@@ -62,17 +81,35 @@ public class DiagnosticWorkflowService {
 
     /** 批准一个待审批任务。 */
     public DiagnosticTaskView approve(UUID taskId, String operationId, String reviewer, String comment) {
-        return review(taskId, operationId, ReviewAction.APPROVE, reviewer, comment);
+        return approve(taskId, operationId, reviewer, comment, PermissionContext.syntheticConsole());
+    }
+
+    /** 使用指定权限上下文批准一个待审批任务。 */
+    public DiagnosticTaskView approve(UUID taskId, String operationId, String reviewer, String comment,
+                                      PermissionContext context) {
+        return review(taskId, operationId, ReviewAction.APPROVE, reviewer, comment, context);
     }
 
     /** 拒绝一个待审批任务。 */
     public DiagnosticTaskView reject(UUID taskId, String operationId, String reviewer, String comment) {
-        return review(taskId, operationId, ReviewAction.REJECT, reviewer, comment);
+        return reject(taskId, operationId, reviewer, comment, PermissionContext.syntheticConsole());
+    }
+
+    /** 使用指定权限上下文拒绝一个待审批任务。 */
+    public DiagnosticTaskView reject(UUID taskId, String operationId, String reviewer, String comment,
+                                     PermissionContext context) {
+        return review(taskId, operationId, ReviewAction.REJECT, reviewer, comment, context);
     }
 
     /** 退回一个待审批任务以结束本次诊断。 */
     public DiagnosticTaskView returnForRevision(UUID taskId, String operationId, String reviewer, String comment) {
-        return review(taskId, operationId, ReviewAction.RETURN, reviewer, comment);
+        return returnForRevision(taskId, operationId, reviewer, comment, PermissionContext.syntheticConsole());
+    }
+
+    /** 使用指定权限上下文退回一个待审批任务。 */
+    public DiagnosticTaskView returnForRevision(UUID taskId, String operationId, String reviewer, String comment,
+                                                PermissionContext context) {
+        return review(taskId, operationId, ReviewAction.RETURN, reviewer, comment, context);
     }
 
     /** 对已批准任务执行一次无外部副作用的治理模拟。 */
@@ -102,7 +139,9 @@ public class DiagnosticWorkflowService {
 
     /** 执行指定的人工审批动作。 */
     private DiagnosticTaskView review(UUID taskId, String operationId, ReviewAction action,
-                                      String reviewer, String comment) {
+                                      String reviewer, String comment, PermissionContext context) {
+        permissionGuard.requireApproval(context, "DIAGNOSTIC_REVIEW_" + action.name(),
+                taskId == null ? null : taskId.toString(), operationId);
         DiagnosticTask task = requireTask(taskId);
         DiagnosticTaskState before = task.state();
         try {
@@ -122,5 +161,23 @@ public class DiagnosticWorkflowService {
         }
         return repository.findById(taskId)
                 .orElseThrow(() -> new DiagnosticWorkflowException("诊断任务不存在：" + taskId));
+    }
+
+    /** 检查诊断快照声明的资方和知识证据，避免模型输入跨越调用方范围。 */
+    private void requireSnapshotPermissions(DiagnosisSnapshot snapshot, String traceId,
+                                            PermissionContext context) {
+        if (snapshot == null) {
+            return;
+        }
+        if (snapshot.metrics() != null && snapshot.metrics().provider() != null) {
+            permissionGuard.requireProvider(context, snapshot.metrics().provider(),
+                    "DIAGNOSTIC_READ", traceId);
+        }
+        for (DiagnosisSnapshot.RagCitation citation : snapshot.ragCitations()) {
+            if (citation != null && citation.documentId() != null && citation.documentVersion() != null) {
+                permissionGuard.requireKnowledge(context, "*", citation.documentId(), citation.documentVersion(),
+                        "DIAGNOSTIC_EVIDENCE_READ", traceId);
+            }
+        }
     }
 }

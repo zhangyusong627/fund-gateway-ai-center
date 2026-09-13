@@ -16,6 +16,9 @@ import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
 import org.practice.fundgateway.console.ConsoleModels.PublishedDocument;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryAudit;
+import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionGuard;
 import org.practice.fundgateway.knowledge.embedding.LocalBgeEmbeddingModel;
 import org.practice.fundgateway.knowledge.search.EvidenceAcceptanceGate;
 import org.practice.fundgateway.knowledge.search.HybridPgvectorRetriever;
@@ -31,22 +34,55 @@ public class ConsoleRagService {
     private final JdbcTemplate jdbcTemplate;
     private final Path modelPath;
     private final ObjectMapper objectMapper;
+    private final PermissionGuard permissionGuard;
+    private final PermissionContext defaultPermissionContext;
     private volatile LocalBgeEmbeddingModel embeddingModel;
 
     /** 使用环境配置创建数据库连接和模型路径。 */
     public ConsoleRagService(JdbcTemplate jdbcTemplate,
                              @Value("${console.embedding.model-path}") String configuredModelPath,
                              ObjectMapper objectMapper) {
+        this(jdbcTemplate, configuredModelPath, objectMapper,
+                new PermissionGuard(PermissionAuditRecorder.noop()), PermissionContext.syntheticConsole());
+    }
+
+    /** 注入正式权限检查器和控制台演示上下文。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public ConsoleRagService(JdbcTemplate jdbcTemplate,
+                             @Value("${console.embedding.model-path}") String configuredModelPath,
+                             ObjectMapper objectMapper, PermissionGuard permissionGuard,
+                             PermissionContext defaultPermissionContext) {
+        if (permissionGuard == null || defaultPermissionContext == null) {
+            throw new IllegalArgumentException("RAG 权限依赖不能为空");
+        }
         this.jdbcTemplate = jdbcTemplate;
         this.modelPath = resolveModelPath(configuredModelPath);
         this.objectMapper = objectMapper;
+        this.permissionGuard = permissionGuard;
+        this.defaultPermissionContext = defaultPermissionContext;
     }
 
     /** 执行一次真实向量检索并返回各阶段可解释分数。 */
     public RagQueryResponse query(RagQueryRequest request) throws Exception {
+        return query(request, defaultPermissionContext);
+    }
+
+    /** 在真正读取向量前检查调用方的知识集合、文档和版本范围。 */
+    public RagQueryResponse query(RagQueryRequest request, PermissionContext permissionContext) throws Exception {
         validate(request);
         long startedAt = System.nanoTime();
-        String collectionName = resolveCollection(request.collectionName());
+        String traceId = "rag-query-" + UUID.randomUUID();
+        if (request.collectionName() != null && !request.collectionName().isBlank()) {
+            permissionGuard.requireKnowledge(permissionContext, request.collectionName(),
+                    request.documentId() == null ? "*" : request.documentId(),
+                    request.documentVersion() == null ? "*" : request.documentVersion(),
+                    "KNOWLEDGE_QUERY", traceId);
+        }
+        String collectionName = resolveCollection(request.collectionName(), permissionContext);
+        permissionGuard.requireKnowledge(permissionContext, collectionName,
+                request.documentId() == null ? "*" : request.documentId(),
+                request.documentVersion() == null ? "*" : request.documentVersion(),
+                "KNOWLEDGE_QUERY", traceId);
         int topK = request.topK() == null ? 3 : request.topK();
         Set<String> keywords = new TreeSet<>(request.keywords());
         float[] queryVector = model().embed(request.question());
@@ -113,6 +149,11 @@ public class ConsoleRagService {
 
     /** 查询全部已发布集合，页面只能从这些不可见半成品之外的集合中选择。 */
     public List<PublishedCollection> publishedCollections() {
+        return publishedCollections(defaultPermissionContext);
+    }
+
+    /** 返回调用方知识范围内可见的已发布集合和文档。 */
+    public List<PublishedCollection> publishedCollections(PermissionContext permissionContext) {
         List<PublishedCollection> collections = jdbcTemplate.query("select r.collection_name, "
                         + "count(distinct (c.document_id, c.document_version)) document_count, "
                         + "count(c.chunk_id) chunk_count, "
@@ -124,9 +165,15 @@ public class ConsoleRagService {
                         resultSet.getInt("document_count"), resultSet.getInt("chunk_count"),
                         resultSet.getString("embedding_model"), resultSet.getInt("embedding_dimension"),
                         List.of()));
-        return collections.stream().map(collection -> new PublishedCollection(collection.collectionName(),
-                collection.documentCount(), collection.chunkCount(), collection.embeddingModel(),
-                collection.embeddingDimension(), publishedDocuments(collection.collectionName()))).toList();
+        return collections.stream().map(collection -> {
+            List<PublishedDocument> visibleDocuments = publishedDocuments(collection.collectionName()).stream()
+                    .filter(document -> permissionContext != null && permissionContext.allowsKnowledge(
+                            collection.collectionName(), document.documentId(), document.documentVersion()))
+                    .toList();
+            return new PublishedCollection(collection.collectionName(), visibleDocuments.size(),
+                    visibleDocuments.stream().mapToInt(PublishedDocument::chunkCount).sum(),
+                    collection.embeddingModel(), collection.embeddingDimension(), visibleDocuments);
+        }).filter(collection -> !collection.documents().isEmpty()).toList();
     }
 
     /** 检查数据库和本地模型是否已具备运行条件。 */
@@ -163,8 +210,8 @@ public class ConsoleRagService {
     }
 
     /** 解析页面指定集合；未指定时选择最近发布的集合。 */
-    private String resolveCollection(String requestedCollection) {
-        List<PublishedCollection> collections = publishedCollections();
+    private String resolveCollection(String requestedCollection, PermissionContext permissionContext) {
+        List<PublishedCollection> collections = publishedCollections(permissionContext);
         if (collections.isEmpty()) {
             throw new IllegalStateException("当前没有已发布的知识集合，请先完成离线索引");
         }

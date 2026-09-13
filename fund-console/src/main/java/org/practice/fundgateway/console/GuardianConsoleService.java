@@ -10,6 +10,10 @@ import java.util.UUID;
 
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationRequest;
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationResponse;
+import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionDeniedException;
+import org.practice.fundgateway.common.permission.PermissionGuard;
 import org.practice.fundgateway.guardian.diagnosis.ContractEvidence;
 import org.practice.fundgateway.guardian.diagnosis.DeterministicDiagnosisService;
 import org.practice.fundgateway.guardian.diagnosis.DiagnosisEvidence;
@@ -48,27 +52,49 @@ public class GuardianConsoleService {
     private final ConsoleRagService ragService;
     private final GuardianRiskRepository riskRepository;
     private final ModelDiagnosisFacade modelFacade;
+    private final PermissionGuard permissionGuard;
+    private final PermissionContext permissionContext;
 
     /** 注入诊断任务、人工审批和模拟治理工作流。 */
     public GuardianConsoleService(DiagnosticWorkflowService workflowService) {
         this(workflowService, null, null,
                 new ModelDiagnosisFacade(ModelGateway.unavailable(),
-                        new ModelAuditApplicationService(new InMemoryModelCallAuditRepository())));
+                        new ModelAuditApplicationService(new InMemoryModelCallAuditRepository())),
+                new PermissionGuard(PermissionAuditRecorder.noop()), PermissionContext.syntheticConsole());
     }
 
     /** 注入正式 RAG 证据查询和模型审计能力。 */
-    @org.springframework.beans.factory.annotation.Autowired
     public GuardianConsoleService(DiagnosticWorkflowService workflowService, ConsoleRagService ragService,
                                    GuardianRiskRepository riskRepository, ModelDiagnosisFacade modelFacade) {
+        this(workflowService, ragService, riskRepository, modelFacade,
+                new PermissionGuard(PermissionAuditRecorder.noop()), PermissionContext.syntheticConsole());
+    }
+
+    /** 注入正式 RAG、风险、模型和权限审计能力。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public GuardianConsoleService(DiagnosticWorkflowService workflowService, ConsoleRagService ragService,
+                                   GuardianRiskRepository riskRepository, ModelDiagnosisFacade modelFacade,
+                                   PermissionGuard permissionGuard, PermissionContext permissionContext) {
         this.workflowService = workflowService;
         this.ragService = ragService;
         this.riskRepository = riskRepository;
         this.modelFacade = modelFacade;
+        this.permissionGuard = permissionGuard;
+        this.permissionContext = permissionContext;
     }
 
     /** 执行指标生成、窗口聚合、规则判定、降频和可选模型诊断。 */
     public GuardianSimulationResponse simulate(GuardianSimulationRequest request) throws Exception {
+        return simulate(request, permissionContext);
+    }
+
+    /** 使用指定权限上下文执行诊断回放，便于验证越权请求在业务入口被拒绝。 */
+    public GuardianSimulationResponse simulate(GuardianSimulationRequest request,
+                                                PermissionContext requestContext) throws Exception {
         validate(request);
+        String replayId = UUID.randomUUID().toString();
+        permissionGuard.requireProvider(requestContext, "synthetic-provider", "GUARDIAN_DIAGNOSTIC_READ",
+                "console-guardian-" + replayId);
         long startedAt = System.nanoTime();
         Scenario scenario = Scenario.valueOf(request.scenario());
         int messageCount = request.messageCount();
@@ -103,11 +129,10 @@ public class GuardianConsoleService {
 
         MetricWindowAggregate representative = windows.get(windows.size() - 1);
         DiagnosisResult deterministic = deterministicDiagnosis(representative, scenario);
-        String replayId = UUID.randomUUID().toString();
         ModelDiagnosisFacade.DiagnosisOutcome model = invokeModelIfRequested(request, representative, deterministic,
-                riskFingerprint, diagnosticTasks, "console-" + scenario.name() + "-" + replayId);
+                riskFingerprint, diagnosticTasks, "console-" + scenario.name() + "-" + replayId, requestContext);
         DiagnosticTaskView diagnosticTask = createWorkflowTask(scenario, model, representative, representativeHits,
-                replayId);
+                replayId, requestContext);
         return new GuardianSimulationResponse(scenario.name(), messageCount, windows.size(), riskWindows,
                 diagnosticTasks, Math.max(0, riskWindows - diagnosticTasks), model.actualCalls(),
                 Duration.ofNanos(System.nanoTime() - startedAt).toMillis(), representative,
@@ -119,7 +144,8 @@ public class GuardianConsoleService {
     /** 先落风险事件再创建工作流，保证 PostgreSQL 外键和审计链完整。 */
     private DiagnosticTaskView createWorkflowTask(Scenario scenario, ModelDiagnosisFacade.DiagnosisOutcome model,
                                                    MetricWindowAggregate aggregate,
-                                                   List<RiskRuleHit> hits, String replayId) throws Exception {
+                                                   List<RiskRuleHit> hits, String replayId,
+                                                   PermissionContext requestContext) throws Exception {
         if (model.report() == null) {
             return null;
         }
@@ -130,7 +156,7 @@ public class GuardianConsoleService {
                     aggregate.windowStart().plus(WINDOW_SIZE), Instant.now(), mapper.writeValueAsString(aggregate)));
         }
         return workflowService.create("console-" + scenario.name() + "-" + BASE_TIME + "-" + replayId,
-                model.snapshot(), model.report());
+                model.snapshot(), model.report(), requestContext);
     }
 
     /** 返回当前进程是否能够进行真实模型调用。 */
@@ -155,7 +181,8 @@ public class GuardianConsoleService {
                                                 MetricWindowAggregate aggregate,
                                                 DiagnosisResult deterministic,
                                                 String fingerprint,
-                                                int diagnosticTasks, String traceId) throws Exception {
+                                                int diagnosticTasks, String traceId,
+                                                PermissionContext requestContext) throws Exception {
         if (!Boolean.TRUE.equals(request.invokeModel())) {
             return ModelDiagnosisFacade.DiagnosisOutcome.skipped("SKIPPED");
         }
@@ -168,7 +195,7 @@ public class GuardianConsoleService {
         MetricsEvidence metrics = new MetricsEvidence("synthetic-provider", "credit-apply",
                 (int) Math.round(aggregate.qps()), (int) aggregate.p95LatencyMs(), aggregate.timeoutRate(),
                 (int) aggregate.activeThreads(), (int) aggregate.maxThreads());
-        List<DiagnosisSnapshot.RagCitation> citations = loadRagCitations();
+        List<DiagnosisSnapshot.RagCitation> citations = loadRagCitations(requestContext, traceId);
         if (citations.isEmpty()) {
             return ModelDiagnosisFacade.DiagnosisOutcome.skipped("RAG_EVIDENCE_UNAVAILABLE");
         }
@@ -181,20 +208,26 @@ public class GuardianConsoleService {
     }
 
     /** 从本次在线检索结果生成诊断引用，禁止使用展示层硬编码证据。 */
-    private List<DiagnosisSnapshot.RagCitation> loadRagCitations() {
+    private List<DiagnosisSnapshot.RagCitation> loadRagCitations(PermissionContext requestContext, String traceId)
+            throws Exception {
         if (ragService == null) {
+            permissionGuard.requireKnowledge(requestContext, "*", "synthetic", "v1",
+                    "DIAGNOSTIC_EVIDENCE_READ", traceId);
             return List.of(new DiagnosisSnapshot.RagCitation("synthetic-fallback",
                     "接口 QPS 上限为 100，超时时间为 1000 毫秒。", "synthetic", "v1", "授信申请"));
         }
         try {
-            var response = ragService.query(new ConsoleModels.RagQueryRequest(null, null, null,
-                    "授信申请金额字段的类型和必填要求是什么？", List.of("applyAmt", "BigDecimal", "必填"), 3));
+            var response = ragService.query(new ConsoleModels.RagQueryRequest("fund-gateway-contracts", null, null,
+                    "授信申请金额字段的类型和必填要求是什么？", List.of("applyAmt", "BigDecimal", "必填"), 3),
+                    requestContext);
             if (!"ACCEPTED".equals(response.status())) {
                 return List.of();
             }
             return response.candidates().stream().map(candidate -> new DiagnosisSnapshot.RagCitation(
                     candidate.chunkId(), candidate.content(), candidate.documentId(),
                     candidate.documentVersion(), candidate.locator())).toList();
+        } catch (PermissionDeniedException exception) {
+            throw exception;
         } catch (Exception exception) {
             return List.of();
         }

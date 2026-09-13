@@ -14,16 +14,32 @@ final class SyntheticToolInput {
 
     /** 只接受精确的合成资方和授信申请标识。 */
     static void require(String toolInput, String errorMessage) {
+        parse(toolInput, errorMessage);
+    }
+
+    /** 解析并校验工具目标，供权限检查在工具回调前复用。 */
+    static Target parse(String toolInput, String errorMessage) {
         try {
             Map<?, ?> request = MAPPER.readValue(toolInput, Map.class);
-            if (!"synthetic-provider".equals(request.get("provider"))
-                    || !"credit-apply".equals(request.get("interface"))) {
+            Object provider = request.get("provider");
+            Object interfaceName = request.get("interface");
+            if (!(provider instanceof String providerValue)
+                    || !(interfaceName instanceof String interfaceValue)
+                    || providerValue.isBlank() || interfaceValue.isBlank()) {
                 throw new IllegalArgumentException(errorMessage);
             }
+            if (!"synthetic-provider".equals(providerValue) || !"credit-apply".equals(interfaceValue)) {
+                throw new IllegalArgumentException(errorMessage);
+            }
+            return new Target(providerValue, interfaceValue);
         } catch (IllegalArgumentException exception) {
             throw exception;
         } catch (Exception exception) {
             throw new IllegalArgumentException(errorMessage, exception);
         }
+    }
+
+    /** 工具请求中经过结构校验的资源目标。 */
+    record Target(String provider, String interfaceName) {
     }
 }

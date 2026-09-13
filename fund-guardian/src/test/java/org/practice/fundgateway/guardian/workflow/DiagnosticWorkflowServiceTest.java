@@ -11,9 +11,15 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.practice.fundgateway.common.permission.InMemoryPermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionAuditEvent;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionDeniedException;
+import org.practice.fundgateway.common.permission.PermissionGuard;
 import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisReport;
@@ -132,6 +138,26 @@ class DiagnosticWorkflowServiceTest {
 
         assertThrows(DiagnosticWorkflowException.class, () -> service.simulateGovernance(
                 task.taskId(), "simulation-2", "ADJUST_TIMEOUT", Map.of("timeoutMs", "1000"), "owner"));
+    }
+
+    /** 审批权限关闭时，工作流状态不得改变且拒绝结果必须可审计。 */
+    @Test
+    void shouldRejectReviewWithoutPermissionAndKeepTaskPending() {
+        InMemoryPermissionAuditRecorder recorder = new InMemoryPermissionAuditRecorder();
+        DiagnosticWorkflowService guardedService = new DiagnosticWorkflowService(
+                new InMemoryDiagnosticTaskRepository(), new ModelDiagnosisGate(), clock,
+                Duration.ofMinutes(15), new PermissionGuard(recorder));
+        DiagnosticTaskView task = guardedService.create("request-permission", snapshot(true), report(false, false));
+        PermissionContext noApproval = new PermissionContext("read-only-agent", Set.of("synthetic-provider"),
+                Set.of(new PermissionContext.KnowledgeScope("*", "*", "*")),
+                PermissionContext.SYNTHETIC_DIAGNOSTIC_TOOLS, false);
+
+        assertThrows(PermissionDeniedException.class, () -> guardedService.approve(task.taskId(),
+                "review-forbidden", "read-only-agent", "尝试审批", noApproval));
+
+        assertEquals(DiagnosticTaskStatus.PENDING_APPROVAL,
+                guardedService.findById(task.taskId()).orElseThrow().status());
+        assertEquals(PermissionAuditEvent.Decision.DENIED, recorder.snapshot().getLast().decision());
     }
 
     /** 构造包含一条确定性规则的固定诊断快照。 */

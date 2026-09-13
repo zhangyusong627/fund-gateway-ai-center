@@ -1,5 +1,9 @@
 package org.practice.fundgateway.console;
 
+import org.practice.fundgateway.common.permission.InMemoryPermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionGuard;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskRepository;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowService;
 import org.practice.fundgateway.guardian.workflow.InMemoryDiagnosticTaskRepository;
@@ -19,6 +23,24 @@ public class GuardianWorkflowConfiguration {
     @Bean
     public DiagnosticEvaluationService diagnosticEvaluationService() {
         return new DiagnosticEvaluationService();
+    }
+
+    /** 创建当前本地演示使用的进程内权限审计记录器，不引入新的数据库表。 */
+    @Bean
+    public InMemoryPermissionAuditRecorder permissionAuditRecorder() {
+        return new InMemoryPermissionAuditRecorder();
+    }
+
+    /** 创建统一权限检查器，所有允许和拒绝结果都进入同一审计端口。 */
+    @Bean
+    public PermissionGuard permissionGuard(PermissionAuditRecorder auditRecorder) {
+        return new PermissionGuard(auditRecorder);
+    }
+
+    /** 创建不承担真实认证职责的合成控制台权限上下文。 */
+    @Bean
+    public PermissionContext permissionContext() {
+        return PermissionContext.syntheticConsole();
     }
 
     /** 创建诊断任务内存仓储，后续由 PostgreSQL 实现替换。 */
@@ -44,8 +66,11 @@ public class GuardianWorkflowConfiguration {
 
     /** 创建诊断、审批和模拟治理应用服务。 */
     @Bean
-    public DiagnosticWorkflowService diagnosticWorkflowService(DiagnosticTaskRepository repository) {
-        return new DiagnosticWorkflowService(repository);
+    public DiagnosticWorkflowService diagnosticWorkflowService(DiagnosticTaskRepository repository,
+                                                               PermissionGuard permissionGuard) {
+        return new DiagnosticWorkflowService(repository,
+                new org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate(),
+                java.time.Clock.systemUTC(), java.time.Duration.ofMinutes(15), permissionGuard);
     }
 
 }

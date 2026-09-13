@@ -1,5 +1,6 @@
 package org.practice.fundgateway.console;
 
+import org.practice.fundgateway.common.permission.PermissionDeniedException;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,7 +12,7 @@ public class ConsoleExceptionHandler {
 
     /** 将输入、状态和审批错误返回为可展示的四百响应。 */
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class,
-            DiagnosticWorkflowException.class})
+            DiagnosticWorkflowException.class, PermissionDeniedException.class})
     public ResponseEntity<ConsoleError> businessError(RuntimeException exception) {
         return ResponseEntity.badRequest().body(new ConsoleError("CONSOLE_REQUEST_FAILED", exception.getMessage()));
     }

@@ -1,9 +1,19 @@
 package org.practice.fundgateway.console;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationRequest;
+import org.practice.fundgateway.common.permission.InMemoryPermissionAuditRecorder;
+import org.practice.fundgateway.common.permission.PermissionAuditEvent;
+import org.practice.fundgateway.common.permission.PermissionContext;
+import org.practice.fundgateway.common.permission.PermissionDeniedException;
+import org.practice.fundgateway.common.permission.PermissionGuard;
+import org.practice.fundgateway.guardian.ai.ModelDiagnosisFacade;
+import org.practice.fundgateway.guardian.ai.ModelGateway;
+import org.practice.fundgateway.guardian.audit.InMemoryModelCallAuditRepository;
+import org.practice.fundgateway.guardian.audit.ModelAuditApplicationService;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowService;
 import org.practice.fundgateway.guardian.workflow.InMemoryDiagnosticTaskRepository;
 
@@ -35,5 +45,29 @@ class GuardianConsoleServiceTest {
         assertThat(result.diagnosticTasks()).isEqualTo(2);
         assertThat(result.suppressedTasks()).isEqualTo(8);
         assertThat(result.deterministicFindings()).allMatch(finding -> finding.matched());
+    }
+
+    /** 诊断入口发现资方越权时应在生成指标前拒绝并记录审计。 */
+    @Test
+    void shouldRejectGuardianProviderOutsideScope() throws Exception {
+        InMemoryPermissionAuditRecorder recorder = new InMemoryPermissionAuditRecorder();
+        PermissionContext restricted = new PermissionContext("read-only-agent", java.util.Set.of("other-provider"),
+                java.util.Set.of(new PermissionContext.KnowledgeScope("*", "*", "*")),
+                PermissionContext.SYNTHETIC_DIAGNOSTIC_TOOLS, false);
+        ModelDiagnosisFacade facade = new ModelDiagnosisFacade(ModelGateway.unavailable(),
+                new ModelAuditApplicationService(new InMemoryModelCallAuditRepository()));
+        try {
+            GuardianConsoleService guarded = new GuardianConsoleService(
+                    new DiagnosticWorkflowService(new InMemoryDiagnosticTaskRepository()), null, null, facade,
+                    new PermissionGuard(recorder), restricted);
+
+            assertThrows(PermissionDeniedException.class,
+                    () -> guarded.simulate(new GuardianSimulationRequest("COMBINED", 100, false), restricted));
+            assertThat(recorder.snapshot()).hasSize(1);
+            assertThat(recorder.snapshot().getFirst().decision())
+                    .isEqualTo(PermissionAuditEvent.Decision.DENIED);
+        } finally {
+            facade.close();
+        }
     }
 }
