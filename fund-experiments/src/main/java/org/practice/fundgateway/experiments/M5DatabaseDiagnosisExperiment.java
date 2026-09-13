@@ -3,6 +3,8 @@ package org.practice.fundgateway.experiments;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import org.postgresql.ds.PGSimpleDataSource;
 import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
@@ -55,7 +57,8 @@ public class M5DatabaseDiagnosisExperiment implements CommandLineRunner {
         save(evidenceDir.resolve("request.json"), mapper.writeValueAsString(request));
 
         DeepSeekApi api = DeepSeekApi.builder().baseUrl(BASE_URL).apiKey(key).build();
-        var responseEntity = api.chatCompletionEntity(request);
+        var responseEntity = invokeModel(repository, snapshotTaskId(snapshot), evidenceDir,
+                () -> api.chatCompletionEntity(request));
         var response = responseEntity.getBody();
         if (response == null || response.choices() == null || response.choices().isEmpty()
                 || response.choices().getFirst().message().content() == null) {
@@ -123,5 +126,26 @@ public class M5DatabaseDiagnosisExperiment implements CommandLineRunner {
     /** 保存原始证据文件。 */
     private void save(Path path, String content) throws Exception {
         Files.writeString(path, content);
+    }
+
+    /** 模型网络调用失败时先停止重复消费并保存不含密钥的失败类型。 */
+    static <T> T invokeModel(GuardianRiskRepository repository, UUID taskId, Path evidenceDir,
+                             Callable<T> invocation) throws Exception {
+        try {
+            return invocation.call();
+        } catch (Exception modelFailure) {
+            try {
+                repository.updateDiagnosticTaskStatus(taskId, "FAILED");
+            } catch (RuntimeException statusFailure) {
+                modelFailure.addSuppressed(statusFailure);
+            }
+            try {
+                Files.writeString(evidenceDir.resolve("model-failure.txt"),
+                        modelFailure.getClass().getSimpleName());
+            } catch (Exception evidenceFailure) {
+                modelFailure.addSuppressed(evidenceFailure);
+            }
+            throw modelFailure;
+        }
     }
 }
