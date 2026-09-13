@@ -6,6 +6,8 @@ import java.util.Set;
 
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisReport;
+import org.practice.fundgateway.guardian.diagnosis.DiagnosticEvaluationService;
+import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate.GateStatus;
 import org.practice.fundgateway.guardian.diagnosis.RuleFinding;
 import org.practice.fundgateway.guardian.metrics.MetricWindowAggregate;
 import org.practice.fundgateway.guardian.metrics.RiskRuleHit;
@@ -123,5 +125,37 @@ public final class ConsoleModels {
                                              ModelDiagnosisGate.GateDecision gateDecision,
                                              DiagnosticTaskView diagnosticTask,
                                              Instant executedAt) {
+    }
+
+    /** 诊断评测请求，评测数据由调用方提供，控制台不新增持久化结构。 */
+    public record DiagnosticEvaluationRequest(List<DiagnosticCaseRequest> cases,
+                                              List<DiagnosticObservationRequest> observations) {
+    }
+
+    /** 一道诊断评测样例及其金标准。 */
+    public record DiagnosticCaseRequest(String caseId, String providerId, String interfaceId,
+                                       List<String> symptoms, String expectedConclusion,
+                                       List<String> requiredEvidence) {
+    }
+
+    /** 一道诊断样例的实际观测结果。 */
+    public record DiagnosticObservationRequest(String caseId, String actualConclusion,
+                                              List<String> evidenceIds, boolean stoppedWithoutEvidence,
+                                              GateStatus gateStatus) {
+    }
+
+    /** 诊断评测接口返回的可复算指标。 */
+    public record DiagnosticEvaluationResponse(int totalCases, int conclusionHits, int evidenceHits,
+                                               int evidenceStopHits, int humanReviews,
+                                               double conclusionAccuracy, double evidenceSupportRate,
+                                               double evidenceStopRate, double humanReviewRate) {
+
+        /** 将 guardian 领域评测结果转换为控制台 API 模型。 */
+        public static DiagnosticEvaluationResponse from(DiagnosticEvaluationService.EvaluationSummary summary) {
+            return new DiagnosticEvaluationResponse(summary.totalCases(), summary.conclusionHits(),
+                    summary.evidenceHits(), summary.evidenceStopHits(), summary.humanReviews(),
+                    summary.conclusionAccuracy(), summary.evidenceSupportRate(), summary.evidenceStopRate(),
+                    summary.humanReviewRate());
+        }
     }
 }

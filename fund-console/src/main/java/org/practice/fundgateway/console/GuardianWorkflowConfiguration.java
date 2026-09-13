@@ -15,6 +15,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GuardianWorkflowConfiguration {
 
+    /** 创建无状态的 guardian 诊断评测器，供控制台应用服务复用。 */
+    @Bean
+    public DiagnosticEvaluationService diagnosticEvaluationService() {
+        return new DiagnosticEvaluationService();
+    }
+
     /** 创建诊断任务内存仓储，后续由 PostgreSQL 实现替换。 */
     @Bean
     @ConditionalOnProperty(name = "console.persistence.mode", havingValue = "memory")
