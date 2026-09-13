@@ -4,6 +4,7 @@ import org.practice.fundgateway.guardian.workflow.DiagnosticTaskRepository;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowService;
 import org.practice.fundgateway.guardian.workflow.InMemoryDiagnosticTaskRepository;
 import org.practice.fundgateway.guardian.workflow.JdbcDiagnosticTaskRepository;
+import org.practice.fundgateway.guardian.diagnosis.DiagnosticEvaluationService;
 import org.practice.fundgateway.guardian.metrics.GuardianRiskRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,5 +40,11 @@ public class GuardianWorkflowConfiguration {
     @Bean
     public DiagnosticWorkflowService diagnosticWorkflowService(DiagnosticTaskRepository repository) {
         return new DiagnosticWorkflowService(repository);
+    }
+
+    /** 装配不落库的确定性诊断评测服务，供控制台基线评测使用。 */
+    @Bean
+    public DiagnosticEvaluationService diagnosticEvaluationService() {
+        return new DiagnosticEvaluationService();
     }
 }

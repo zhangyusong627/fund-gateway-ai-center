@@ -353,6 +353,11 @@
                 <div id="guardianResult" class="result"></div>
             </div>
         </div>
+        <div class="panel" style="margin-top:16px">
+            <div class="section-title"><h2>诊断评测基线</h2><button id="runDiagnosticEvaluation" class="secondary">运行评测</button></div>
+            <p>固定合成样例只计算结论、证据和门禁指标，不调用 DeepSeek，也不写入运行数据库。</p>
+            <div id="diagnosticEvaluationResult" class="placeholder"><div><b>尚未运行诊断评测</b><span>运行后可复算缺证停止和人工转审结果。</span></div></div>
+        </div>
         </section>
 
         <section id="diagnosis" class="workspace">
@@ -970,6 +975,23 @@
             byId('guardianError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         } finally {
             button.disabled = false; button.textContent = '运行智能守护';
+        }
+    });
+
+    byId('runDiagnosticEvaluation').addEventListener('click', async () => {
+        const button = byId('runDiagnosticEvaluation');
+        button.disabled = true;
+        button.textContent = '评测中…';
+        try {
+            const result = await request('/api/console/guardian/diagnostic-evaluation');
+            byId('diagnosticEvaluationResult').className = '';
+            byId('diagnosticEvaluationResult').innerHTML = `
+                <div class="stats"><div class="stat"><span>结论命中率</span><strong>${percent(result.conclusionAccuracy)}</strong><small>${number(result.conclusionHits)} / ${number(result.totalCases)}</small></div><div class="stat"><span>证据支撑率</span><strong>${percent(result.evidenceSupportRate)}</strong><small>${number(result.evidenceHits)} / ${number(result.totalCases)}</small></div><div class="stat"><span>缺证停止率</span><strong>${percent(result.evidenceStopRate)}</strong><small>${number(result.evidenceStopHits)} 道缺证样例</small></div><div class="stat"><span>人工转审率</span><strong>${percent(result.humanReviewRate)}</strong><small>${number(result.humanReviews)} / ${number(result.totalCases)}</small></div></div>`;
+        } catch (error) {
+            byId('diagnosticEvaluationResult').innerHTML = `<div class="error">诊断评测失败：${escapeHtml(error.message)}</div>`;
+        } finally {
+            button.disabled = false;
+            button.textContent = '运行评测';
         }
     });
 
