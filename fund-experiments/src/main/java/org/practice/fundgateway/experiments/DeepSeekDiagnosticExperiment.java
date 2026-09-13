@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.practice.fundgateway.guardian.tool.SyntheticDiagnosticToolRegistry;
+import org.practice.fundgateway.guardian.tool.DiagnosticToolExecutor;
 import org.practice.fundgateway.guardian.diagnosis.*;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
@@ -33,6 +34,9 @@ public class DeepSeekDiagnosticExperiment implements CommandLineRunner {
 
     /** 集中维护允许模型调用的三个只读工具，并按工具名执行白名单查找。 */
     private final SyntheticDiagnosticToolRegistry registry = new SyntheticDiagnosticToolRegistry();
+
+    /** 限制一次诊断最多读取三类只读证据，避免模型工具循环无界增长。 */
+    private final DiagnosticToolExecutor toolExecutor = new DiagnosticToolExecutor(registry, 3);
 
     /** Spring Boot 完成启动后自动执行一次 M1 真实诊断实验。 */
     @Override
@@ -93,14 +97,13 @@ public class DeepSeekDiagnosticExperiment implements CommandLineRunner {
 
         // index 只用于生成顺序稳定、互不覆盖的工具结果证据文件名。
         int index = 0;
+        DiagnosticToolExecutor.Invocation invocation = toolExecutor.startInvocation();
 
         // 逐个处理模型请求的工具调用，不允许模型直接执行任意 Java 方法。
         for (ToolCall call : assistant.toolCalls()) {
             // 按模型返回的工具名查询白名单；未注册名称会立即失败。
-            var tool = registry.require(call.function().name());
-
             // Java 侧执行只读工具，模型提供的 arguments 只是输入，不能绕过工具实现边界。
-            String result = tool.call(call.function().arguments());
+            String result = invocation.execute(call.function().name(), call.function().arguments());
 
             // 每个工具原始结果单独落盘，便于追踪最终结论来自哪份证据。
             saveAndPrint(evidence.resolve("tool-result-" + (++index) + ".json"), result, "工具结果 " + index);

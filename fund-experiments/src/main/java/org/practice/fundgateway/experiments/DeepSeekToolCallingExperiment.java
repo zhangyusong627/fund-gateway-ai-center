@@ -5,7 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.practice.fundgateway.guardian.tool.SyntheticContractQueryTool;
+import org.practice.fundgateway.guardian.tool.DiagnosticToolExecutor;
+import org.practice.fundgateway.guardian.tool.SyntheticDiagnosticToolRegistry;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ChatCompletionFunction;
@@ -27,7 +28,9 @@ public class DeepSeekToolCallingExperiment implements CommandLineRunner {
     private static final String BASE_URL = "https://api.deepseek.com";
     private static final Path EVIDENCE_ROOT = Path.of("..", "docs", "learning");
     private final JsonMapper mapper = JsonMapper.builder().build();
-    private final SyntheticContractQueryTool tool = new SyntheticContractQueryTool();
+    private final SyntheticDiagnosticToolRegistry registry = new SyntheticDiagnosticToolRegistry();
+    /** 复用 Guardian 的工具白名单和单次调用预算。 */
+    private final DiagnosticToolExecutor toolExecutor = new DiagnosticToolExecutor(registry, 1);
 
     @Override
     public void run(String... args) {
@@ -44,7 +47,9 @@ public class DeepSeekToolCallingExperiment implements CommandLineRunner {
         String prompt = "查询 synthetic-provider 的 credit-apply 接口 QPS 限制和超时时间，必须先调用工具，不要编造事实。";
         Path evidence = EVIDENCE_ROOT.resolve("D3-real-call-" + System.currentTimeMillis());
         Files.createDirectories(evidence);
+        DiagnosticToolExecutor.Invocation invocation = toolExecutor.startInvocation();
         DeepSeekApi api = DeepSeekApi.builder().baseUrl(BASE_URL).apiKey(apiKey).build();
+        var tool = registry.require("querySyntheticContract");
         FunctionTool.Function function = new FunctionTool.Function(tool.getToolDefinition().description(),
                 tool.getToolDefinition().name(), tool.getToolDefinition().inputSchema());
         FunctionTool functionTool = new FunctionTool(function);
@@ -56,7 +61,7 @@ public class DeepSeekToolCallingExperiment implements CommandLineRunner {
         save(evidence.resolve("response-1.json"), mapper.writeValueAsString(firstResponse.getBody()));
         ChatCompletionMessage assistant = firstResponse.getBody().choices().getFirst().message();
         ToolCall call = assistant.toolCalls().getFirst();
-        String result = tool.call(call.function().arguments());
+        String result = invocation.execute(call.function().name(), call.function().arguments());
         save(evidence.resolve("tool-result.json"), result);
         ChatCompletionMessage toolMessage = new ChatCompletionMessage(result, Role.TOOL, null, call.id(), null);
         ChatCompletionRequest secondRequest = ChatCompletionRequest.builder().model(MODEL)
