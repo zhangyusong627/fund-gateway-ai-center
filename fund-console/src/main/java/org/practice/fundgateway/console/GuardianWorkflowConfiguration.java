@@ -48,9 +48,4 @@ public class GuardianWorkflowConfiguration {
         return new DiagnosticWorkflowService(repository);
     }
 
-    /** 装配不落库的确定性诊断评测服务，供控制台基线评测使用。 */
-    @Bean
-    public DiagnosticEvaluationService diagnosticEvaluationService() {
-        return new DiagnosticEvaluationService();
-    }
 }

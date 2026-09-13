@@ -199,6 +199,28 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-139] 2026-09-13 · Codex
+
+**最终收口**
+- 诊断评测已接入 `POST /api/console/guardian/evaluation`，支持调用方提交固定样例和观测结果并返回可复算指标。
+- 指标消费失败记录、幂等状态、Kafka 重投和可重放边界已合并。
+- Docker Compose 已重建 `fund-console`，PostgreSQL 和 Redpanda 健康，控制台状态接口返回 `READY`，诊断评测接口已完成 HTTP 验证。
+- 最小权限子任务未形成可审查提交，暂不宣称权限模型完成；真实认证和生产权限系统不在本项目范围。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS。
+- `docker compose ps`：fund-console、fund-guardian、fund-integration、PostgreSQL、Redpanda 均运行；PostgreSQL/Redpanda 健康。
+
+### [C-138] 2026-09-13 · Codex
+
+**做了什么**
+- 将固定诊断评测增强接入控制台，补充控制器测试和结果展示模型。
+- 延续指标消费失败记录、幂等和重放边界治理。
+- 最小权限子任务未产出可审查提交，本轮不宣称权限系统已完成。
+
+**验证**
+- 待本轮全量 Maven 和 Docker 状态检查通过后提交推送。
+
 ### [C-137] 2026-09-13 · Codex
 
 **并行合并内容**
