@@ -21,10 +21,7 @@ public class SyntheticIncidentHistoryTool implements ToolCallback {
     /** 根据合成资方和接口返回固定历史故障。 */
     @Override
     public String call(String toolInput) {
-        if (toolInput == null || !toolInput.contains("synthetic-provider")
-                || !toolInput.contains("credit-apply")) {
-            throw new IllegalArgumentException("只支持合成资方的授信申请历史查询");
-        }
+        SyntheticToolInput.require(toolInput, "只支持合成资方的授信申请历史查询");
         return "{\"provider\":\"synthetic-provider\",\"interface\":\"credit-apply\","
                 + "\"incidentId\":\"incident-001\",\"status\":\"confirmed\","
                 + "\"cause\":\"upstream-timeout\",\"occurredAt\":\"2026-09-08T10:00:00+08:00\"}";

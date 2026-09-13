@@ -199,6 +199,17 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-132] 2026-09-13 · Codex
+
+**做了什么**
+- 新增 `SyntheticToolInput`，统一使用 Jackson 解析诊断工具 JSON 入参。
+- 三个合成只读工具改为精确校验 `provider=synthetic-provider` 和 `interface=credit-apply`，拒绝部分字符串匹配和非法 JSON。
+- 新增部分匹配绕过回归测试。
+
+**验证**
+- `mvn -B -pl fund-guardian -am test`：BUILD SUCCESS；32 项通过。
+- 待全量验证通过后提交并推送。
+
 ### [C-131] 2026-09-13 · Codex
 
 **做了什么**

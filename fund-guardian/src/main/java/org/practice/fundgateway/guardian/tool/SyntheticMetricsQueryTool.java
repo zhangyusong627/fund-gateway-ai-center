@@ -21,10 +21,7 @@ public class SyntheticMetricsQueryTool implements ToolCallback {
     /** 根据合成资方和接口返回固定运行指标。 */
     @Override
     public String call(String toolInput) {
-        if (toolInput == null || !toolInput.contains("synthetic-provider")
-                || !toolInput.contains("credit-apply")) {
-            throw new IllegalArgumentException("只支持合成资方的授信申请指标查询");
-        }
+        SyntheticToolInput.require(toolInput, "只支持合成资方的授信申请指标查询");
         return "{\"provider\":\"synthetic-provider\",\"interface\":\"credit-apply\","
                 + "\"qps\":18,\"avgLatencyMs\":420,\"timeoutRate\":0.02,"
                 + "\"activeThreads\":6,\"maxThreads\":10}";

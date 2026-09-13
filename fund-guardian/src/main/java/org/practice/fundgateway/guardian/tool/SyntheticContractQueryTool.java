@@ -20,10 +20,7 @@ public class SyntheticContractQueryTool implements ToolCallback {
     /** 根据合成输入返回固定契约事实，不修改任何状态。 */
     @Override
     public String call(String toolInput) {
-        if (toolInput == null || !toolInput.contains("synthetic-provider")
-                || !toolInput.contains("credit-apply")) {
-            throw new IllegalArgumentException("只支持合成资方的授信申请查询");
-        }
+        SyntheticToolInput.require(toolInput, "只支持合成资方的授信申请查询");
         return "{\"provider\":\"synthetic-provider\",\"interface\":\"credit-apply\",\"qpsLimit\":20,\"timeoutMs\":3000}";
     }
 }

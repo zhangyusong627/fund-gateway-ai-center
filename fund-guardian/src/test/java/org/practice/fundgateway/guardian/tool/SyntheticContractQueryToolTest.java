@@ -64,6 +64,13 @@ class SyntheticContractQueryToolTest {
                 () -> manager.executeToolCalls(prompt, invalidInputResponse()));
     }
 
+    /** 参数值必须精确匹配，不能靠 JSON 文本中的部分字符串通过校验。 */
+    @Test
+    void partialInputMatchIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> tool.call("{\"provider\":\"not-synthetic-provider\",\"interface\":\"credit-apply\"}"));
+    }
+
     /** 构造带工具回调列表的提示。 */
     private Prompt promptWithCalls(int count, int limit) {
         ToolCallingChatOptions options = ToolCallingChatOptions.builder()
