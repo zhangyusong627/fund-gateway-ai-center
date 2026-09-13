@@ -1,4 +1,6 @@
-# FG-ADC 文档索引
+# 资金网关智能守护 Agent：文档索引
+
+> 内部工程代号：FG-ADC 资金网关智能决策中心
 
 `docs/HANDOFF.md` 是跨会话交接入口；本页按文档用途组织其他材料。
 
@@ -19,6 +21,7 @@
 - [`planning/ROADMAP.md`](planning/ROADMAP.md)：唯一里程碑和依赖顺序。
 - [`planning/DAILY_PLAN.md`](planning/DAILY_PLAN.md)：每日安排。
 - [`planning/EXECUTION_PROTOCOL.md`](planning/EXECUTION_PROTOCOL.md)：开工、验证、收工和学习验收机制。
+- [`planning/PRODUCTIONIZATION-FOCUS.md`](planning/PRODUCTIONIZATION-FOCUS.md)：生产化增强的 P0/P1 范围与暂不做项。
 - `tasks/`：当前或历史阶段任务卡，例如 M2 RAG、M3 资方接入助手任务卡。
 
 ## 决策、评审与学习证据

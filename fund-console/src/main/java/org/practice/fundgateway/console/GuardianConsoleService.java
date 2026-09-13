@@ -51,6 +51,8 @@ public class GuardianConsoleService {
     private static final Duration COOLDOWN = Duration.ofMinutes(1);
     private static final Instant BASE_TIME = Instant.parse("2026-09-11T10:00:00Z");
     private static final String MODEL = "deepseek-v4-flash";
+    private static final String PROMPT_VERSION = "M1-D1-json-v2";
+    private static final int MAX_MODEL_ATTEMPTS = 2;
     private final JsonMapper mapper = JsonMapper.builder().build();
     private final DiagnosticWorkflowService workflowService;
     private final ConsoleRagService ragService;
@@ -192,27 +194,34 @@ public class GuardianConsoleService {
                 "stream", false, "messages", List.of(java.util.Map.of("role", "user", "content", prompt))));
         long callStarted = System.nanoTime();
         String rawResponse = null;
-        try {
-            var responseEntity = DeepSeekApi.builder().baseUrl("https://api.deepseek.com").apiKey(key).build()
-                    .chatCompletionEntity(modelRequest);
-            var response = responseEntity.getBody();
-            rawResponse = response == null ? null : mapper.writeValueAsString(response);
-            if (response == null || response.choices() == null || response.choices().isEmpty()
-                    || response.choices().getFirst().message().content() == null) {
-                recordAudit(rawRequest, rawResponse, callStarted, ModelCallStatus.FAILED);
-                return new ModelOutcome("EMPTY_RESPONSE", 1, rawRequest, prompt, rawResponse, null, null, snapshot);
+        int retryCount = 0;
+        for (int attempt = 1; attempt <= MAX_MODEL_ATTEMPTS; attempt++) {
+            try {
+                var responseEntity = DeepSeekApi.builder().baseUrl("https://api.deepseek.com").apiKey(key).build()
+                        .chatCompletionEntity(modelRequest);
+                var response = responseEntity.getBody();
+                rawResponse = response == null ? null : mapper.writeValueAsString(response);
+                if (response == null || response.choices() == null || response.choices().isEmpty()
+                        || response.choices().getFirst().message().content() == null) {
+                    recordAudit(rawRequest, rawResponse, callStarted, ModelCallStatus.FAILED, retryCount);
+                    return new ModelOutcome("EMPTY_RESPONSE", attempt, rawRequest, prompt, rawResponse, null, null, snapshot);
+                }
+                ModelDiagnosisReport report = mapper.readValue(response.choices().getFirst().message().content(),
+                        ModelDiagnosisReport.class);
+                ModelDiagnosisGate.GateDecision gateDecision = new ModelDiagnosisGate().assess(report, snapshot);
+                recordAudit(rawRequest, rawResponse, callStarted,
+                        gateDecision.status() == ModelDiagnosisGate.GateStatus.ACCEPTED
+                                ? ModelCallStatus.SUCCEEDED : ModelCallStatus.REJECTED_BY_GATE, retryCount);
+                return new ModelOutcome("COMPLETED", attempt, rawRequest, prompt, rawResponse, report, gateDecision, snapshot);
+            } catch (Exception exception) {
+                if (!isRetryable(exception) || attempt == MAX_MODEL_ATTEMPTS) {
+                    recordAudit(rawRequest, rawResponse, callStarted, ModelCallStatus.FAILED, retryCount);
+                    return new ModelOutcome("MODEL_CALL_FAILED", attempt, rawRequest, prompt, rawResponse, null, null, snapshot);
+                }
+                retryCount++;
             }
-            ModelDiagnosisReport report = mapper.readValue(response.choices().getFirst().message().content(),
-                    ModelDiagnosisReport.class);
-            ModelDiagnosisGate.GateDecision gateDecision = new ModelDiagnosisGate().assess(report, snapshot);
-            recordAudit(rawRequest, rawResponse, callStarted,
-                    gateDecision.status() == ModelDiagnosisGate.GateStatus.ACCEPTED
-                            ? ModelCallStatus.SUCCEEDED : ModelCallStatus.REJECTED_BY_GATE);
-            return new ModelOutcome("COMPLETED", 1, rawRequest, prompt, rawResponse, report, gateDecision, snapshot);
-        } catch (Exception exception) {
-            recordAudit(rawRequest, rawResponse, callStarted, ModelCallStatus.FAILED);
-            return new ModelOutcome("MALFORMED_RESPONSE", 1, rawRequest, prompt, rawResponse, null, null, snapshot);
         }
+        throw new IllegalStateException("模型调用未返回结果");
     }
 
     /** 从本次在线检索结果生成诊断引用，禁止使用展示层硬编码证据。 */
@@ -237,14 +246,36 @@ public class GuardianConsoleService {
 
     /** 保存完整请求、响应、状态和按固定价格版本计算的本地成本。 */
     private void recordAudit(String rawRequest, String rawResponse, long callStarted, ModelCallStatus status) {
+        recordAudit(rawRequest, rawResponse, callStarted, status, 0);
+    }
+
+    /** 记录一次模型调用及其重试次数，保证失败路径也可追溯。 */
+    private void recordAudit(String rawRequest, String rawResponse, long callStarted, ModelCallStatus status,
+                             int retryCount) {
         long inputTokens = Math.max(1, rawRequest.length() / 2L);
         long outputTokens = rawResponse == null ? 0 : rawResponse.length() / 2L;
         ModelCallAudit audit = ModelCallAudit.priced("console-call-" + java.util.UUID.randomUUID(),
-                "console-guardian", "guardian", "diagnosis", "deepseek", MODEL, "M1-D1-json-v1",
-                inputTokens, outputTokens, Duration.ofNanos(System.nanoTime() - callStarted).toMillis(), status, 0,
+                "console-guardian", "guardian", "diagnosis", "deepseek", MODEL, PROMPT_VERSION,
+                inputTokens, outputTokens, Duration.ofNanos(System.nanoTime() - callStarted).toMillis(), status, retryCount,
                 "local-demo-price-v1", BigDecimal.ZERO, BigDecimal.ZERO, "CNY", rawRequest,
                 rawResponse == null ? "" : rawResponse, Instant.now());
         auditService.record(audit);
+    }
+
+    /** 只对网络抖动、限流和服务端错误重试，结构化输出错误直接停止。 */
+    private boolean isRetryable(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            String type = current.getClass().getSimpleName();
+            String message = current.getMessage() == null ? "" : current.getMessage();
+            if (type.contains("ResourceAccess") || type.contains("Timeout") || type.contains("Connect")
+                    || message.contains("429") || message.contains("500") || message.contains("502")
+                    || message.contains("503") || message.contains("504")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     /** 组装固定 JSON 输出和中文门禁要求。 */

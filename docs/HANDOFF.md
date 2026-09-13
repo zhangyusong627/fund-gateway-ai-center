@@ -199,6 +199,32 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-131] 2026-09-13 · Codex
+
+**做了什么**
+- 在 `fund-console` 的智能守护模型调用链路增加最多两次调用限制。
+- 仅对连接/超时、429、5xx 等可恢复异常重试；结构化 JSON、模型门禁等业务失败直接停止。
+- 模型审计增加 Prompt 版本 `M1-D1-json-v2` 和实际 `retryCount`，失败结果明确为 `MODEL_CALL_FAILED`。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS；知识库 19 项（跳过 2 项外部数据库测试）、守护 31 项、控制台 5 项通过。
+- 待本轮全量 `mvn -B verify` 通过后提交；未修改依赖、schema、密钥或治理动作。
+
+### [C-130] 2026-09-13 · Codex
+
+**做了什么**
+- 将对外项目名称统一为“资金网关智能守护 Agent”，副标题统一为“面向资金网关异常诊断与受控治理的 Java AI 应用工程”。
+- 新增 `docs/adr/ADR-015.md`，冻结名称、主链路和真实性边界；旧名称保留为内部工程代号。
+- 新增 `docs/planning/PRODUCTIONIZATION-FOCUS.md`，把生产化增强收敛为 P0/P1，并明确暂不做 MCP、第二模型、多 Agent、真实权限和生产写操作。
+- 同步更新文档索引、PRD、范围、业务架构和技术架构中的主叙事。
+
+**结果**
+- 文档改动已通过 `git diff --check`。
+- 未修改 Java 代码、依赖、数据库 schema、密钥或 Compose 配置；未执行 push。
+
+**下一步**
+- 先完成全量 Maven 验证；随后逐批审查 AI Facade、Agent 边界和评测增强，任何代码批次单独测试后再进入下一批。
+
 ### [C-129] 2026-09-13 · Codex
 
 **做了什么**
