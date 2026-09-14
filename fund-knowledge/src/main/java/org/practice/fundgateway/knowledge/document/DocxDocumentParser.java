@@ -19,7 +19,13 @@ import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 /** 按 DOCX 原始顺序解析段落和表格，并保留来源位置。 */
-public class DocxDocumentParser {
+public class DocxDocumentParser implements DocumentParser {
+
+    /** 返回 DOCX 格式标识。 */
+    @Override
+    public DocumentFormat format() {
+        return DocumentFormat.DOCX;
+    }
 
     private static final Pattern HEADING_PATTERN =
             Pattern.compile("^(?:\\d+(?:\\.\\d+)*|【[^】]+】).+");

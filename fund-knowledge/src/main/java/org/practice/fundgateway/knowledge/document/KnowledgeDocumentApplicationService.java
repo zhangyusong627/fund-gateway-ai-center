@@ -12,29 +12,38 @@ public class KnowledgeDocumentApplicationService {
 
     private final DocumentVersionRepository documentRepository;
     private final IndexTaskRepository taskRepository;
-    private final DocxDocumentParser parser;
+    private final DocumentParserRegistry parserRegistry;
     private final DocumentChunker chunker;
 
-    /** 使用默认 DOCX 解析器和分片器创建应用服务。 */
+    /** 使用默认多格式解析器和分片器创建应用服务。 */
     public KnowledgeDocumentApplicationService(DocumentVersionRepository documentRepository,
                                                IndexTaskRepository taskRepository) {
-        this(documentRepository, taskRepository, new DocxDocumentParser(), new DocumentChunker());
+        this(documentRepository, taskRepository, DocumentParserRegistry.defaultRegistry(), new DocumentChunker());
     }
 
     /** 注入解析和分片组件，方便测试替换具体实现。 */
     public KnowledgeDocumentApplicationService(DocumentVersionRepository documentRepository,
                                                IndexTaskRepository taskRepository,
                                                DocxDocumentParser parser, DocumentChunker chunker) {
+        this(documentRepository, taskRepository,
+                new DocumentParserRegistry(List.of(parser)), chunker);
+    }
+
+    /** 注入解析器注册表和分片组件，支持多种格式并方便测试替换。 */
+    public KnowledgeDocumentApplicationService(DocumentVersionRepository documentRepository,
+                                               IndexTaskRepository taskRepository,
+                                               DocumentParserRegistry parserRegistry,
+                                               DocumentChunker chunker) {
         this.documentRepository = documentRepository;
         this.taskRepository = taskRepository;
-        this.parser = parser;
+        this.parserRegistry = parserRegistry;
         this.chunker = chunker;
     }
 
     /** 解析 DOCX 后登记文档版本，并返回可供审核的分片预览。 */
     public DocumentVersionRecord registerAndParse(Path file, String documentId, String version)
             throws java.io.IOException {
-        ParsedDocument parsed = parser.parse(file, documentId, version);
+        ParsedDocument parsed = parserRegistry.parse(file, documentId, version);
         if (documentRepository.find(documentId, version).isPresent()) {
             throw new IllegalStateException("文档版本已存在，不允许覆盖：" + documentId + "@" + version);
         }

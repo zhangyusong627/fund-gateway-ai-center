@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.practice.fundgateway.knowledge.chunk.KnowledgeChunk;
 import org.practice.fundgateway.knowledge.document.DocumentElement;
+import org.practice.fundgateway.knowledge.document.DocumentFormat;
 import org.practice.fundgateway.knowledge.document.DocumentVersionRecord;
 import org.practice.fundgateway.knowledge.document.IndexTask;
 import org.practice.fundgateway.knowledge.document.KnowledgeDocumentApplicationService;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** 提供文档上传、解析预览和索引任务创建接口。 */
+/** 提供多格式文档上传、解析预览和索引任务创建接口。 */
 @RestController
 @RequestMapping("/api/console/knowledge")
 public class KnowledgeDocumentController {
@@ -51,15 +52,16 @@ public class KnowledgeDocumentController {
         this.storagePath = Path.of(storagePath).toAbsolutePath().normalize();
     }
 
-    /** 保存并解析一份 DOCX，返回文档版本及首批分片预览。 */
+    /** 保存并解析一份支持格式的文档，返回文档版本及首批分片预览。 */
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public DocumentUploadResponse upload(@RequestParam("file") MultipartFile file,
                                          @RequestParam String documentId,
                                          @RequestParam String version) throws IOException {
         validate(file, documentId, version);
+        String extension = extension(file.getOriginalFilename());
         Path documentDirectory = storagePath.resolve(safeSegment(documentId)).resolve(safeSegment(version));
         Files.createDirectories(documentDirectory);
-        Path savedFile = documentDirectory.resolve("source.docx");
+        Path savedFile = documentDirectory.resolve("source." + extension);
         if (Files.exists(savedFile)) {
             throw new IllegalStateException("原始文档版本已存在，不允许覆盖：" + documentId + "@" + version);
         }
@@ -127,17 +129,23 @@ public class KnowledgeDocumentController {
                 task.errorMessage(), task.updatedAt().toString());
     }
 
-    /** 校验上传参数和第一版文件格式边界。 */
+    /** 校验上传参数和当前支持的五种文档格式。 */
     private void validate(MultipartFile file, String documentId, String version) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("上传文件不能为空");
         }
         String filename = file.getOriginalFilename();
-        if (filename == null || !filename.toLowerCase(java.util.Locale.ROOT).endsWith(".docx")) {
-            throw new IllegalArgumentException("第一版只支持 DOCX 文件");
+        if (filename == null) {
+            throw new IllegalArgumentException("文件名不能为空");
         }
+        DocumentFormat.from(filename);
         safeSegment(documentId);
         safeSegment(version);
+    }
+
+    /** 提取已经通过格式白名单校验的扩展名。 */
+    private String extension(String filename) {
+        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(java.util.Locale.ROOT);
     }
 
     /** 把业务标识转换为安全的目录片段，阻止路径穿越。 */
@@ -156,36 +164,41 @@ public class KnowledgeDocumentController {
         long tableRowCount = record.elements().stream()
                 .filter(element -> element.type() == DocumentElement.ElementType.TABLE_ROW).count();
         return new DocumentUploadResponse(record.source().documentId(), record.source().version(),
-                record.source().fileSha256(), record.status().name(), record.elements().size(),
+                format(record), record.source().fileSha256(), record.status().name(), record.elements().size(),
                 paragraphCount, tableRowCount, record.chunks().size(), previews);
     }
 
     /** 将一个知识分片映射为页面预览结构。 */
     private ChunkPreview preview(KnowledgeChunk chunk) {
         return new ChunkPreview(chunk.chunkId(), chunk.sectionPath(), chunk.text(),
-                chunk.firstSequence(), chunk.lastSequence(), chunk.tableIndex(), chunk.rowIndex());
+                chunk.firstSequence(), chunk.lastSequence(), chunk.tableIndex(), chunk.rowIndex(), chunk.locator());
     }
 
     /** 将文档领域记录映射为列表摘要。 */
     private DocumentSummary summary(DocumentVersionRecord record) {
         return new DocumentSummary(record.source().documentId(), record.source().version(),
-                record.source().fileSha256(), record.status().name(), record.elements().size(),
+                format(record), record.source().fileSha256(), record.status().name(), record.elements().size(),
                 record.chunks().size());
     }
 
+    /** 从原始文件名提取文档格式，确保列表和详情口径一致。 */
+    private String format(DocumentVersionRecord record) {
+        return DocumentFormat.from(record.source().file().getFileName().toString()).name();
+    }
+
     /** 文档上传和解析结果。 */
-    public record DocumentUploadResponse(String documentId, String version, String sha256, String status,
+    public record DocumentUploadResponse(String documentId, String version, String format, String sha256, String status,
                                          int elementCount, long paragraphCount, long tableRowCount,
                                          int chunkCount, List<ChunkPreview> previews) {
     }
 
     /** 页面展示的一条分片预览。 */
     public record ChunkPreview(String chunkId, String sectionPath, String text, int firstSequence,
-                               int lastSequence, int tableIndex, int rowIndex) {
+                               int lastSequence, int tableIndex, int rowIndex, String locator) {
     }
 
     /** 文档版本列表摘要。 */
-    public record DocumentSummary(String documentId, String version, String sha256, String status,
+    public record DocumentSummary(String documentId, String version, String format, String sha256, String status,
                                   int elementCount, int chunkCount) {
     }
 

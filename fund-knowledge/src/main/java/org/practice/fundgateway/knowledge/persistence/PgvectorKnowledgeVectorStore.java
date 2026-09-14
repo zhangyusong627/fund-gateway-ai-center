@@ -3,6 +3,7 @@ package org.practice.fundgateway.knowledge.persistence;
 import org.practice.fundgateway.knowledge.chunk.KnowledgeChunk;
 import org.practice.fundgateway.knowledge.embedding.EmbeddingDescriptor;
 import org.practice.fundgateway.knowledge.embedding.EmbeddingVectorValidator;
+import org.practice.fundgateway.knowledge.document.DocumentFormat;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -60,7 +61,7 @@ public class PgvectorKnowledgeVectorStore implements KnowledgeVectorStore {
                 + "metadata = EXCLUDED.metadata, updated_at = now() "
                 + "WHERE knowledge.knowledge_chunks.embedding_model = EXCLUDED.embedding_model "
                 + "AND knowledge.knowledge_chunks.embedding_dimension = EXCLUDED.embedding_dimension";
-        String locator = chunk.sectionPath() + "#" + chunk.firstSequence() + "-" + chunk.lastSequence();
+        String locator = chunk.locator();
         jdbcTemplate.update(sql, chunk.chunkId(), collectionName, chunk.sectionPath(), chunk.text(),
                 vectorLiteral(vector), metadataJson(chunk), chunk.source().documentId(), chunk.source().version(),
                 "synthetic-source", "fund-gateway", chunk.sectionPath(), "text", "document", "knowledge",
@@ -109,11 +110,13 @@ public class PgvectorKnowledgeVectorStore implements KnowledgeVectorStore {
 
     /** 保存来源定位元数据，供后续引用和排查使用。 */
     private String metadataJson(KnowledgeChunk chunk) {
-        return "{\"sectionPath\":\"" + jsonEscape(chunk.sectionPath())
+        return "{\"format\":\"" + DocumentFormat.from(chunk.source().file().getFileName().toString())
+                + "\",\"sectionPath\":\"" + jsonEscape(chunk.sectionPath())
                 + "\",\"firstSequence\":" + chunk.firstSequence()
                 + ",\"lastSequence\":" + chunk.lastSequence()
                 + ",\"tableIndex\":" + chunk.tableIndex()
-                + ",\"rowIndex\":" + chunk.rowIndex() + "}";
+                + ",\"rowIndex\":" + chunk.rowIndex()
+                + ",\"locator\":\"" + jsonEscape(chunk.locator()) + "\"}";
     }
 
     /** 转义元数据中的 JSON 字符。 */

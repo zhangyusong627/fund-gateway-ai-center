@@ -67,7 +67,7 @@ public final class ConsoleModels {
 
     /** 文档分片浏览结果，供评测集选择标准证据。 */
     public record KnowledgeChunkPreview(String chunkId, String documentId, String documentVersion,
-                                        String locator, String content) {
+                                        String format, String locator, String content) {
     }
 
     /** 分页返回已发布文档分片。 */

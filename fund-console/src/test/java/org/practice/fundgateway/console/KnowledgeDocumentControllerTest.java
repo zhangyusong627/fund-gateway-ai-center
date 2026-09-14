@@ -38,8 +38,10 @@ class KnowledgeDocumentControllerTest {
         var task = controller.createIndexTask("demo-document", "v1");
 
         assertThat(response.status()).isEqualTo("PARSED");
+        assertThat(response.format()).isEqualTo("DOCX");
         assertThat(response.chunkCount()).isPositive();
         assertThat(response.previews()).isNotEmpty();
+        assertThat(response.previews().getFirst().locator()).contains("序号");
         assertThat(task.documentId()).isEqualTo("demo-document");
     }
 

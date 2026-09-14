@@ -93,9 +93,9 @@ public class PostgresDocumentVersionRepository implements DocumentVersionReposit
 
     /** 保存待向量化分片，索引任务可在进程重启后继续执行。 */
     private void saveChunks(DocumentVersionRecord record) {
-        jdbcTemplate.batchUpdate("insert into knowledge.knowledge_document_chunks "
+                jdbcTemplate.batchUpdate("insert into knowledge.knowledge_document_chunks "
                         + "(chunk_id, document_id, version, section_path, content, first_sequence, last_sequence, "
-                        + "table_index, row_index, metadata) values (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}'::jsonb)",
+                        + "table_index, row_index, metadata) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)",
                 record.chunks(), 200, (statement, chunk) -> {
                     statement.setString(1, chunk.chunkId());
                     statement.setString(2, record.source().documentId());
@@ -106,7 +106,14 @@ public class PostgresDocumentVersionRepository implements DocumentVersionReposit
                     statement.setInt(7, chunk.lastSequence());
                     statement.setInt(8, chunk.tableIndex());
                     statement.setInt(9, chunk.rowIndex());
+                    statement.setString(10, metadataJson(chunk));
                 });
+    }
+
+    /** 保存格式和来源定位元数据，供重启后的分片预览继续展示。 */
+    private String metadataJson(KnowledgeChunk chunk) {
+        return "{\"format\":\"" + DocumentFormat.from(chunk.source().file().getFileName().toString())
+                + "\",\"locator\":\"" + chunk.locator().replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
     }
 
     /** 将数据库行及其解析子记录转换为完整领域记录。 */

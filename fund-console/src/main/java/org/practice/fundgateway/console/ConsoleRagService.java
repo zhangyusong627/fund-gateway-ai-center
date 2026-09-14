@@ -206,11 +206,13 @@ public class ConsoleRagService {
                 Integer.class, arguments.toArray());
         arguments.add(safeLimit);
         arguments.add(safeOffset);
-        List<KnowledgeChunkPreview> chunks = jdbcTemplate.query("select chunk_id,document_id,document_version,locator,content "
+        List<KnowledgeChunkPreview> chunks = jdbcTemplate.query("select chunk_id,document_id,document_version,"
+                + "coalesce(metadata->>'format','UNKNOWN') as format,locator,content "
                 + "from knowledge.knowledge_chunks where collection_name=? and document_id=? and document_version=?" + condition
                 + " order by locator,chunk_id limit ? offset ?", (resultSet, rowNumber) -> new KnowledgeChunkPreview(
                         resultSet.getString("chunk_id"), resultSet.getString("document_id"),
-                        resultSet.getString("document_version"), resultSet.getString("locator"),
+                        resultSet.getString("document_version"), resultSet.getString("format"),
+                        resultSet.getString("locator"),
                         resultSet.getString("content")), arguments.toArray());
         return new KnowledgeChunkPage(total, safeOffset, safeLimit, chunks);
     }

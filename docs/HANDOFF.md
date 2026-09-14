@@ -206,6 +206,67 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-166] 2026-09-14 · Codex
+
+**完成 M9-D 评测分片可见性**
+- 评测分片浏览响应增加 `format`，兼容新写入 metadata；历史分片无格式 metadata 时返回 `UNKNOWN`，不影响 locator 和标准证据选择。
+- 评测页面分片摘要显示格式、locator 和 chunkId，标准证据仍写入完整 locator。
+- 继续沿用现有 `file_path`、`locator` 和 `metadata`，未新增字段、未修改 DDL/DBML/ER、未执行迁移。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS；相关测试全部通过。
+- `mvn -B verify`：上一批已通过；本次仅增加响应字段和页面展示，待最终收尾时再复跑。
+- `git diff --check` 通过；未执行 commit、push 或部署重启。
+
+### [C-165] 2026-09-14 · Codex
+
+**推进 M9-D：统一 locator 与控制台可见性**
+- 新增 `DocumentLocator`，DOC/DOCX 使用章节和序号范围，PDF 使用页级文本块，XLS/XLSX 使用 Sheet 和行号。
+- `KnowledgeChunk`、pgvector 持久化和控制台上传预览统一使用同一 locator；待索引分片的 metadata 也保存格式和 locator。
+- 控制台文档详情和列表显示格式，分片预览 JSON 标明来源定位；未新增数据库字段或执行迁移。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：知识库、Guardian、Console 相关测试全部通过，知识库 2 项既有 PostgreSQL 条件测试跳过。
+- 新增 locator 单元测试和控制台格式/定位断言；`git diff --check` 通过。
+- 下一步：全量 verify 后评估评测页面对 locator 的显式展示，以及是否需要正式格式字段迁移。
+
+### [C-164] 2026-09-14 · Codex
+
+**完成 M9 第一版解析与上传入口**
+- 完成 DOC、DOCX、PDF、XLS、XLSX 的统一解析入口；Office 使用 Apache POI，PDF 使用 PDFBox 3.0.5。
+- 完成控制台五种扩展名白名单、原始扩展名保存和页面提示；保留既有 DOCX 兼容调用。
+- 文档状态更新为解析与控制台第一版完成，数据库字段、结构化 locator 展示和 ER 同步仍待评估。
+
+**最终验证**
+- `mvn -B verify`：全模块构建成功；知识库 29 项、Guardian 65 项、Integration 14 项、Console 9 项、Experiments 6 项测试通过，知识库 2 项 PostgreSQL 条件测试按当前环境跳过。
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS；`git diff --check` 通过。
+- 未执行数据库迁移、commit、push 或部署重启。
+
+### [C-163] 2026-09-14 · Codex
+
+**完成 M9 多格式解析第一版实现**
+- 新增 `DocumentParser`、`DocumentFormat` 和 `DocumentParserRegistry`，应用服务改为通过注册表选择解析器，保留 `DocxDocumentParser` 兼容构造和实验入口。
+- 接入 `DocDocumentParser`、`ExcelDocumentParser` 和 `PdfDocumentParser`；支持 DOC、DOCX、XLS、XLSX，以及可搜索文本 PDF。
+- PDF 按页保留定位；Excel 按 Sheet 和原始行号保留定位；扫描/空白 PDF 明确拒绝，不承诺 OCR 和复杂表格还原。
+- 控制台上传白名单、页面文案和保存文件名已支持五种扩展名；未修改数据库 Schema、DDL、DBML 或 ER 图。
+
+**验证**
+- `mvn -B -pl fund-knowledge -am test`：29 项通过，2 项既有 PostgreSQL 条件测试按当前配置跳过。
+- `mvn -B -pl fund-console -am test`：知识库 29 项、Guardian 65 项、Console 9 项通过，知识库 2 项既有 PostgreSQL 条件测试跳过。
+- `git diff --check` 通过；未执行 commit、push，未重启部署环境。
+- 下一步：补充多格式控制台/API 回归和结构化定位展示，再评估是否需要数据库迁移。
+
+### [C-162] 2026-09-14 · Codex
+
+**完成多格式文档解析规划**
+- 新增 `docs/tasks/M9-DOCUMENT-FORMAT-REQUIREMENTS.md`，冻结 DOC、DOCX、PDF、XLS、XLSX 第一版支持范围。
+- 规划统一 `DocumentParser`、解析器注册表和 `DocumentLocator`，保留现有 DOCX 分片、chunkId、locator、RAG 和评测兼容性。
+- 将实施拆为解析抽象与 DOCX 回归、Office 格式、可搜索 PDF、控制台/持久化/评测与文档四批次。
+- 明确扫描 PDF OCR、复杂 PDF 表格、数据库迁移和生产级文档解析不在本次范围。
+
+**验证**
+- 任务卡已加入任务卡索引；未修改解析代码、依赖、数据库 Schema 或控制台配置，未执行 commit、push。
+
 ### [C-161] 2026-09-14 · Codex
 
 **完成文档规范收尾**

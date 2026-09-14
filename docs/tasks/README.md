@@ -5,6 +5,7 @@
 ## 当前主线
 
 - [M8 记忆管理与受控多轮 Agent](M8-MEMORY-AGENT-REQUIREMENTS.md)：当前最新阶段任务卡，已完成实现，等待学习者独立验收。
+- [M9 多格式文档解析](M9-DOCUMENT-FORMAT-REQUIREMENTS.md)：当前执行中，解析器和控制台已支持 DOC、DOCX、PDF、XLS、XLSX，数据库字段和 ER 同步待评估。
 
 ## 已完成或历史任务卡
 

@@ -396,10 +396,10 @@
         </section>
 
         <section id="documents" class="workspace">
-            <div class="page-heading"><div><h1>文档管理</h1><p>上传 DOCX、查看解析结果，并为每次变更保留不可覆盖的文档版本。</p></div><span class="status-pill ok">上传与解析已接入</span></div>
+            <div class="page-heading"><div><h1>文档管理</h1><p>上传 DOC、DOCX、PDF、XLS、XLSX，查看解析结果，并为每次变更保留不可覆盖的文档版本。</p></div><span class="status-pill ok">多格式解析已接入</span></div>
             <div class="page-grid">
-                <div class="panel"><h2>上传新版本</h2><p>文件保存后立即执行 DOCX 解析和分片预览；同一文档版本与相同文件哈希都不能重复登记。</p><div class="field"><label for="uploadFile">DOCX 文件</label><input id="uploadFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div><div class="row"><div class="field"><label for="uploadDocumentId">文档标识</label><input id="uploadDocumentId" value="shengheng-api"></div><div class="field"><label for="uploadVersion">版本</label><input id="uploadVersion" value="v1"></div></div><button id="documentUploadRun" class="primary">上传并解析</button><div id="documentUploadError"></div></div>
-                <div class="panel"><h2>解析结果</h2><p>展示真实元素数量、表格行数、分片数量和首批分片正文。</p><div id="documentUploadEmpty" class="placeholder"><div><b>等待上传一份 DOCX</b><span>解析完成后可以继续创建索引任务。</span></div></div><div id="documentUploadResult"></div></div>
+                <div class="panel"><h2>上传新版本</h2><p>文件保存后立即执行解析和分片预览；同一文档版本与相同文件哈希都不能重复登记。PDF 仅支持可搜索文本，不支持扫描件 OCR。</p><div class="field"><label for="uploadFile">文档文件</label><input id="uploadFile" type="file" accept=".doc,.docx,.pdf,.xls,.xlsx"></div><div class="row"><div class="field"><label for="uploadDocumentId">文档标识</label><input id="uploadDocumentId" value="shengheng-api"></div><div class="field"><label for="uploadVersion">版本</label><input id="uploadVersion" value="v1"></div></div><button id="documentUploadRun" class="primary">上传并解析</button><div id="documentUploadError"></div></div>
+                <div class="panel"><h2>解析结果</h2><p>展示真实元素数量、表格行数、分片数量和首批分片正文。</p><div id="documentUploadEmpty" class="placeholder"><div><b>等待上传一份文档</b><span>解析完成后可以继续创建索引任务。</span></div></div><div id="documentUploadResult"></div></div>
             </div>
             <div class="panel" style="margin-top:16px"><h2>文档版本列表</h2><p>列表来自当前知识库仓储；点击版本可以重新查看解析和分片详情。</p><div id="documentList" class="placeholder"><div><b>正在读取文档版本</b></div></div></div>
         </section>
@@ -662,7 +662,7 @@
         const file = byId('uploadFile').files[0];
         byId('documentUploadError').innerHTML = '';
         if (!file) {
-            byId('documentUploadError').innerHTML = '<div class="error">请选择一份 DOCX 文件</div>';
+            byId('documentUploadError').innerHTML = '<div class="error">请选择 DOC、DOCX、PDF、XLS 或 XLSX 文件</div>';
             return;
         }
         const formData = new FormData();
@@ -676,8 +676,8 @@
             byId('documentUploadEmpty').style.display = 'none';
             byId('documentUploadResult').innerHTML = `
                 <div class="stats"><div class="stat"><span>文档元素</span><strong>${number(result.elementCount)}</strong></div><div class="stat"><span>段落</span><strong>${number(result.paragraphCount)}</strong></div><div class="stat"><span>表格行</span><strong>${number(result.tableRowCount)}</strong></div><div class="stat"><span>分片</span><strong>${number(result.chunkCount)}</strong></div></div>
-                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
-                <details open><summary>首批分片预览</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>
+                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)} · ${escapeHtml(result.format)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
+                <details open><summary>首批分片预览（含来源定位）</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>
                 <button id="createIndexTaskRun" class="secondary" style="margin-top:14px">确认并创建索引任务</button>`;
             byId('createIndexTaskRun').addEventListener('click', () => createIndexTask(result.documentId, result.version));
             loadDocuments();
@@ -710,8 +710,8 @@
             byId('documentList').className = '';
             byId('documentList').innerHTML = documents.length ? documents.map(document => `
                 <button class="mini-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;cursor:pointer" data-document-id="${escapeHtml(document.documentId)}" data-document-version="${escapeHtml(document.version)}">
-                    <span>${escapeHtml(document.documentId)} · ${escapeHtml(document.version)} · ${number(document.chunkCount)} 个分片</span><span class="status-pill ${document.status === 'INDEXED' ? 'ok' : 'pending'}">${escapeHtml(document.status)}</span>
-                </button>`).join('') : '<div class="placeholder"><div><b>尚未登记文档</b><span>上传第一份 DOCX 后将在这里显示。</span></div></div>';
+                    <span>${escapeHtml(document.documentId)} · ${escapeHtml(document.version)} · ${escapeHtml(document.format)} · ${number(document.chunkCount)} 个分片</span><span class="status-pill ${document.status === 'INDEXED' ? 'ok' : 'pending'}">${escapeHtml(document.status)}</span>
+                </button>`).join('') : '<div class="placeholder"><div><b>尚未登记文档</b><span>上传第一份支持格式的文档后将在这里显示。</span></div></div>';
             document.querySelectorAll('[data-document-id]').forEach(item => item.addEventListener('click', () => loadDocumentDetail(item.dataset.documentId, item.dataset.documentVersion)));
         } catch (error) {
             byId('documentList').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
@@ -727,7 +727,7 @@
                 : '';
             byId('documentUploadResult').innerHTML = `
                 <div class="stats"><div class="stat"><span>文档元素</span><strong>${number(result.elementCount)}</strong></div><div class="stat"><span>段落</span><strong>${number(result.paragraphCount)}</strong></div><div class="stat"><span>表格行</span><strong>${number(result.tableRowCount)}</strong></div><div class="stat"><span>分片</span><strong>${number(result.chunkCount)}</strong></div></div>
-                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
+                <div class="mini-row"><span>${escapeHtml(result.documentId)} · ${escapeHtml(result.version)} · ${escapeHtml(result.format)}</span><span class="status-pill ok">${escapeHtml(result.status)}</span></div>
                 <details open><summary>分片预览</summary><pre>${escapeHtml(JSON.stringify(result.previews, null, 2))}</pre></details>
                 ${createTaskButton}`;
             if (createTaskButton) {
@@ -959,7 +959,7 @@
             const page = await request(`/api/console/rag/chunks?${params}`);
             byId('evaluationChunks').className = '';
             byId('evaluationChunks').innerHTML = page.chunks.length
-                ? page.chunks.map(item => `<details class="audit-item"><summary>${escapeHtml(item.locator)} · ${escapeHtml(item.chunkId)}</summary><p>${escapeHtml(item.content)}</p><button class="secondary choose-evaluation-chunk" data-chunk-id="${escapeHtml(item.chunkId)}" data-locator="${escapeHtml(item.locator)}">选择为标准证据</button></details>`).join('')
+                ? page.chunks.map(item => `<details class="audit-item"><summary>${escapeHtml(item.format)} · ${escapeHtml(item.locator)} · ${escapeHtml(item.chunkId)}</summary><p>${escapeHtml(item.content)}</p><button class="secondary choose-evaluation-chunk" data-chunk-id="${escapeHtml(item.chunkId)}" data-locator="${escapeHtml(item.locator)}">选择为标准证据</button></details>`).join('')
                 : '<div class="placeholder"><div><b>没有匹配的文档分片</b><span>更换关键词后重试。</span></div></div>';
             byId('evaluationChunks').querySelectorAll('.choose-evaluation-chunk').forEach(button => button.addEventListener('click', () => {
                 const question = byId('evaluationQuestion').value.trim();
