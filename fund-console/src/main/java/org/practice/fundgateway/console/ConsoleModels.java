@@ -65,6 +65,16 @@ public final class ConsoleModels {
     public record PublishedDocument(String documentId, String documentVersion, int chunkCount) {
     }
 
+    /** 文档分片浏览结果，供评测集选择标准证据。 */
+    public record KnowledgeChunkPreview(String chunkId, String documentId, String documentVersion,
+                                        String locator, String content) {
+    }
+
+    /** 分页返回已发布文档分片。 */
+    public record KnowledgeChunkPage(int total, int offset, int limit,
+                                    List<KnowledgeChunkPreview> chunks) {
+    }
+
     /** 一次可追溯评测运行的汇总指标。 */
     public record RagEvaluationResponse(java.util.UUID runId, java.util.UUID setId, String setName,
                                         int topK, int caseCount, double recallAtK, double meanReciprocalRank,

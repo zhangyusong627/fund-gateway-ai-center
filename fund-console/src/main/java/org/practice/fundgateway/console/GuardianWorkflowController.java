@@ -9,6 +9,9 @@ import org.practice.fundgateway.guardian.workflow.DiagnosticTaskStatus;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskView;
 import org.practice.fundgateway.guardian.workflow.DiagnosticWorkflowService;
 import org.practice.fundgateway.guardian.workflow.ReviewAction;
+import org.practice.fundgateway.guardian.memory.ConfirmedIncidentMemory;
+import org.practice.fundgateway.guardian.memory.ConfirmedIncidentMemoryService;
+import org.practice.fundgateway.guardian.memory.IncidentMemoryPort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +27,8 @@ public class GuardianWorkflowController {
 
     private final DiagnosticWorkflowService workflowService;
     private final PermissionContext permissionContext;
+    private final ConfirmedIncidentMemoryService incidentMemoryService;
+    private final IncidentMemoryPort incidentMemory;
 
     /** 注入智能守护诊断工作流。 */
     public GuardianWorkflowController(DiagnosticWorkflowService workflowService) {
@@ -31,11 +36,21 @@ public class GuardianWorkflowController {
     }
 
     /** 注入当前控制台的显式审批权限上下文。 */
-    @org.springframework.beans.factory.annotation.Autowired
     public GuardianWorkflowController(DiagnosticWorkflowService workflowService,
                                       PermissionContext permissionContext) {
+        this(workflowService, permissionContext, null, null);
+    }
+
+    /** 注入审批后案例记忆服务。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public GuardianWorkflowController(DiagnosticWorkflowService workflowService,
+                                      PermissionContext permissionContext,
+                                      ConfirmedIncidentMemoryService incidentMemoryService,
+                                      IncidentMemoryPort incidentMemory) {
         this.workflowService = workflowService;
         this.permissionContext = permissionContext;
+        this.incidentMemoryService = incidentMemoryService;
+        this.incidentMemory = incidentMemory;
     }
 
     /** 查询全部诊断任务，也可按状态过滤。 */
@@ -71,6 +86,27 @@ public class GuardianWorkflowController {
                 request.parameters(), request.operator());
     }
 
+    /** 审批通过后沉淀长期案例记忆。 */
+    @PostMapping("/{taskId}/memories")
+    public ConfirmedIncidentMemory promoteMemory(@PathVariable UUID taskId, @RequestBody MemoryRequest request) {
+        if (incidentMemoryService == null || incidentMemory == null) {
+            throw new IllegalStateException("长期案例记忆未装配");
+        }
+        DiagnosticTaskView task = workflowService.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("诊断任务不存在：" + taskId));
+        return incidentMemoryService.promote(task, workflowService.findSnapshot(taskId).orElse(null),
+                request.approvalId());
+    }
+
+    /** 查询指定资方和接口下按症状匹配的有效案例记忆。 */
+    @GetMapping("/memories")
+    public List<ConfirmedIncidentMemory> findMemories(@RequestParam String providerId,
+                                                      @RequestParam String interfaceId,
+                                                      @RequestParam(required = false) String symptom) {
+        if (incidentMemory == null) throw new IllegalStateException("长期案例记忆未装配");
+        return incidentMemory.findActive(providerId, interfaceId, symptom);
+    }
+
     /** 人工审批请求。 */
     public record ReviewRequest(String operationId, ReviewAction action, String reviewer, String comment) {
     }
@@ -79,4 +115,7 @@ public class GuardianWorkflowController {
     public record SimulationRequest(String operationId, String actionType,
                                     Map<String, String> parameters, String operator) {
     }
+
+    /** 长期案例记忆沉淀请求。 */
+    public record MemoryRequest(String approvalId) { }
 }

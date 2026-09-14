@@ -2,11 +2,12 @@
 
 > 这份文档是**给 AI 协作方（Codex / WorkBuddy / Claude Code）看的唯一入口**。
 > 你接手时如果只来得及读一个文件，就读这个。
+> 阅读顺序：先读「1.8 当前状态」和「3. 下一步唯一动作」，再看「4. 交接日志」最新一条；4 节中较早记录只用于历史追溯，不覆盖当前事实卡。
 > 权威规划文档在 `~/Documents/AIWriting/Java_AI_Engineer_项目化学习规划指引_v2.2.md`（下称"指引 v2.2"），但它不要求你从头读——本文件已摘出执行必需的全部事实。
 
 - 项目名：**FG-ADC 资金网关智能决策中心**（Fund Gateway AI Decision Center）
 - 仓库路径：`~/Documents/AICoding/fund-gateway-ai-center`
-- 最后更新：2026-09-11（M7 可视化控制台已完成 Docker 部署与端到端验收）
+- 最后更新：2026-09-14（M8 记忆管理与受控 Agent 闭环、架构与 ER 文档已完成同步）
 
 ---
 
@@ -72,19 +73,22 @@ AI 按小批次实现，**每批结束回报"改了哪些文件、跑了什么�
 > **当前数据口径（ADR-003）**：用户提供给本项目的材料一律视为合成数据，可在当前项目中复用和迁移；不再设置“不得使用真实公司名称或材料”的额外红线。
 项目场景、语料、指标、代码范例和故障样本均按用户提供的合成数据处理。
 
-### 1.3 系统构成：一个仓库、两条独立链路
+### 1.3 系统构成：一个仓库、两个核心能力域与统一工作台
 
 ```
 fund-common       共享：通用标识、错误类型、审计关联信息（不放领域实体和万能工具类）
 fund-knowledge    共享能力：文档、切分、Embedding、RAG、来源、索引和查询接口
-fund-guardian     应用 A：独立 Spring Boot 智能守护（指标 + 规则 + Agent + 审批 + 模拟执行）
-fund-integration  应用 B：独立 Spring Boot 资方接入助手（文档 → RAG → 候选接口规范 → Java 校验 → 人工确认 → 发布 V1）
-fund-experiments  仅保留 M0/M1 实验入口，不属于最终运行拓扑
+fund-guardian     智能守护能力与独立 Spring Boot 应用（指标 + 规则 + Agent + 审批 + 模拟执行）
+fund-integration  独立 Spring Boot 应用：既有资方接入助手，暂缓扩展，当前主要为内存实现
+fund-console      统一管理工作台：REST 入站、知识库/RAG/评测、守护回放、Agent、审批与审计
+fund-experiments  仅保留历史实验和回放入口，不属于正式控制台边界
 ```
 
-**两条链路必须能各自独立演示**，不强行做深度融合。唯一的真实连接点：
+当前默认完整演示入口是 `fund-console:18080`；`fund-guardian` 的 Redpanda 指标消费者默认关闭，开启后才走消息消费验证链路。核心业务域是资方知识库和智能守护；`fund-integration` 只作为暂缓的历史能力保留。
 
-> 应用 B 发布的**资方接口规范**（版本化、不可变），可以成为应用 A 的一项诊断证据。
+后续能力的唯一规划连接点：
+
+> 已发布的**资方接口规范**（版本化、不可变），可以成为智能守护的一项只读诊断证据。
 
 **资方接口规范** = 资方文档声明的接口事实（QPS 上限、超时、字段条件、错误码、幂等约定）。流程是
 `文档 → 候选接口规范 → Java 校验 → 人工确认 → 发布不可变版本`。
@@ -138,16 +142,17 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 | 阶段 | 周数 | 核心产物 | 必须通过的验收 |
 |---|---:|---|---|
-| M0 机制与立项 | 1 | AGENTS、范围、架构草图、兼容基线、三个实验 | 能解释模型调用、工具循环、一次向量检索；首批验收样例已定义 |
-| M1 需求与受控 Agent 基线 | 截至 9/11 | M1-D1、核心版 PRD、架构和 ADR | 真实诊断通过，核心范围与依赖顺序冻结 |
-| M2 知识底座与 RAG | 9/12–9/16 | 文档解析、离线索引、在线检索、引用和评测 | 一份文档可检索，引用和指标可复算 |
-| M3 资方接入助手 | 9/17–9/19 | 用信申请候选规范、Java 校验、人工确认和 V1 | 缺引用不能发布，发布版本不可变 |
-| M4 智能守护实时链路 | 9/20–9/23 | Redpanda、窗口、核心指标、风险、去重和冷却 | 高频指标只产生少量诊断任务 |
-| M5 Agent 联合诊断 | 9/24–9/26 | 快照、RAG、只读工具、报告门禁、人工审核 | 结论有证据，缺证停止，硬冲突转人工 |
-| M6 双应用与 Docker | 9/27–9/29 | 独立启动、依赖故障、Compose 和联合回放 | 两条链路可复现，故障结果明确 |
-| M7 最终验收 | 9/30 | 全量回归、评测、证据和项目讲解 | 干净环境可复现，学习者可独立讲解 |
+| M0 机制与立项 | 已完成 | AGENTS、范围、架构草图、兼容基线、D1-D5 实验 | 模型调用、工具循环、Embedding 与检索已验证 |
+| M1 需求与受控 Agent 基线 | 已完成 | M1-D1、核心版 PRD、架构和 ADR | 真实诊断、工具和门禁已验证 |
+| M2 知识底座与 RAG | 已完成 | 文档解析、索引、检索、引用和评测 | 文档可检索，引用和指标可复算 |
+| M3 资方接入助手 | 历史能力，暂缓扩展 | 候选规范、Java 校验、人工确认和 V1 | 既有证据保留，不作为当前主线 |
+| M4 智能守护实时链路 | 已完成 | 指标、窗口、规则、风险、去重和冷却 | 高频指标只产生少量诊断任务 |
+| M5 Agent 联合诊断 | 已完成 | 快照、RAG、只读工具、报告门禁、人工审核 | 结论有证据，缺证停止，冲突转人工 |
+| M6 双应用与 Docker | 已完成 | 独立启动、依赖故障、Compose 和联合回放 | 运行入口和依赖状态可验证 |
+| M7 控制台与交付 | 已完成 | 管理后台、持久化、成本审计和联合回放 | 统一入口可回放核心链路 |
+| M8 记忆与 Agent 收尾 | 当前收尾 | Prompt、记忆、受控 Agent、文档和 ER 整理 | 学习者独立验收和交付材料完成 |
 
-### 1.8 当前状态（截至 2026-09-10）
+### 1.8 当前状态（截至 2026-09-14）
 
 | 项 | 状态 |
 |---|---|
@@ -159,9 +164,11 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 | D1 学习验收 | 已完成：模型调用三问、项目结构与 POM 复述通过，三层状态均已记录 |
 | M0 | D1-D5 已完成，真实模型、结构化输出、工具循环、本地 Embedding 与 pgvector 已验证 |
 | M1-D1 | 三个只读工具、Java 规则、真实 Tool Calling、结构化报告、中文门禁和三层验收已完成 |
-| 架构基线 | 双业务域核心版 PRD、业务架构、技术架构及 ADR-008～ADR-010 已完成收敛，等待用户终审 |
-| 当前阶段 | M0～M4 已完成；M5 数据库任务到模型报告门禁接缝已完成；M6 双应用启动与 Docker 构建配置已完成，进入 M7 最终验收 |
-| 可视化控制台 | 已完成：18080 统一入口可触发真实 RAG、指标回放和可选 DeepSeek 诊断，并展示完整证据与门禁结果 |
+| 架构基线 | 双业务域 PRD、业务架构、技术架构、ER 模型及 ADR-008～ADR-016 已完成同步 |
+| 当前阶段 | M0～M7 核心链路和控制台已完成；M8 记忆管理与受控 Agent 闭环已完成，进入学习者独立验收与交付整理 |
+| 可视化控制台 | 已完成：18080 统一入口可触发 RAG、指标回放、受控 Agent 和可选 DeepSeek 诊断，并展示证据、门禁、记忆和审计结果 |
+
+**历史资料索引**：旧阶段的详细验证结果以 `docs/learning/README.md` 为入口；冻结决策以 `docs/adr/README.md` 为入口；任务设计以 `docs/tasks/README.md` 为入口。交接日志保留过程证据，不作为当前状态的第二份权威来源。
 
 ---
 
@@ -191,13 +198,256 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ---
 
-## 3. 下一步唯一动作：完成 M7 学习者独立验收
+## 3. 下一步唯一动作：完成 M8 学习者独立验收与项目交付整理
 
-由学习者通过 18080 控制台独立完成一次 RAG 检索和一次智能守护回放，并说明召回分数、消息降频、模型职责和 Java 门禁，形成最终可讲述验收。
+由学习者通过 18080 控制台独立完成一次 RAG 检索、一次智能守护回放和一次受控 Agent/记忆回放，并说明召回分数、消息降频、Prompt/上下文、记忆隔离、工具循环、模型职责和 Java 门禁，形成最终可讲述验收。
 
 ---
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
+
+### [C-161] 2026-09-14 · Codex
+
+**完成文档规范收尾**
+- 校准项目事实卡中的里程碑状态，M8 标记为当前收尾阶段，M3 标记为历史暂缓能力。
+- 保持旧计划、ADR、任务卡和评审记录的历史属性，不删除过程证据。
+- 复核当前文档入口、主总结和详细证据的分工。
+
+**验证**
+- 关键文档入口和主总结链接目标检查通过。
+- `git diff --check` 通过；未修改代码、数据库、密钥或部署状态，未执行 commit、push。
+
+### [C-160] 2026-09-14 · Codex
+
+**完成第二轮文档整合**
+- 在当前事实卡顶部增加阅读顺序和历史资料索引，明确较早交接记录只用于追溯。
+- 将 M2 的专题文档统一标记为详细证据，阶段总览以 `M2-acceptance-2026-09-10.md` 为主。
+- 保留历史计划、ADR、任务卡和原始模型证据，不删除、不改写历史结论。
+
+**验证**
+- `git diff --check` 通过；M2 专题文档主总结链接和当前事实入口已核对。
+- 未删除文件、未修改代码或数据库、未执行 commit、push。
+
+### [C-159] 2026-09-14 · Codex
+
+**整合项目文档入口与层级**
+- 修正项目事实卡：以当前双核心业务域、`fund-console` 统一工作台和 M8 完成状态为准，消除旧的“fund-integration 主链路”表述。
+- 新增 `docs/adr/README.md`、`docs/tasks/README.md` 和 `docs/learning/README.md`，分别整理决策、任务卡和学习验收证据入口。
+- 在 `docs/README.md` 增加根 README、ADR、任务卡和学习证据索引入口。
+- 将旧每日计划和 M3/M4 任务卡明确标记为历史或非当前开工入口；不删除历史日志、ADR 或原始证据。
+
+**验证**
+- `git diff --check` 通过；新增索引中的文件引用和当前模块/阶段状态已核对。
+- 未删除文件、未修改数据库 Schema、未修改密钥或代码；未执行 commit、push。
+
+### [C-158] 2026-09-14 · Codex
+
+**新增项目集根 README**
+- 新增根目录 `README.md`，作为项目第一次进入仓库时的总入口。
+- 补充当前业务范围、模块职责、技术栈、架构链路、Compose 启动、控制台使用顺序、关键 API、数据模型、文档导航和验证口径。
+- 明确 `fund-console` 是默认完整演示入口，`fund-integration` 暂缓且主要为内存实现，Redpanda 指标消费者默认关闭，以及项目只使用合成数据。
+
+**验证**
+- `git diff --check` 通过；README 中的模块、端口、命令和文档链接已按当前仓库核对。
+- 未修改代码、数据库 Schema、密钥或部署状态；未执行 commit、push。
+
+### [C-157] 2026-09-14 · Codex
+
+**同步 guardian ER 数据模型**
+- 以 `fund-guardian/src/main/resources/guardian-schema.sql` 为基准，将 `snapshot_json`、会话消息、会话摘要、人工确认案例记忆和 Agent 执行状态同步到 DBML 与 Guardian ER 图。
+- 更新 knowledge/guardian ER 图来源说明：改为当前初始化 DDL，运行数据库快照需另行核对。
+- 重新生成 `data-model-guardian-er.png` 与 `data-model-knowledge-er.png`；未新增 integration 持久化表，因为资方接入助手当前仍是暂缓的内存实现。
+
+**验证**
+- 两张 ER SVG 通过 `xmllint --noout`；`git diff --check` 通过；PNG 文件类型和输出尺寸已核对。
+- 未执行数据库迁移、commit 或 push。
+
+### [C-156] 2026-09-14 · Codex
+
+**同步业务与技术架构图**
+- 业务图明确当前核心域是资方知识库和智能守护，资方接入助手调整为暂缓保留能力。
+- 技术图补充 `fund-console` 当前统一工作台和完整演示闭环，标明 Redpanda 指标消费默认关闭，以及 `fund-integration` 当前主要为内存实现。
+- 部署图补充 `fund-console`，`integration Schema` 标记为暂缓能力的预留边界。
+- 技术架构正文同步调整当前运行入口与模块承载说明，保留长期领域规则下沉方向。
+
+**验证**
+- SVG XML 结构校验、关键文案复核和 `git diff --check` 通过。
+- 未修改业务代码、数据库 Schema、密钥或历史数据；未执行 commit、push。
+
+### [C-155] 2026-09-14 · Codex
+
+**修正模型成本汇总展示口径**
+- 核对截图后确认：费用计算公式正确，但页面把所有币种的 Token 合计与按币种拆分的费用并列展示，容易误以为 USD 费用对应全部 Token。
+- 当前实时审计数据为 10 条旧 CNY 零价格记录和 1 条新 USD 记录；新记录 1,411 输入 Token、675 输出 Token，费用为 `USD 0.00061665`，与预置价格计算一致。
+- 成本卡现在明确显示 Token 为全部币种合计，费用显示币种、金额和对应调用次数，并提示不跨币种相加。
+
+**验证**
+- `/api/console/audit/model-costs` 返回 CNY `0`（10 次）与 USD `0.0006166500`（1 次）。
+- `/api/console/status` 返回 `READY`；控制台已重新 package、重建并重启。
+- 内联 JavaScript 语法检查和 `git diff --check` 通过；未执行 commit、push，未修改历史审计数据。
+
+### [C-154] 2026-09-14 · Codex
+
+**接入 DeepSeek 成本预估基线**
+- 根因：`ModelDiagnosisFacade` 原先使用 `local-demo-price-v1`，输入和输出单价均为 `0`，因此所有审计费用为零。
+- 新增 `DeepSeekPricingPolicy`，预置 DeepSeek V4.1-Flash 官方价格快照：缓存命中输入 `$0.003 / 1M`、缓存未命中输入 `$0.15 / 1M`、输出 `$0.6 / 1M`，单位为 USD。
+- 当前 Spring AI 适配层没有可靠的缓存命中 Token 明细，因此审计输入 Token 全部按缓存未命中价格计算，属于保守估算；每条记录保存价格版本和币种。
+- 模型成本页面改为按币种分别展示，避免把历史 CNY 记录和新 USD 记录直接相加。
+
+**验证**
+- 官方价格来源：`https://api-docs.deepseek.com/quick_start/pricing`。
+- `mvn -B -pl fund-console -am package`：BUILD SUCCESS，Guardian 65 项、Console 9 项及知识模块测试通过。
+- 价格策略单元测试、内联 JavaScript 语法、`git diff --check` 通过；`fund-console` 已重建并重启。
+- 现有历史记录仍显示 CNY 0，因为它们保存的是当时的零价格快照；后续新发起的模型调用会按新价格生成 USD 费用。
+- 未执行 commit、push，未修改数据库 schema 或历史数据。
+
+### [C-153] 2026-09-14 · Codex
+
+**修复标准证据选择无反馈问题**
+- 原逻辑在未填写“当前题目”或“期望关键词”时，把错误写到页面下方的创建区域，分片按钮旁不可见，容易被误认为点击无效。
+- 现在校验提示显示在分片列表上方，并自动聚焦缺失输入框；选择成功后立即显示已选 `chunkId`，按钮变为“已选择为标准证据”，同时继续把完整证据写入 JSON。
+
+**验证**
+- 最新 `fund-console` 已重新 package、重建并重启。
+- 空字段点击：页面显示“请先填写下方的当前题目和期望关键词”，并聚焦当前题目。
+- 填写题目与 `CreditFullApply` 后点击：页面显示“已选择标准证据：dingrui-api:v1:26”，JSON 同步写入 `expectedChunkId` 与 `expectedLocator`。
+- Maven package、浏览器交互验证通过；未执行 commit、push，未修改数据库 schema。
+
+### [C-152] 2026-09-14 · Codex
+
+**修复评测分片浏览无反馈问题**
+- 分片浏览按钮增加读取中状态、临时禁用、成功数量提示和明确失败提示，避免请求成功但列表变化不明显时被误认为没有响应。
+- 定位到本轮部署问题：此前 Docker 使用了未重新打包的旧 `target` JAR，导致源码修复没有进入容器；已重新执行 Maven package 并重建、重启 `fund-console`。
+
+**验证**
+- `mvn -B -pl fund-console -am package`：BUILD SUCCESS，相关测试全部通过。
+- 内联 JavaScript 语法检查、`git diff --check`：通过。
+- 强制刷新 Chrome 后打开 RAG 评测页并点击“浏览分片”：页面显示“已读取 114 个匹配分片，当前展示 20 个”；浏览器无 error 日志。
+- 本次未执行 commit、push，也未修改数据库 schema。
+
+### [C-151] 2026-09-14 · Codex
+
+**评测集证据选择优化**
+- 新增 `GET /api/console/rag/chunks`，按已发布集合、文档版本和关键词分页浏览分片，带权限校验，不暴露向量字段。
+- 新增分片预览数据结构；页面支持填写题目和关键词后浏览分片，并一键将 `chunkId`、`locator` 写入评测题 JSON。
+- 保留原始 JSON 编辑入口，兼容高级用户和拒答题配置；未新增数据库表或修改 schema。
+
+**验证**
+- `mvn -B verify`（显式启用本地 pgvector 集成测试）：BUILD SUCCESS。
+- `git diff --check`：通过。
+- Docker `fund-console` 已用最新代码重建并重启；`/api/console/status` 返回 `READY`，分片浏览接口返回 HTTP 200。
+
+### [C-150] 2026-09-14 · Codex
+
+**最终验证补充**
+- 调用 `/api/console/guardian/agent/resume` 验证安全重放；返回 HTTP 200，恢复后状态为 `COMPLETED`，第 1 轮、0 次工具调用，说明非工具型中断也不会遗留 `RUNNING` 状态。
+- 用当前代码重建并重启 `fund-guardian`；`/health` 返回 `UP`。`fund-integration` `/health` 返回 `UP`，Console overview 返回 HTTP 200，PostgreSQL、Redpanda、Embedding、DeepSeek 状态可用。
+- 执行 `mvn -B dependency:tree`：BUILD SUCCESS。
+- 显式设置本地 `PGVECTOR_TEST_URL` 后运行真实 pgvector 集成测试：2 项通过；此前因环境变量未设置而跳过的问题已消除。
+- 带 PostgreSQL 集成测试的全量 `mvn -B verify`：BUILD SUCCESS；所有测试无失败、无跳过，`git diff --check` 通过。
+
+**当前结论**
+- 当前可执行范围内的构建、单元测试、真实 PostgreSQL/pgvector 集成测试、HTTP、Docker 重启恢复和 Agent 恢复验证均已完成。
+- 仍不包含生产环境、真实认证、真实业务副作用和中间 tool-call 精确续跑验证；未执行 commit 或 push。
+
+### [C-149] 2026-09-14 · Codex
+
+**本轮收口**
+- 重新执行全量 `mvn -B verify`，Guardian 63 项、Console 9 项及其他模块测试全部通过；`git diff --check` 通过。
+- 真实运行态重建 `fund-console`，收紧版本化诊断 Prompt 的固定 JSON 字段约束；不符合结构的模型响应继续由 Java 门禁转人工审核。
+- 通过 HTTP 完成诊断任务创建、人工批准和长期案例沉淀；新任务写入完整 `snapshot_json`，旧记录空快照仍可兼容查询。
+- 通过真实 DeepSeek 完成两轮只读 Tool Calling：工具轨迹为 `querySyntheticContract`，状态为 `COMPLETED`、第 2 轮、1 次工具调用。
+- 修正 Agent 首轮直接返回最终答案或空首轮响应时的执行状态落库，避免返回结果与 `RUNNING` 状态不一致。
+
+**运行态证据**
+- 任务 `68b8dc56-792e-4c81-a563-134d031a2b66` 重启后仍为 `APPROVED`；数据库任务 5 条，其中 1 条有完整快照。
+- 长期案例查询重启前后均返回 1 条 `ACTIVE` 记录，`evidenceRefs` 正确恢复为 `List<String>`。
+- Agent 执行游标重启后仍为 `COMPLETED / turn=2 / toolCalls=1`。
+
+**当前结论**
+- 在合成数据、只读工具和人工审批边界内，可以宣称 Prompt 管理、短期会话记忆、摘要上下文、审批后的长期案例记忆和受控两轮 Agent 闭环完成。
+- `resume` 仍是安全重放，不是中间 tool-call 精确续跑；真实认证、生产副作用、多 Agent、Redis 和自动修复不在本次范围；未执行 git push。
+
+### [C-141] 2026-09-14 · Codex
+
+**本轮进展**
+- 新增 ADR-016 和 M8 任务卡，冻结 Prompt、上下文、会话记忆、长期案例记忆和有界 Agent 边界。
+- 新增 `fund-guardian` 的 Prompt 资源读取、会话消息/摘要模型、内存与 JDBC 记忆适配器、长期案例记忆端口和有界工具循环。
+- guardian schema 增加会话消息、摘要和已确认案例记忆表；新增记忆、Prompt 和 Agent 测试。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS；`fund-guardian` 60 项测试通过。
+- 当前仍需把真实 DeepSeek 多轮工具协议、控制台交互入口和审批后的案例写入流程接入正式用例，暂不宣称完整 Agent 已完成。
+
+### [C-142] 2026-09-14 · Codex
+
+**本轮增量**
+- 新增 `GuardianAgentService` 与 `/api/console/guardian/agent/replay`，正式控制台可用真实 DeepSeek 执行两轮工具调用：模型选择工具、Java 权限/参数门禁、工具执行、结果回灌和最终回答。
+- 新增控制台会话记忆装配：jdbc 模式使用 PostgreSQL，memory 模式使用内存替身。
+- 会话消息已保存用户问题、工具结果和模型回答，绑定 `conversationId + diagnosticTaskId`。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS。
+- Docker PostgreSQL 中 `conversation_memory_messages`、`conversation_memory_summaries`、`confirmed_incident_memories` 已创建。
+- 上下文摘要/超长裁剪、任务中断恢复和审批后案例自动接入仍待下一批，不宣称完整 Agent 平台完成。
+
+### [C-143] 2026-09-14 · Codex
+
+**本轮增量**
+- 新增 `AgentContextPromptBuilder`，正式控制台两轮 DeepSeek 请求均注入历史摘要、最近消息和工具轨迹。
+- 新增 `ConversationMemoryCompactor`，超过字符预算时生成版本化摘要，保留原始诊断证据边界。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS；guardian 62 项、console 9 项测试通过。
+- `mvn -B verify`：BUILD SUCCESS。
+- `git diff --check`：通过。
+- 任务中断恢复和审批后案例自动沉淀尚未接入正式控制台用例，仍不宣称完整 Agent 平台完成。
+
+### [C-144] 2026-09-14 · Codex
+
+**本轮增量**
+- 新增 `AgentExecutionState`、内存适配器和 PostgreSQL 适配器，保存会话/诊断任务维度的 Agent 执行游标、轮次、工具次数和中断错误。
+- guardian schema 新增 `agent_execution_states`，已在本地 PostgreSQL 创建。
+
+**验证**
+- `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
+- PostgreSQL guardian schema 重复执行成功，新增表存在且幂等。
+- 执行游标尚未接入 `GuardianAgentService` 的请求恢复逻辑；审批后案例自动沉淀也仍待接入正式控制台用例。
+
+### [C-145] 2026-09-14 · Codex
+
+**本轮增量**
+- `GuardianAgentService` 已接入 Agent 执行游标：开始、等待工具、工具执行中、完成和失败状态均持久化到 `agent_execution_states`。
+- 上下文 Prompt 已继续使用摘要、最近消息和工具轨迹；控制台 Bean 已同时装配会话记忆和执行状态的 JDBC/内存实现。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS。
+- `git diff --check`：通过。
+- 下一步仍需以持久化游标恢复未完成 Agent 轮次，并将审批通过的完整诊断快照接入长期案例自动沉淀；当前不宣称最终闭环完成。
+
+### [C-147] 2026-09-14 · Codex
+
+**本轮增量**
+- 新增 `GET /api/console/guardian/agent/state`，查询会话和诊断任务的最新 Agent 执行游标。
+- 新增 `POST /api/console/guardian/agent/resume`，从持久化会话恢复最近用户问题，对未完成只读调查执行安全重放。
+- 恢复仅允许非 `COMPLETED` 状态，工具无外部副作用，不执行治理写操作。
+
+**验证**
+- `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
+- `git diff --check`：通过。
+- 完整诊断快照接入长期案例自动沉淀仍待下一批。
+
+### [C-148] 2026-09-14 · Codex
+
+**本轮增量**
+- `DiagnosticTask` 和 `DiagnosticTaskState` 纳入完整 `DiagnosisSnapshot`，新建任务可持久化恢复原始诊断事实。
+- `JdbcDiagnosticTaskRepository` 已增加 `snapshot_json` 写入/读取兼容逻辑。
+- 新增 `GET /api/console/guardian/agent/state` 与恢复流程配套的正式状态查询，并装配长期案例 JDBC 服务及 `POST /api/console/guardian/diagnostics/{taskId}/memories` 审批后沉淀入口。
+
+**验证**
+- `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
+- `snapshot_json` schema 变更已在本地 PostgreSQL 执行。
+- 下一步需用真实已审批任务做 HTTP 回放，验证案例沉淀和召回；不能只凭编译结果宣称最终闭环完成。
 
 ### [C-140] 2026-09-13 · Codex
 

@@ -1,5 +1,5 @@
 // FG-ADC 数据模型（DBML）
-// 依据 PostgreSQL fund_integration 当前真实结构整理；字段注释和约束以各模块 schema.sql 为准。
+// 依据各模块当前初始化 DDL 整理；字段注释和约束以 schema.sql 为准，不是数据库迁移脚本。
 // 可导入 dbdiagram.io / DataGrip / DBeaver；这是模型快照，不是数据库迁移脚本。
 
 // ---------- knowledge ----------
@@ -201,6 +201,7 @@ Table guardian.diagnosis_workflow_tasks {
   gate_status varchar(32) [not null, note: '门禁结论']
   gate_reason text [not null, note: '门禁理由']
   report_json jsonb [not null, note: '诊断报告']
+  snapshot_json jsonb [note: '诊断快照']
   created_at timestamptz [not null, note: '创建时间']
   updated_at timestamptz [not null, note: '更新时间']
   review_deadline timestamptz [note: '审核截止时间']
@@ -268,3 +269,61 @@ Ref: guardian.diagnosis_approvals.task_id > guardian.diagnosis_workflow_tasks.ta
 Ref: guardian.governance_simulations.task_id > guardian.diagnosis_workflow_tasks.task_id
 
 // diagnosis_workflow_tasks.risk_fingerprint 与 risk_events 是逻辑关联，当前未建立外键。
+
+Table guardian.conversation_memory_messages {
+  message_id uuid [pk, note: '消息标识']
+  conversation_id varchar(128) [not null, note: '会话标识']
+  diagnostic_task_id uuid [not null, note: '诊断任务标识']
+  role varchar(32) [not null, note: '消息角色']
+  message_type varchar(32) [not null, note: '消息类型']
+  content text [not null, note: '消息内容']
+  evidence_refs_json jsonb [not null, default: `'[]'::jsonb`, note: '证据引用']
+  created_at timestamptz [not null]
+  expires_at timestamptz [note: '过期时间']
+  indexes {
+    (conversation_id, message_id) [unique]
+  }
+}
+
+Table guardian.conversation_memory_summaries {
+  conversation_id varchar(128) [pk]
+  diagnostic_task_id uuid [pk]
+  summary_version integer [pk, note: '摘要版本']
+  content text [not null, note: '摘要内容']
+  created_at timestamptz [not null]
+}
+
+Table guardian.confirmed_incident_memories {
+  case_id uuid [pk, note: '长期案例标识']
+  source_task_id uuid [not null, note: '来源诊断任务']
+  provider_id varchar(128) [not null, note: '资方标识']
+  interface_id varchar(256) [not null, note: '接口标识']
+  symptom text [not null, note: '故障现象']
+  confirmed_root_cause text [not null, note: '确认根因']
+  evidence_refs_json jsonb [not null, note: '证据引用']
+  approval_id varchar(128) [not null, unique, note: '审批标识']
+  applicable_conditions text [not null, note: '适用条件']
+  status varchar(32) [not null, note: '案例状态']
+  version integer [not null, default: `1`, note: '案例版本']
+  created_at timestamptz [not null]
+  expired_at timestamptz [note: '失效时间']
+}
+
+Table guardian.agent_execution_states {
+  execution_id uuid [pk, note: '执行状态标识']
+  conversation_id varchar(128) [not null, note: '会话标识']
+  diagnostic_task_id uuid [not null, note: '诊断任务标识']
+  status varchar(32) [not null, note: '执行状态']
+  turn integer [not null, note: '当前轮次']
+  tool_calls integer [not null, note: '工具调用次数']
+  last_error text [note: '最后错误']
+  updated_at timestamptz [not null]
+  indexes {
+    (conversation_id, diagnostic_task_id) [unique]
+  }
+}
+
+Ref: guardian.conversation_memory_messages.diagnostic_task_id > guardian.diagnosis_workflow_tasks.task_id
+Ref: guardian.conversation_memory_summaries.diagnostic_task_id > guardian.diagnosis_workflow_tasks.task_id
+Ref: guardian.confirmed_incident_memories.source_task_id > guardian.diagnosis_workflow_tasks.task_id
+Ref: guardian.agent_execution_states.diagnostic_task_id > guardian.diagnosis_workflow_tasks.task_id

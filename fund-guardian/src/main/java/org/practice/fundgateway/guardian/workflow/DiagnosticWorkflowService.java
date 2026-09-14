@@ -75,7 +75,7 @@ public class DiagnosticWorkflowService {
         GateDecision decision = modelGate.assess(report, snapshot);
         Instant now = Instant.now(clock);
         DiagnosticTask candidate = new DiagnosticTask(UUID.randomUUID(), creationKey, snapshot.snapshotId(),
-                snapshot.riskFingerprint(), report, decision, now, now.plus(reviewTtl));
+                snapshot.riskFingerprint(), report, decision, now, now.plus(reviewTtl), snapshot);
         return repository.saveIfAbsent(creationKey, candidate).toView();
     }
 
@@ -127,6 +127,11 @@ public class DiagnosticWorkflowService {
     /** 查询一条诊断任务详情及完整时间线。 */
     public Optional<DiagnosticTaskView> findById(UUID taskId) {
         return repository.findById(taskId).map(DiagnosticTask::toView);
+    }
+
+    /** 查询任务持久化的完整诊断快照，供长期案例记忆使用。 */
+    public java.util.Optional<DiagnosisSnapshot> findSnapshot(UUID taskId) {
+        return repository.findById(taskId).map(DiagnosticTask::snapshot);
     }
 
     /** 按更新时间倒序查询任务，可按状态过滤。 */

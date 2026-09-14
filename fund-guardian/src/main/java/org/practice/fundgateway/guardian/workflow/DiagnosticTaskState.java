@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisReport;
+import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate.GateStatus;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskView.ReviewView;
 
@@ -26,7 +27,8 @@ public record DiagnosticTaskState(
         String reviewOperationId,
         List<DiagnosticTimelineEvent> timeline,
         List<GovernanceSimulationRecord> simulations,
-        Set<String> completedOperations) {
+        Set<String> completedOperations,
+        DiagnosisSnapshot snapshot) {
 
     /** 固定聚合中的集合，避免持久化过程修改领域事实。 */
     public DiagnosticTaskState {

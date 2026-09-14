@@ -8,7 +8,7 @@
     <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto"><path d="M0,0L0,7L9,3.5z" fill="#9b6b2f"/></marker>
   </defs>
   <rect width="1920" height="1220" fill="#f7f9fc"/><rect width="1920" height="72" fill="#eaf2fb"/><rect y="70" width="1920" height="2" fill="#4b91d1"/>
-  <text x="48" y="43" class="title">FG-ADC 资金网关智能决策中心 · 业务架构</text><text x="1395" y="42" class="subtitle">双业务域智能工程平台，共享知识能力与已发布接口规范</text>
+  <text x="48" y="43" class="title">FG-ADC 资金网关智能决策中心 · 业务架构</text><text x="1395" y="42" class="subtitle">双核心业务域；资方接入助手暂缓保留</text>
 
   <rect x="220" y="100" width="1640" height="120" rx="10" fill="#fde3e5" stroke="#e69aa3" class="band"/>
   <rect x="38" y="136" width="150" height="48" rx="24" fill="#d95565"/><text x="113" y="167" text-anchor="middle" class="layerTitle" fill="#fff">业务参与方</text>
@@ -25,7 +25,7 @@
   <rect x="525" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="628" y="350" text-anchor="middle" class="cardTitle">正式告警</text>
   <rect x="755" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="858" y="350" text-anchor="middle" class="cardTitle">人工专项诊断</text>
   <rect x="1080" y="282" width="740" height="105" rx="9" fill="#fff8e8" stroke="#d19a1c" stroke-width="1.5"/>
-  <text x="1450" y="306" text-anchor="middle" class="cardTitle">资方接入任务触发</text>
+  <text x="1450" y="306" text-anchor="middle" class="cardTitle">后续扩展触发（暂缓）</text>
   <rect x="1115" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1218" y="350" text-anchor="middle" class="cardTitle">新资方接入</text>
   <rect x="1345" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1448" y="350" text-anchor="middle" class="cardTitle">文档版本更新</text>
   <rect x="1575" y="323" width="205" height="44" rx="7" stroke="#d19a1c" class="card"/><text x="1678" y="350" text-anchor="middle" class="cardTitle">指定接口提取</text>
@@ -44,7 +44,7 @@
 
   <rect x="1075" y="480" width="755" height="330" rx="12" fill="#dceafa" stroke="#4a8fce" stroke-width="2"/>
   <rect x="1075" y="480" width="755" height="48" rx="12" fill="#377fbd"/><rect x="1075" y="516" width="755" height="12" fill="#377fbd"/>
-  <text x="1453" y="512" text-anchor="middle" class="domainTitle">资方接入助手</text>
+  <text x="1453" y="512" text-anchor="middle" class="domainTitle">资方接入助手（暂缓）</text>
   <rect x="1110" y="558" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1265" y="587" text-anchor="middle" class="cardTitle">文档解析与证据检索</text><text x="1265" y="611" text-anchor="middle" class="cardNote">正文、表格、版本与来源位置</text>
   <rect x="1480" y="558" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1635" y="587" text-anchor="middle" class="cardTitle">候选接口规范抽取</text><text x="1635" y="611" text-anchor="middle" class="cardNote">字段、条件、错误码与引用</text>
   <rect x="1110" y="678" width="310" height="75" rx="8" stroke="#377fbd" class="card"/><text x="1265" y="707" text-anchor="middle" class="cardTitle">Java 校验与证据核对</text><text x="1265" y="731" text-anchor="middle" class="cardNote">结构、业务关系、来源存在性</text>
@@ -52,7 +52,7 @@
   <path d="M1420 595H1480 M1265 633V678 M1635 633V678 M1420 715H1480" class="flow"/>
 
   <path d="M630 410V450 M1450 410V450" class="flow"/>
-  <path d="M1635 633V650H1040H810V633" class="cross"/><text x="1225" y="670" text-anchor="middle" class="cardNote">已发布接口规范成为只读诊断证据</text>
+  <path d="M1635 633V650H1040H810V633" class="cross"/><text x="1225" y="670" text-anchor="middle" class="cardNote">后续发布的接口规范仅作为只读诊断证据</text>
 
   <rect x="220" y="880" width="1640" height="145" rx="10" fill="#e8e0f6" stroke="#a184cf" class="band"/>
   <rect x="38" y="929" width="150" height="48" rx="24" fill="#7552aa"/><text x="113" y="960" text-anchor="middle" class="layerTitle" fill="#fff">共享业务能力</text>

@@ -15,6 +15,8 @@ import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
 import org.practice.fundgateway.console.ConsoleModels.PublishedDocument;
+import org.practice.fundgateway.console.ConsoleModels.KnowledgeChunkPage;
+import org.practice.fundgateway.console.ConsoleModels.KnowledgeChunkPreview;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryAudit;
 import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
 import org.practice.fundgateway.common.permission.PermissionContext;
@@ -174,6 +176,43 @@ public class ConsoleRagService {
                     visibleDocuments.stream().mapToInt(PublishedDocument::chunkCount).sum(),
                     collection.embeddingModel(), collection.embeddingDimension(), visibleDocuments);
         }).filter(collection -> !collection.documents().isEmpty()).toList();
+    }
+
+    /** 分页浏览已发布文档分片，供评测人员选择标准证据。 */
+    public KnowledgeChunkPage browseChunks(String collectionName, String documentId, String documentVersion,
+                                           String keyword, Integer offset, Integer limit) {
+        if (collectionName == null || collectionName.isBlank() || documentId == null || documentId.isBlank()
+                || documentVersion == null || documentVersion.isBlank()) {
+            throw new IllegalArgumentException("浏览分片必须指定集合、文档和版本");
+        }
+        permissionGuard.requireKnowledge(defaultPermissionContext, collectionName, documentId, documentVersion,
+                "KNOWLEDGE_CHUNK_BROWSE", "rag-chunk-browser-" + UUID.randomUUID());
+        int safeOffset = offset == null ? 0 : offset;
+        int safeLimit = limit == null ? 20 : limit;
+        if (safeOffset < 0 || safeLimit < 1 || safeLimit > 100) {
+            throw new IllegalArgumentException("分片分页参数无效");
+        }
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+        String condition = normalizedKeyword.isBlank() ? "" : " and (content ilike ? or locator ilike ? or chunk_id ilike ?)";
+        List<Object> arguments = new java.util.ArrayList<>(List.of(collectionName, documentId, documentVersion));
+        if (!normalizedKeyword.isBlank()) {
+            String pattern = "%" + normalizedKeyword + "%";
+            arguments.add(pattern);
+            arguments.add(pattern);
+            arguments.add(pattern);
+        }
+        int total = jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                + "where collection_name=? and document_id=? and document_version=?" + condition,
+                Integer.class, arguments.toArray());
+        arguments.add(safeLimit);
+        arguments.add(safeOffset);
+        List<KnowledgeChunkPreview> chunks = jdbcTemplate.query("select chunk_id,document_id,document_version,locator,content "
+                + "from knowledge.knowledge_chunks where collection_name=? and document_id=? and document_version=?" + condition
+                + " order by locator,chunk_id limit ? offset ?", (resultSet, rowNumber) -> new KnowledgeChunkPreview(
+                        resultSet.getString("chunk_id"), resultSet.getString("document_id"),
+                        resultSet.getString("document_version"), resultSet.getString("locator"),
+                        resultSet.getString("content")), arguments.toArray());
+        return new KnowledgeChunkPage(total, safeOffset, safeLimit, chunks);
     }
 
     /** 检查数据库和本地模型是否已具备运行条件。 */

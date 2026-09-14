@@ -66,6 +66,18 @@ public class DemoConsoleController {
         return ragService.publishedCollections();
     }
 
+    /** 浏览指定已发布文档的分片，避免用户手工查询向量数据库。 */
+    @GetMapping("/rag/chunks")
+    public ConsoleModels.KnowledgeChunkPage browseChunks(
+            @org.springframework.web.bind.annotation.RequestParam String collectionName,
+            @org.springframework.web.bind.annotation.RequestParam String documentId,
+            @org.springframework.web.bind.annotation.RequestParam String documentVersion,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String keyword,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer offset,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer limit) {
+        return ragService.browseChunks(collectionName, documentId, documentVersion, keyword, offset, limit);
+    }
+
     /** 查询全部与文档版本绑定的评测集。 */
     @GetMapping("/rag/evaluation-sets")
     public List<EvaluationSetSummary> evaluationSets() {

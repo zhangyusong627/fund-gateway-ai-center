@@ -1,5 +1,7 @@
 # M2 pgvector 离线索引与在线检索验证
 
+> 文档角色：M2 专题证据。阶段主总结见 [`M2-acceptance-2026-09-10.md`](M2-acceptance-2026-09-10.md)，本文件不单独代表阶段整体结论。
+
 - 执行日期：2026-09-10
 - 集合：`m2_shengheng_credit_application_v1`
 - 数据库：本地 Docker PostgreSQL 16 + pgvector

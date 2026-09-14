@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisReport;
+import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate.GateDecision;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate.GateStatus;
 import org.practice.fundgateway.guardian.workflow.DiagnosticTaskView.ReviewView;
@@ -23,6 +24,7 @@ public class DiagnosticTask {
     private final GateStatus gateStatus;
     private final String gateReason;
     private final ModelDiagnosisReport report;
+    private final DiagnosisSnapshot snapshot;
     private final Instant createdAt;
     private final Instant reviewDeadline;
     private final List<DiagnosticTimelineEvent> timeline = new ArrayList<>();
@@ -37,6 +39,13 @@ public class DiagnosticTask {
     public DiagnosticTask(UUID taskId, String creationKey, String snapshotId, String riskFingerprint,
                           ModelDiagnosisReport report, GateDecision decision, Instant createdAt,
                           Instant reviewDeadline) {
+        this(taskId, creationKey, snapshotId, riskFingerprint, report, decision, createdAt, reviewDeadline, null);
+    }
+
+    /** 创建带完整诊断事实的可恢复任务。 */
+    public DiagnosticTask(UUID taskId, String creationKey, String snapshotId, String riskFingerprint,
+                          ModelDiagnosisReport report, GateDecision decision, Instant createdAt,
+                          Instant reviewDeadline, DiagnosisSnapshot snapshot) {
         if (taskId == null || isBlank(creationKey) || isBlank(snapshotId) || isBlank(riskFingerprint)
                 || report == null || decision == null || createdAt == null) {
             throw new IllegalArgumentException("诊断任务缺少必要字段");
@@ -51,6 +60,7 @@ public class DiagnosticTask {
         this.riskFingerprint = riskFingerprint;
         this.report = new ModelDiagnosisReport(report.summary(), report.riskLevel(),
                 List.copyOf(report.findings()), report.requiresHumanReview());
+        this.snapshot = snapshot;
         this.gateStatus = decision.status();
         this.gateReason = decision.reason();
         this.createdAt = createdAt;
@@ -84,6 +94,7 @@ public class DiagnosticTask {
         this.gateReason = state.gateReason();
         this.report = new ModelDiagnosisReport(state.report().summary(), state.report().riskLevel(),
                 List.copyOf(state.report().findings()), state.report().requiresHumanReview());
+        this.snapshot = state.snapshot();
         this.createdAt = state.createdAt();
         this.updatedAt = state.updatedAt();
         this.reviewDeadline = state.reviewDeadline();
@@ -155,11 +166,16 @@ public class DiagnosticTask {
         return taskId;
     }
 
+    /** 返回创建任务时固定的诊断快照，供审批后案例沉淀使用。 */
+    public DiagnosisSnapshot snapshot() {
+        return snapshot;
+    }
+
     /** 返回供仓储保存和恢复的完整状态。 */
     public synchronized DiagnosticTaskState state() {
         return new DiagnosticTaskState(taskId, creationKey, snapshotId, riskFingerprint, status,
                 gateStatus, gateReason, report, createdAt, updatedAt, reviewDeadline, review,
-                reviewOperationId, timeline, simulations, completedOperations);
+                reviewOperationId, timeline, simulations, completedOperations, snapshot);
     }
 
     /** 将人工动作映射为诊断任务终态。 */

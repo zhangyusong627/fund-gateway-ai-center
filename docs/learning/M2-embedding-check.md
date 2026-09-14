@@ -1,5 +1,7 @@
 # M2 Embedding 单点验证
 
+> 文档角色：M2 专题证据。阶段主总结见 [`M2-acceptance-2026-09-10.md`](M2-acceptance-2026-09-10.md)，本文件不单独代表阶段整体结论。
+
 - 执行日期：2026-09-10
 - 模型：`BAAI/bge-small-zh-v1.5`
 - 运行方式：Java + DJL + ONNX Runtime，本地模型目录 `models/bge-small-zh-v1.5`

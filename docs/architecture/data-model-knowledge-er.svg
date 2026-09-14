@@ -23,7 +23,7 @@
 <rect width="2640" height="1840" fill="#f5f7fa"/>
 <text class="title" x="60" y="58">FG-ADC 数据模型 · knowledge schema</text>
 <text class="subtitle" x="60" y="82">知识库与 RAG 检索、评测、审计</text>
-<text class="source" x="60" y="104">来源：PostgreSQL 16 + pgvector 库 fund_integration 真实结构快照</text>
+<text class="source" x="60" y="104">来源：fund-knowledge/src/main/resources/knowledge-schema.sql 初始化 DDL；运行数据库快照需另行核对</text>
 <g class="legend">
 <rect x="60" y="122" width="1010" height="52" rx="8" fill="#ffffff" stroke="#d7dfe9" stroke-width="1"/>
 <text class="legendText" x="74" y="143">标记：</text>

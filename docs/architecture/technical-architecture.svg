@@ -8,7 +8,7 @@
     <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto"><path d="M0,0L0,7L9,3.5z" fill="#9b6b2f"/></marker>
   </defs>
   <rect width="2100" height="1600" fill="#f7f9fc"/><rect width="2100" height="72" fill="#eaf2fb"/><rect y="70" width="2100" height="2" fill="#4b91d1"/>
-  <text x="48" y="43" class="title">FG-ADC 资金网关智能决策中心 · 技术架构</text><text x="1510" y="42" class="subtitle">单仓库、两个独立应用、共享知识能力、一个本地基础设施栈</text>
+  <text x="48" y="43" class="title">FG-ADC 资金网关智能决策中心 · 技术架构</text><text x="1510" y="42" class="subtitle">统一控制台主入口、两个独立保留应用、共享知识能力</text>
 
   <rect x="220" y="95" width="1820" height="125" rx="10" fill="#fde3e5" stroke="#e69aa3" class="band"/>
   <rect x="34" y="133" width="155" height="48" rx="24" fill="#d95565"/><text x="112" y="164" text-anchor="middle" class="layerTitle" fill="#fff">外部输入与用户</text>
@@ -16,12 +16,12 @@
   <rect x="550" y="125" width="300" height="64" rx="8" stroke="#d95565" class="card"/><text x="700" y="151" text-anchor="middle" class="cardTitle">监控平台适配口</text><text x="700" y="174" text-anchor="middle" class="cardNote">Prometheus / SkyWalking</text>
   <rect x="885" y="125" width="265" height="64" rx="8" stroke="#d95565" class="card"/><text x="1018" y="151" text-anchor="middle" class="cardTitle">应用业务埋点</text><text x="1018" y="174" text-anchor="middle" class="cardNote">补充业务特有指标</text>
   <rect x="1185" y="125" width="500" height="64" rx="8" stroke="#d95565" class="card"/><text x="1435" y="151" text-anchor="middle" class="cardTitle">API 文档 / 产品需求 / 复盘 / 排查手册</text><text x="1435" y="174" text-anchor="middle" class="cardNote">版本化文件与来源位置</text>
-  <rect x="1720" y="125" width="285" height="64" rx="8" stroke="#d95565" class="card"/><text x="1863" y="151" text-anchor="middle" class="cardTitle">诊断与接入控制台</text><text x="1863" y="174" text-anchor="middle" class="cardNote">报告、审核、任务与验证</text>
+  <rect x="1720" y="125" width="285" height="64" rx="8" stroke="#d95565" class="card"/><text x="1863" y="151" text-anchor="middle" class="cardTitle">fund-console 统一工作台</text><text x="1863" y="174" text-anchor="middle" class="cardNote">报告、审核、任务与验证</text>
 
   <rect x="220" y="260" width="1820" height="145" rx="10" fill="#fff0c9" stroke="#dcae42" class="band"/>
   <rect x="34" y="309" width="155" height="48" rx="24" fill="#d19a1c"/><text x="112" y="340" text-anchor="middle" class="layerTitle" fill="#fff">接入与消息</text>
   <rect x="270" y="300" width="330" height="64" rx="8" stroke="#d19a1c" class="card"/><text x="435" y="326" text-anchor="middle" class="cardTitle">指标标准化适配器</text><text x="435" y="349" text-anchor="middle" class="cardNote">统一单位、时间、来源与关联标识</text>
-  <rect x="650" y="300" width="390" height="64" rx="8" stroke="#d19a1c" class="card"/><text x="845" y="326" text-anchor="middle" class="cardTitle">guardian.metric-events.v1</text><text x="845" y="349" text-anchor="middle" class="cardNote">Redpanda / Kafka 协议、有限期保留</text>
+  <rect x="650" y="300" width="390" height="64" rx="8" stroke="#d19a1c" class="card"/><text x="845" y="326" text-anchor="middle" class="cardTitle">guardian.metric-events.v1</text><text x="845" y="349" text-anchor="middle" class="cardNote">Redpanda / Kafka；可选消费，默认关闭</text>
   <rect x="1090" y="300" width="390" height="64" rx="8" stroke="#d19a1c" class="card"/><text x="1285" y="326" text-anchor="middle" class="cardTitle">integration.contract-published.v1</text><text x="1285" y="349" text-anchor="middle" class="cardNote">只传递人工确认后的接口规范事实</text>
   <rect x="1530" y="300" width="440" height="64" rx="8" stroke="#d19a1c" class="card"/><text x="1750" y="326" text-anchor="middle" class="cardTitle">REST API / 文档与任务入口</text><text x="1750" y="349" text-anchor="middle" class="cardNote">认证、参数校验、幂等与审计关联</text>
   <path d="M383 189V240H435V300 M700 189V240H435V300 M1018 189V240H435V300" class="dash"/>
@@ -32,7 +32,7 @@
 
   <rect x="250" y="475" width="850" height="330" rx="12" fill="#dcf3df" stroke="#4ba563" stroke-width="2"/>
   <rect x="250" y="475" width="850" height="48" rx="12" fill="#3c9a52"/><rect x="250" y="511" width="850" height="12" fill="#3c9a52"/>
-  <text x="675" y="507" text-anchor="middle" class="domainTitle">fund-guardian · 独立 Spring Boot 应用</text>
+  <text x="675" y="507" text-anchor="middle" class="domainTitle">fund-guardian · 独立应用（运行能力）</text>
   <rect x="280" y="550" width="235" height="76" rx="8" stroke="#3c9a52" class="card"/><text x="398" y="577" text-anchor="middle" class="cardTitle">入站适配器</text><text x="398" y="600" text-anchor="middle" class="cardNote">Kafka / REST / Mock</text>
   <rect x="555" y="550" width="235" height="76" rx="8" stroke="#3c9a52" class="card"/><text x="673" y="577" text-anchor="middle" class="cardTitle">实时计算与规则</text><text x="673" y="600" text-anchor="middle" class="cardNote">窗口 / 特征 / 风险事件</text>
   <rect x="830" y="550" width="235" height="76" rx="8" stroke="#3c9a52" class="card"/><text x="948" y="577" text-anchor="middle" class="cardTitle">诊断应用服务</text><text x="948" y="600" text-anchor="middle" class="cardNote">快照 / Agent / 审核</text>
@@ -43,7 +43,7 @@
 
   <rect x="1160" y="475" width="850" height="330" rx="12" fill="#dceafa" stroke="#4a8fce" stroke-width="2"/>
   <rect x="1160" y="475" width="850" height="48" rx="12" fill="#377fbd"/><rect x="1160" y="511" width="850" height="12" fill="#377fbd"/>
-  <text x="1585" y="507" text-anchor="middle" class="domainTitle">fund-integration · 独立 Spring Boot 应用</text>
+  <text x="1585" y="507" text-anchor="middle" class="domainTitle">fund-integration · 独立应用（暂缓 / 内存实现）</text>
   <rect x="1190" y="550" width="235" height="76" rx="8" stroke="#377fbd" class="card"/><text x="1308" y="577" text-anchor="middle" class="cardTitle">任务与文档入口</text><text x="1308" y="600" text-anchor="middle" class="cardNote">REST / 版本登记 / 幂等</text>
   <rect x="1465" y="550" width="235" height="76" rx="8" stroke="#377fbd" class="card"/><text x="1583" y="577" text-anchor="middle" class="cardTitle">离线索引应用服务</text><text x="1583" y="600" text-anchor="middle" class="cardNote">解析 / 切分 / Embedding</text>
   <rect x="1740" y="550" width="235" height="76" rx="8" stroke="#377fbd" class="card"/><text x="1858" y="577" text-anchor="middle" class="cardTitle">候选规范抽取</text><text x="1858" y="600" text-anchor="middle" class="cardNote">指定接口 / 来源引用</text>
@@ -52,7 +52,7 @@
   <rect x="1740" y="670" width="235" height="76" rx="8" stroke="#377fbd" class="card"/><text x="1858" y="697" text-anchor="middle" class="cardTitle">不可变版本发布</text><text x="1858" y="720" text-anchor="middle" class="cardNote">接口规范 V1 / 发布事件</text>
   <path d="M1425 588H1465 M1700 588H1740 M1858 626V670 M1740 708H1700 M1465 708H1425" class="flow"/>
 
-  <rect x="280" y="825" width="1690" height="28" rx="6" fill="#d6e2ef" stroke="#708aa4"/><text x="1125" y="844" text-anchor="middle" class="cardNote">fund-common：只提供通用标识、错误类型和审计关联信息，不共享业务域实体</text>
+  <rect x="280" y="825" width="1690" height="28" rx="6" fill="#d6e2ef" stroke="#708aa4"/><text x="1125" y="844" text-anchor="middle" class="cardNote">fund-console：当前装配知识库、RAG、评测、守护回放、Agent、审批与审计；fund-common 只提供通用对象</text>
   <path d="M845 364V430H398V550 M1750 364V430H1308V550" class="flow"/>
   <path d="M1285 364V430H1130V650H535V708H515" class="flow"/>
   <path d="M1858 550V430H1285V300" class="event"/>
@@ -70,7 +70,7 @@
   <rect x="250" y="1160" width="1240" height="125" rx="9" fill="#fff7ef" stroke="#c87931" stroke-width="1.5"/>
   <text x="870" y="1184" text-anchor="middle" class="cardTitle">一个 PostgreSQL 16 + pgvector 实例</text>
   <rect x="275" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="460" y="1225" text-anchor="middle" class="cardTitle">guardian Schema</text><text x="460" y="1247" text-anchor="middle" class="cardNote">窗口 / 风险 / 诊断 / 审核及其审计</text>
-  <rect x="680" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="865" y="1225" text-anchor="middle" class="cardTitle">integration Schema</text><text x="865" y="1247" text-anchor="middle" class="cardNote">任务 / 候选 / 审核 / 版本及其审计</text>
+  <rect x="680" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="865" y="1225" text-anchor="middle" class="cardTitle">integration Schema（预留）</text><text x="865" y="1247" text-anchor="middle" class="cardNote">暂缓能力；当前候选与发布主要在内存</text>
   <rect x="1085" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="1270" y="1225" text-anchor="middle" class="cardTitle">knowledge Schema</text><text x="1270" y="1247" text-anchor="middle" class="cardNote">文档 / 分块 / 向量 / 来源及其审计</text>
   <rect x="1535" y="1160" width="220" height="125" rx="8" stroke="#c87931" class="card"/><text x="1645" y="1205" text-anchor="middle" class="cardTitle">模型证据文件</text><text x="1645" y="1229" text-anchor="middle" class="cardNote">提示词 / 请求响应</text><text x="1645" y="1251" text-anchor="middle" class="cardNote">工具 / 门禁 / 审核</text>
   <rect x="1790" y="1160" width="220" height="125" rx="8" stroke="#c87931" class="card"/><text x="1900" y="1205" text-anchor="middle" class="cardTitle">评测与回放文件</text><text x="1900" y="1229" text-anchor="middle" class="cardNote">问题集 / 指标结果</text><text x="1900" y="1251" text-anchor="middle" class="cardNote">失败样例 / 运行报告</text>
@@ -78,7 +78,7 @@
 
   <rect x="220" y="1360" width="1820" height="105" rx="10" fill="#e6ebf0" stroke="#95a3b0" class="band"/>
   <rect x="34" y="1389" width="155" height="48" rx="24" fill="#657786"/><text x="112" y="1420" text-anchor="middle" class="layerTitle" fill="#fff">交付与运维</text>
-  <rect x="270" y="1385" width="470" height="55" rx="8" stroke="#657786" class="card"/><text x="505" y="1409" text-anchor="middle" class="cardTitle">Docker Compose 本地部署</text><text x="505" y="1430" text-anchor="middle" class="cardNote">Guardian / Integration / Redpanda / PostgreSQL</text>
+  <rect x="270" y="1385" width="470" height="55" rx="8" stroke="#657786" class="card"/><text x="505" y="1409" text-anchor="middle" class="cardTitle">Docker Compose 本地部署</text><text x="505" y="1430" text-anchor="middle" class="cardNote">Console / Guardian / Integration / Redpanda / PostgreSQL</text>
   <rect x="815" y="1385" width="430" height="55" rx="8" stroke="#657786" class="card"/><text x="1030" y="1409" text-anchor="middle" class="cardTitle">Maven 构建与自动化验证</text><text x="1030" y="1430" text-anchor="middle" class="cardNote">单元 / 集成 / 故障 / 规范 / 端到端</text>
   <rect x="1320" y="1385" width="650" height="55" rx="8" stroke="#657786" class="card"/><text x="1645" y="1409" text-anchor="middle" class="cardTitle">日志 / 指标 / Trace / 模型成本观测</text><text x="1645" y="1430" text-anchor="middle" class="cardNote">关联 traceId、业务任务、模型、规则、接口规范与知识版本</text>
 

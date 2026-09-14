@@ -1,6 +1,5 @@
 package org.practice.fundgateway.guardian.ai;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,6 +19,7 @@ import org.practice.fundgateway.guardian.audit.ModelCallStatus;
 import org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisGate;
 import org.practice.fundgateway.guardian.diagnosis.ModelDiagnosisReport;
+import org.practice.fundgateway.guardian.memory.ClasspathPromptTemplateRepository;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -28,8 +28,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
 
     private static final String PROVIDER = "deepseek";
     private static final String MODEL = "deepseek-v4-flash";
-    private static final String PROMPT_VERSION = "guardian-diagnosis-v2";
-    private static final String PRICE_VERSION = "local-demo-price-v1";
+    private static final String PROMPT_VERSION = "guardian-diagnosis-v1";
     private static final int MAX_OUTPUT_TOKENS = 1200;
     private static final int DEFAULT_MAX_ATTEMPTS = 2;
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
@@ -42,6 +41,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
     private final int maxAttempts;
     private final ExecutorService executor;
     private final Clock clock;
+    private final ClasspathPromptTemplateRepository promptRepository;
 
     /** 使用固定模型治理策略创建正式 Facade。 */
     public ModelDiagnosisFacade(ModelGateway gateway, ModelAuditApplicationService auditService) {
@@ -65,6 +65,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
         this.maxAttempts = maxAttempts;
         this.executor = executor;
         this.clock = clock;
+        this.promptRepository = new ClasspathPromptTemplateRepository();
     }
 
     /** 返回模型适配器是否可用，调用方据此决定是否展示真实调用入口。 */
@@ -166,11 +167,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
 
     /** 组装固定版本的中文结构化诊断提示词，只传入 Java 已组装的快照。 */
     private String buildPrompt(DiagnosisSnapshot snapshot) throws Exception {
-        return "你是 Java 应用故障诊断助手。只能依据诊断快照中的事实做只读分析，不得执行工具或修改操作。"
-                + "只返回一个 JSON 对象，字段固定为 summary、riskLevel、findings、requiresHumanReview。"
-                + "riskLevel 只能是 LOW、MEDIUM、HIGH；findings 每项必须包含 ruleId、matched、evidence、recommendation、requiresHumanReview。"
-                + "ruleId 只能使用快照已有规则；summary、evidence、recommendation 必须使用简体中文。"
-                + "不得输出 Markdown、解释文字或代码围栏；模型与 Java 规则冲突时 requiresHumanReview 必须为 true。"
+        return promptRepository.load("diagnosis-system", "v1").content()
                 + "\n诊断快照：" + mapper.writeValueAsString(snapshot);
     }
 
@@ -194,10 +191,11 @@ public class ModelDiagnosisFacade implements AutoCloseable {
                              ModelCallStatus status, int retryCount) {
         long inputTokens = Math.max(1, rawRequest.length() / 2L);
         long outputTokens = rawResponse == null ? 0 : rawResponse.length() / 2L;
+        DeepSeekPricingPolicy.PriceSnapshot pricing = DeepSeekPricingPolicy.snapshot(MODEL);
         ModelCallAudit audit = ModelCallAudit.priced("model-call-" + UUID.randomUUID(), traceId, "guardian",
                 "diagnosis", PROVIDER, MODEL, PROMPT_VERSION, inputTokens, outputTokens,
                 Duration.ofNanos(System.nanoTime() - started).toMillis(), status, retryCount,
-                PRICE_VERSION, BigDecimal.ZERO, BigDecimal.ZERO, "CNY", rawRequest,
+                pricing.version(), pricing.inputCacheMissPerMillion(), pricing.outputPerMillion(), pricing.currency(), rawRequest,
                 rawResponse == null ? "" : rawResponse, Instant.now(clock));
         auditService.record(audit);
     }

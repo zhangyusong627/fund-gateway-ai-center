@@ -4,7 +4,7 @@
 
 - [业务架构](BUSINESS_ARCHITECTURE.md)：资方知识库、智能守护及暂缓的资方接入助手边界。
 - [技术架构](TECHNICAL_ARCHITECTURE.md)：Java 模块、RAG、Agent、Redpanda、PostgreSQL/pgvector 和 Docker 拓扑。
-- 数据模型 ER 图（依据本地 PostgreSQL 真实库生成的当前快照）：
+- 数据模型 ER 图（依据当前初始化 DDL 整理；运行数据库快照需另行核对）：
   [knowledge schema](data-model-knowledge-er.svg) · [guardian schema](data-model-guardian-er.svg) · [DBML 建模文件](data-model.dbml)。
 - [产品需求](../product/PRD.md)：核心交付、有条件扩展、明确不做和最终验收。
 - [范围与验收](../product/SCOPE.md)：一页纸范围边界。

@@ -1,5 +1,7 @@
 # M2 RAG 真实 DeepSeek 联调摘要
 
+> 文档角色：M2 专题证据。阶段主总结见 [`M2-acceptance-2026-09-10.md`](M2-acceptance-2026-09-10.md)，本文件不单独代表阶段整体结论。
+
 - 执行目录：`M2-rag-real-call-1789047273238`
 - 请求模型：`deepseek-v4-flash`
 - 请求方式：Spring AI 2.0.1 `DeepSeekApi`，同步非流式调用

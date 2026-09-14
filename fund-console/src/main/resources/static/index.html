@@ -200,6 +200,10 @@
         .placeholder b { display: block; margin-bottom: 7px; color: var(--ink); }
         .toolbar { display: flex; gap: 9px; align-items: center; }
         .secondary { border: 1px solid var(--line); background: rgba(255,255,255,.85); border-radius: 11px; padding: 9px 13px; color: var(--ink); cursor: pointer; }
+        .secondary:disabled { opacity: .58; cursor: wait; }
+        .inline-status { min-height: 18px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+        .inline-status.success { color: var(--green); }
+        .inline-status.error { margin-top: 8px; padding: 0; background: transparent; color: var(--red); }
         .tiny-button { margin-left: 8px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); cursor: pointer; font-size: 12px; }
         .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 4px; }
         .filter-bar select, .filter-bar input { width: auto; min-width: 128px; padding: 8px 10px; border-radius: 10px; font-size: 12px; }
@@ -432,7 +436,7 @@
         <section id="evaluation" class="workspace">
             <div class="page-heading"><div><h1>RAG 评测中心</h1><p>评测集绑定集合和文档版本，运行结果保存后可复查和比较。</p></div><div class="toolbar"><select id="evaluationSet"><option value="">选择评测集</option></select><button id="runEvaluation" class="secondary">运行评测</button></div></div>
             <div id="evaluationSummary" class="kpi-grid"><div class="kpi"><span>Recall@3</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>MRR</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>引用命中率</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>拒答准确率</span><strong>—</strong><small>点击运行评测</small></div></div>
-            <div class="page-grid"><div class="panel"><h2>创建评测集版本</h2><p>评测集创建后不可覆盖；题目 JSON 中每题填写 question、expectedKeyword、expectedChunkId 或 expectedLocator，拒答题填写 refusalExpected:true。</p><div class="field"><label for="evaluationName">评测集名称</label><input id="evaluationName" value="授信申请接口合成基线 v2"></div><div class="field"><label for="evaluationCollection">已发布集合</label><select id="evaluationCollection"><option value="">正在读取集合…</option></select></div><div class="field"><label for="evaluationDocument">文档版本</label><select id="evaluationDocument"><option value="">请先选择集合</option></select></div><div class="field"><label for="evaluationTopK">Top-K</label><select id="evaluationTopK"><option>3</option><option>5</option><option>8</option></select></div><div class="field"><label for="evaluationCasesJson">评测题 JSON 数组</label><textarea id="evaluationCasesJson" rows="7">[{"question":"授信申请金额字段是什么类型，是否必填？","expectedKeyword":"applyAmt","expectedChunkId":"shengheng-api:v1:117","refusalExpected":false}]</textarea></div><button id="createEvaluationSet" class="secondary">创建不可变评测集</button><div id="evaluationCreateError"></div></div><div class="panel"><h2>当前评测结果</h2><div id="evaluationList" class="placeholder"><div><b>请选择评测集并运行</b></div></div><h2 style="margin-top:20px">历史运行</h2><div id="evaluationHistory" class="placeholder"><div><b>正在读取历史运行</b></div></div></div></div>
+            <div class="page-grid"><div class="panel"><h2>创建评测集版本</h2><p>先从已发布文档中选择标准分片，再生成评测题；高级用户也可以直接编辑 JSON。</p><div class="field"><label for="evaluationName">评测集名称</label><input id="evaluationName" value="授信申请接口合成基线 v2"></div><div class="field"><label for="evaluationCollection">已发布集合</label><select id="evaluationCollection"><option value="">正在读取集合…</option></select></div><div class="field"><label for="evaluationDocument">文档版本</label><select id="evaluationDocument"><option value="">请先选择集合</option></select></div><div class="field"><label for="evaluationChunkKeyword">查找文档分片</label><div class="row"><input id="evaluationChunkKeyword" placeholder="按关键词、章节或 chunkId 查找"><button id="browseEvaluationChunks" class="secondary">浏览分片</button></div><div id="evaluationChunkStatus" class="inline-status" aria-live="polite"></div></div><div id="evaluationChunks" class="placeholder"><div><b>选择文档版本后浏览标准分片</b><span>选择分片即可自动填入评测题 JSON。</span></div></div><div class="field"><label for="evaluationQuestion">当前题目</label><input id="evaluationQuestion" placeholder="例如：授信申请金额字段是什么类型，是否必填？"></div><div class="field"><label for="evaluationExpectedKeyword">期望关键词</label><input id="evaluationExpectedKeyword" placeholder="例如：applyAmt"></div><div class="field"><label for="evaluationTopK">Top-K</label><select id="evaluationTopK"><option>3</option><option>5</option><option>8</option></select></div><div class="field"><label for="evaluationCasesJson">评测题 JSON 数组（可高级编辑）</label><textarea id="evaluationCasesJson" rows="7">[{"question":"授信申请金额字段是什么类型，是否必填？","expectedKeyword":"applyAmt","expectedChunkId":"","expectedLocator":"","refusalExpected":false}]</textarea></div><button id="createEvaluationSet" class="secondary">创建不可变评测集</button><div id="evaluationCreateError"></div></div><div class="panel"><h2>当前评测结果</h2><div id="evaluationList" class="placeholder"><div><b>请选择评测集并运行</b></div></div><h2 style="margin-top:20px">历史运行</h2><div id="evaluationHistory" class="placeholder"><div><b>正在读取历史运行</b></div></div></div></div>
         </section>
 
         <section id="guardian" class="workspace">
@@ -932,6 +936,57 @@
         byId('evaluationDocument').innerHTML = collection && collection.documents.length
             ? collection.documents.map(item => `<option value="${escapeHtml(item.documentId)}@${escapeHtml(item.documentVersion)}">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${number(item.chunkCount)} 个分片</option>`).join('')
             : '<option value="">暂无已发布文档</option>';
+        loadEvaluationChunks();
+    }
+
+    /** 浏览当前文档的已发布分片，避免手工查询向量数据库。 */
+    async function loadEvaluationChunks() {
+        const status = byId('evaluationChunkStatus');
+        const button = byId('browseEvaluationChunks');
+        const scope = byId('evaluationDocument').value.split('@');
+        const collectionName = byId('evaluationCollection').value;
+        if (!collectionName || !scope[0] || !scope[1]) {
+            status.className = 'inline-status error';
+            status.textContent = '请先选择已发布集合和文档版本。';
+            return;
+        }
+        const params = new URLSearchParams({collectionName, documentId: scope[0], documentVersion: scope[1],
+            keyword: byId('evaluationChunkKeyword').value.trim(), limit: '20'});
+        button.disabled = true;
+        status.className = 'inline-status';
+        status.textContent = '正在读取分片…';
+        try {
+            const page = await request(`/api/console/rag/chunks?${params}`);
+            byId('evaluationChunks').className = '';
+            byId('evaluationChunks').innerHTML = page.chunks.length
+                ? page.chunks.map(item => `<details class="audit-item"><summary>${escapeHtml(item.locator)} · ${escapeHtml(item.chunkId)}</summary><p>${escapeHtml(item.content)}</p><button class="secondary choose-evaluation-chunk" data-chunk-id="${escapeHtml(item.chunkId)}" data-locator="${escapeHtml(item.locator)}">选择为标准证据</button></details>`).join('')
+                : '<div class="placeholder"><div><b>没有匹配的文档分片</b><span>更换关键词后重试。</span></div></div>';
+            byId('evaluationChunks').querySelectorAll('.choose-evaluation-chunk').forEach(button => button.addEventListener('click', () => {
+                const question = byId('evaluationQuestion').value.trim();
+                const keyword = byId('evaluationExpectedKeyword').value.trim();
+                if (!question || !keyword) {
+                    status.className = 'inline-status error';
+                    status.textContent = '请先填写下方的“当前题目”和“期望关键词”，再选择标准证据。';
+                    byId(!question ? 'evaluationQuestion' : 'evaluationExpectedKeyword').focus();
+                    return;
+                }
+                const cases = JSON.parse(byId('evaluationCasesJson').value || '[]');
+                cases.push({question, expectedKeyword: keyword, expectedChunkId: button.dataset.chunkId,
+                    expectedLocator: button.dataset.locator, refusalExpected: false});
+                byId('evaluationCasesJson').value = JSON.stringify(cases);
+                status.className = 'inline-status success';
+                status.textContent = `已选择标准证据：${button.dataset.chunkId}，评测题已加入 JSON。`;
+                button.textContent = '已选择为标准证据';
+            }));
+            status.className = 'inline-status success';
+            status.textContent = `已读取 ${number(page.total)} 个匹配分片，当前展示 ${number(page.chunks.length)} 个。`;
+        } catch (error) {
+            byId('evaluationChunks').innerHTML = `<div class="error">分片读取失败：${escapeHtml(error.message)}</div>`;
+            status.className = 'inline-status error';
+            status.textContent = `读取失败：${error.message}`;
+        } finally {
+            button.disabled = false;
+        }
     }
 
     /** 读取评测批次历史。 */
@@ -946,6 +1001,8 @@
     }
 
     byId('evaluationCollection').addEventListener('change', loadEvaluationDocuments);
+    byId('evaluationDocument').addEventListener('change', loadEvaluationChunks);
+    byId('browseEvaluationChunks').addEventListener('click', loadEvaluationChunks);
     byId('createEvaluationSet').addEventListener('click', async () => {
         try {
             const scope = byId('evaluationDocument').value.split('@');
@@ -1024,9 +1081,9 @@
                 callCount: acc.callCount + item.callCount,
                 inputTokens: acc.inputTokens + item.inputTokens,
                 outputTokens: acc.outputTokens + item.outputTokens,
-                estimatedCost: acc.estimatedCost + Number(item.estimatedCost || 0)
-            }), {callCount: 0, inputTokens: 0, outputTokens: 0, estimatedCost: 0});
-            byId('auditSummary').innerHTML = `<div class="kpi"><span>模型调用</span><strong>${number(total.callCount)}</strong><small>DeepSeek</small></div><div class="kpi"><span>输入 Token</span><strong>${number(total.inputTokens)}</strong><small>审计快照</small></div><div class="kpi"><span>输出 Token</span><strong>${number(total.outputTokens)}</strong><small>审计快照</small></div><div class="kpi"><span>估算费用</span><strong>${total.estimatedCost.toFixed(6)}</strong><small>按币种分别汇总</small></div>`;
+            }), {callCount: 0, inputTokens: 0, outputTokens: 0});
+            const costDetails = summary.map(item => `${escapeHtml(item.currency)} ${Number(item.estimatedCost || 0).toFixed(6)} <small>（${number(item.callCount)} 次）</small>`);
+            byId('auditSummary').innerHTML = `<div class="kpi"><span>模型调用</span><strong>${number(total.callCount)}</strong><small>DeepSeek</small></div><div class="kpi"><span>输入 Token</span><strong>${number(total.inputTokens)}</strong><small>全部币种合计</small></div><div class="kpi"><span>输出 Token</span><strong>${number(total.outputTokens)}</strong><small>全部币种合计</small></div><div class="kpi"><span>估算费用</span><strong style="font-size:20px">${costDetails.length ? costDetails.join('<br>') : '—'}</strong><small>按币种分别汇总，不跨币种相加</small></div>`;
             auditCache = calls;
             pageState.audit = 1;
             renderAudit();

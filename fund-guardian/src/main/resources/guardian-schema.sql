@@ -38,6 +38,8 @@ create table if not exists guardian.diagnosis_workflow_tasks (
     review_deadline timestamptz
 );
 
+alter table guardian.diagnosis_workflow_tasks add column if not exists snapshot_json jsonb;
+
 create index if not exists idx_diagnosis_workflow_status_updated
     on guardian.diagnosis_workflow_tasks (status, updated_at desc);
 
@@ -104,3 +106,59 @@ create index if not exists idx_model_call_audits_trace
 
 create index if not exists idx_model_call_audits_domain_stage
     on guardian.model_call_audits (domain, stage, called_at desc);
+
+create table if not exists guardian.conversation_memory_messages (
+    message_id uuid primary key,
+    conversation_id varchar(128) not null,
+    diagnostic_task_id uuid not null references guardian.diagnosis_workflow_tasks(task_id),
+    role varchar(32) not null,
+    message_type varchar(32) not null,
+    content text not null,
+    evidence_refs_json jsonb not null default '[]'::jsonb,
+    created_at timestamptz not null,
+    expires_at timestamptz,
+    unique (conversation_id, message_id)
+);
+
+create index if not exists idx_conversation_memory_lookup
+    on guardian.conversation_memory_messages (conversation_id, diagnostic_task_id, created_at desc);
+
+create table if not exists guardian.conversation_memory_summaries (
+    conversation_id varchar(128) not null,
+    diagnostic_task_id uuid not null references guardian.diagnosis_workflow_tasks(task_id),
+    summary_version integer not null,
+    content text not null,
+    created_at timestamptz not null,
+    primary key (conversation_id, diagnostic_task_id, summary_version)
+);
+
+create table if not exists guardian.confirmed_incident_memories (
+    case_id uuid primary key,
+    source_task_id uuid not null references guardian.diagnosis_workflow_tasks(task_id),
+    provider_id varchar(128) not null,
+    interface_id varchar(256) not null,
+    symptom text not null,
+    confirmed_root_cause text not null,
+    evidence_refs_json jsonb not null,
+    approval_id varchar(128) not null unique,
+    applicable_conditions text not null,
+    status varchar(32) not null,
+    version integer not null default 1,
+    created_at timestamptz not null,
+    expired_at timestamptz
+);
+
+create index if not exists idx_confirmed_incident_memory_match
+    on guardian.confirmed_incident_memories (provider_id, interface_id, status);
+
+create table if not exists guardian.agent_execution_states (
+    execution_id uuid primary key,
+    conversation_id varchar(128) not null,
+    diagnostic_task_id uuid not null references guardian.diagnosis_workflow_tasks(task_id),
+    status varchar(32) not null,
+    turn integer not null check (turn >= 0),
+    tool_calls integer not null check (tool_calls >= 0),
+    last_error text,
+    updated_at timestamptz not null,
+    unique (conversation_id, diagnostic_task_id)
+);

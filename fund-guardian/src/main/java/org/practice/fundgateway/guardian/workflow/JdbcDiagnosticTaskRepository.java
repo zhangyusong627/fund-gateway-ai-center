@@ -25,10 +25,10 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
 
     static final String INSERT_TASK_SQL = "insert into guardian.diagnosis_workflow_tasks "
             + "(task_id, creation_key, snapshot_id, risk_fingerprint, status, gate_status, gate_reason, "
-            + "report_json, created_at, updated_at, review_deadline) values (?,?,?,?,?,?,?,?::jsonb,?,?,?) "
+            + "report_json, snapshot_json, created_at, updated_at, review_deadline) values (?,?,?,?,?,?,?,?::jsonb,?::jsonb,?,?,?) "
             + "on conflict (creation_key) do nothing";
     static final String UPDATE_TASK_SQL = "update guardian.diagnosis_workflow_tasks set status=?, "
-            + "updated_at=?, gate_status=?, gate_reason=?, report_json=?::jsonb, review_deadline=? "
+            + "updated_at=?, gate_status=?, gate_reason=?, report_json=?::jsonb, snapshot_json=?::jsonb, review_deadline=? "
             + "where task_id=? and status=?";
 
     private final JdbcTemplate jdbcTemplate;
@@ -55,7 +55,7 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
         DiagnosticTaskState state = task.state();
         int inserted = jdbcTemplate.update(INSERT_TASK_SQL, state.taskId(), creationKey, state.snapshotId(),
                 state.riskFingerprint(), state.status().name(), state.gateStatus().name(), state.gateReason(),
-                writeJson(state.report()), Timestamp.from(state.createdAt()), Timestamp.from(state.updatedAt()),
+                writeJson(state.report()), writeJson(state.snapshot()), Timestamp.from(state.createdAt()), Timestamp.from(state.updatedAt()),
                 timestamp(state.reviewDeadline()));
         if (inserted == 0) {
             return findByCreationKey(creationKey).orElseThrow(() ->
@@ -71,7 +71,7 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
     public void save(DiagnosticTask task) {
         DiagnosticTaskState state = task.state();
         int updated = jdbcTemplate.update(UPDATE_TASK_SQL, state.status().name(), Timestamp.from(state.updatedAt()),
-                state.gateStatus().name(), state.gateReason(), writeJson(state.report()),
+                state.gateStatus().name(), state.gateReason(), writeJson(state.report()), writeJson(state.snapshot()),
                 timestamp(state.reviewDeadline()), state.taskId(), previousStatus(state.status()).name());
         if (updated == 0) {
             throw new DiagnosticWorkflowException("诊断任务不存在或已被其他操作更新：" + state.taskId());
@@ -114,7 +114,8 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
                 GateStatus.valueOf(resultSet.getString("gate_status")), resultSet.getString("gate_reason"),
                 readJson(resultSet.getString("report_json"), ModelDiagnosisReport.class),
                 instant(resultSet, "created_at"), instant(resultSet, "updated_at"),
-                nullableInstant(resultSet, "review_deadline"));
+                nullableInstant(resultSet, "review_deadline"),
+                readJsonNullable(resultSet.getString("snapshot_json"), org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot.class));
     }
 
     /** 装配时间线、审批和治理模拟记录并恢复领域聚合。 */
@@ -136,7 +137,8 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
         simulations.stream().map(GovernanceSimulationRecord::operationId).forEach(operations::add);
         return DiagnosticTask.restore(new DiagnosticTaskState(row.taskId(), row.creationKey(), row.snapshotId(),
                 row.riskFingerprint(), row.status(), row.gateStatus(), row.gateReason(), row.report(), row.createdAt(),
-                row.updatedAt(), row.reviewDeadline(), review, reviewOperationId, timeline, simulations, operations));
+                row.updatedAt(), row.reviewDeadline(), review, reviewOperationId, timeline, simulations, operations,
+                row.snapshot()));
     }
 
     /** 保存聚合下属的追加型事实。 */
@@ -208,6 +210,11 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
         }
     }
 
+    /** 读取兼容旧记录的可空 JSON。 */
+    private <T> T readJsonNullable(String value, Class<T> type) {
+        return value == null ? null : readJson(value, type);
+    }
+
     /** 将 JSON 文本解码为带泛型的指定类型。 */
     private <T> T readJson(String value, TypeReference<T> type) {
         try {
@@ -249,7 +256,7 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
     record TaskRow(UUID taskId, String creationKey, String snapshotId, String riskFingerprint,
                    DiagnosticTaskStatus status, GateStatus gateStatus, String gateReason,
                    ModelDiagnosisReport report, Instant createdAt, Instant updatedAt,
-                   Instant reviewDeadline) {
+                   Instant reviewDeadline, org.practice.fundgateway.guardian.diagnosis.DiagnosisSnapshot snapshot) {
     }
 
     /** 保存审批操作号及其查询视图。 */

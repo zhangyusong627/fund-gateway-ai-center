@@ -1,6 +1,7 @@
 # M4 任务卡：智能守护实时指标链路
 
-- 状态：任务卡已建立，待实现
+- 状态：核心闭环已实现；历史任务卡，当前不再单独作为开工入口
+- 验收证据：`docs/learning/M4-*`、`docs/learning/M5-*`、`docs/learning/M8-memory-agent-acceptance-20260914.md`
 - 对应路线图：M4（9/20–9/23）
 - 依赖：M1 规则基线、M2 RAG、M3 已发布契约查询能力
 
