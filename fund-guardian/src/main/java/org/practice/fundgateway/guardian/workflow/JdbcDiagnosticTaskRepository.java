@@ -58,8 +58,10 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
                 writeJson(state.report()), writeJson(state.snapshot()), Timestamp.from(state.createdAt()), Timestamp.from(state.updatedAt()),
                 timestamp(state.reviewDeadline()));
         if (inserted == 0) {
-            return findByCreationKey(creationKey).orElseThrow(() ->
-                    new DiagnosticWorkflowException("创建键冲突但未找到已有诊断任务：" + creationKey));
+            return findByCreationKey(creationKey)
+                    .or(() -> findActiveByRiskFingerprint(state.riskFingerprint()))
+                    .orElseThrow(() -> new DiagnosticWorkflowException(
+                            "创建键或活跃风险指纹冲突但未找到已有诊断任务：" + creationKey));
         }
         saveRelatedFacts(state);
         return task;
@@ -83,6 +85,14 @@ public class JdbcDiagnosticTaskRepository implements DiagnosticTaskRepository {
     @Override
     public Optional<DiagnosticTask> findByCreationKey(String creationKey) {
         return findOne("select * from guardian.diagnosis_workflow_tasks where creation_key=?", creationKey);
+    }
+
+    /** 按风险指纹查询尚未结束的诊断任务，活跃唯一性由数据库部分索引保证。 */
+    @Override
+    public Optional<DiagnosticTask> findActiveByRiskFingerprint(String riskFingerprint) {
+        return findOne("select * from guardian.diagnosis_workflow_tasks "
+                + "where risk_fingerprint=? and status in ('DIAGNOSED','PENDING_APPROVAL','APPROVED') "
+                + "order by created_at limit 1", riskFingerprint);
     }
 
     /** 按任务标识加载诊断聚合。 */

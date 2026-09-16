@@ -62,6 +62,29 @@ class DiagnosticWorkflowServiceTest {
         assertEquals(null, task.reviewDeadline());
     }
 
+    /** 同一活跃风险在不同创建键下也只能复用已有任务。 */
+    @Test
+    void shouldReuseActiveTaskForSameRiskFingerprint() {
+        DiagnosticTaskView first = service.create("request-active-1", snapshot(true), report(true, false));
+        DiagnosticTaskView second = service.create("request-active-2", snapshot(true), report(true, false));
+
+        assertEquals(first.taskId(), second.taskId());
+        assertEquals(1, service.findAll(null).size());
+    }
+
+    /** 活跃任务进入拒绝终态后，同一风险可以重新开案。 */
+    @Test
+    void shouldReopenRiskAfterTerminalTask() {
+        DiagnosticTaskView first = service.create("request-reopen-1", snapshot(true), report(false, false));
+        service.reject(first.taskId(), "review-reopen", "owner", "本次证据不足");
+
+        DiagnosticTaskView second = service.create("request-reopen-2", snapshot(true), report(false, false));
+
+        assertEquals(DiagnosticTaskStatus.PENDING_APPROVAL, second.status());
+        assertNotNull(second.taskId());
+        assertEquals(2, service.findAll(null).size());
+    }
+
     /** 相同创建键和审批操作号应保持幂等，不增加任务或时间线。 */
     @Test
     void shouldProtectDuplicateCreationAndApproval() {

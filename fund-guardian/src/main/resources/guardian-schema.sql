@@ -24,6 +24,15 @@ create table if not exists guardian.diagnostic_tasks (
     unique (risk_fingerprint, window_start)
 );
 
+create table if not exists guardian.risk_cooldowns (
+    risk_fingerprint varchar(64) primary key,
+    next_allowed_at timestamptz not null
+);
+
+create unique index if not exists uq_guardian_active_diagnostic_risk
+    on guardian.diagnostic_tasks (risk_fingerprint)
+    where status = 'PENDING';
+
 create table if not exists guardian.diagnosis_workflow_tasks (
     task_id uuid primary key,
     creation_key varchar(128) not null unique,
@@ -39,6 +48,10 @@ create table if not exists guardian.diagnosis_workflow_tasks (
 );
 
 alter table guardian.diagnosis_workflow_tasks add column if not exists snapshot_json jsonb;
+
+create unique index if not exists uq_diagnosis_workflow_active_risk
+    on guardian.diagnosis_workflow_tasks (risk_fingerprint)
+    where status in ('DIAGNOSED', 'PENDING_APPROVAL', 'APPROVED');
 
 create index if not exists idx_diagnosis_workflow_status_updated
     on guardian.diagnosis_workflow_tasks (status, updated_at desc);

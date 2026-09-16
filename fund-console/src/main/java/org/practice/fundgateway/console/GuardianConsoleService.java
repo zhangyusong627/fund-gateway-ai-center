@@ -109,36 +109,68 @@ public class GuardianConsoleService {
         RiskRuleEvaluator evaluator = new RiskRuleEvaluator();
         RiskCooldownGate cooldown = new RiskCooldownGate(COOLDOWN);
         List<MetricWindowAggregate> windows = new ArrayList<>();
-        List<RiskRuleHit> representativeHits = List.of();
+        Map<String, RiskCandidate> admittedCandidates = new LinkedHashMap<>();
         int riskWindows = 0;
-        int diagnosticTasks = 0;
-        String riskFingerprint = null;
+        int cooldownAdmittedWindows = 0;
         for (Instant windowStart : windowStarts.keySet()) {
             MetricWindowAggregate aggregate = aggregator.snapshot("fund-gateway", "/credit/apply", windowStart);
             windows.add(aggregate);
             List<RiskRuleHit> hits = evaluator.evaluate(aggregate);
             if (!hits.isEmpty()) {
                 riskWindows++;
-                representativeHits = hits;
-                riskFingerprint = RiskFingerprint.of(aggregate, hits);
-                if (cooldown.tryAcquire(riskFingerprint, windowStart)) {
-                    diagnosticTasks++;
+                String evaluatedFingerprint = RiskFingerprint.of(aggregate, hits);
+                if (cooldown.tryAcquire(evaluatedFingerprint, windowStart)) {
+                    cooldownAdmittedWindows++;
+                    admittedCandidates.putIfAbsent(evaluatedFingerprint,
+                            new RiskCandidate(aggregate, hits, evaluatedFingerprint));
                 }
             }
         }
 
-        MetricWindowAggregate representative = windows.get(windows.size() - 1);
+        RiskCandidate primaryCandidate = admittedCandidates.values().stream().findFirst()
+                .orElse(new RiskCandidate(windows.get(0), List.of(), null));
+        MetricWindowAggregate representative = primaryCandidate.aggregate();
         DiagnosisResult deterministic = deterministicDiagnosis(representative, scenario);
-        ModelDiagnosisFacade.DiagnosisOutcome model = invokeModelIfRequested(request, representative, deterministic,
-                riskFingerprint, diagnosticTasks, "console-" + scenario.name() + "-" + replayId, requestContext);
-        DiagnosticTaskView diagnosticTask = createWorkflowTask(scenario, model, representative, representativeHits,
-                replayId, requestContext);
+        ModelDiagnosisFacade.DiagnosisOutcome model = ModelDiagnosisFacade.DiagnosisOutcome.skipped("NO_DIAGNOSTIC_TASK");
+        DiagnosticTaskView diagnosticTask = null;
+        int diagnosticTasks = 0;
+        int actualModelCalls = 0;
+        for (RiskCandidate candidate : admittedCandidates.values()) {
+            DiagnosticTaskView activeTask = workflowService.findActiveByRiskFingerprint(candidate.fingerprint()).orElse(null);
+            DiagnosisResult candidateDeterministic = deterministicDiagnosis(candidate.aggregate(), scenario);
+            ModelDiagnosisFacade.DiagnosisOutcome candidateModel = activeTask == null
+                    ? invokeModelIfRequested(request, candidate.aggregate(), candidateDeterministic,
+                            candidate.fingerprint(), 1, "console-" + scenario.name() + "-" + replayId,
+                            requestContext)
+                    : ModelDiagnosisFacade.DiagnosisOutcome.skipped("ACTIVE_TASK_EXISTS");
+            DiagnosticTaskView candidateTask = activeTask != null ? activeTask
+                    : createWorkflowTask(scenario, candidateModel, candidate.aggregate(), candidate.hits(),
+                            replayId, requestContext);
+            actualModelCalls += candidateModel.actualCalls();
+            if (candidateTask != null) {
+                diagnosticTasks++;
+            }
+            if (diagnosticTask == null && candidateTask != null) {
+                diagnosticTask = candidateTask;
+                model = candidateModel;
+                deterministic = candidateDeterministic;
+            } else if (diagnosticTask == null && model.status().equals("NO_DIAGNOSTIC_TASK")) {
+                model = candidateModel;
+                deterministic = candidateDeterministic;
+            }
+        }
+        String riskFingerprint = primaryCandidate.fingerprint();
+        List<RiskRuleHit> representativeHits = primaryCandidate.hits();
         return new GuardianSimulationResponse(scenario.name(), messageCount, windows.size(), riskWindows,
-                diagnosticTasks, Math.max(0, riskWindows - diagnosticTasks), model.actualCalls(),
+                diagnosticTasks, Math.max(0, riskWindows - cooldownAdmittedWindows), actualModelCalls,
                 Duration.ofNanos(System.nanoTime() - startedAt).toMillis(), representative,
                 representativeHits, deterministic.findings(), riskFingerprint, model.status(),
                 model.rawRequest(), model.prompt(), model.rawResponse(), model.report(), model.gateDecision(), diagnosticTask,
                 Instant.now());
+    }
+
+    /** 表示一个通过规则和冷却、等待独立诊断的风险候选。 */
+    private record RiskCandidate(MetricWindowAggregate aggregate, List<RiskRuleHit> hits, String fingerprint) {
     }
 
     /** 先落风险事件再创建工作流，保证 PostgreSQL 外键和审计链完整。 */

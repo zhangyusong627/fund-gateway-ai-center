@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -32,6 +33,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
     private static final int MAX_OUTPUT_TOKENS = 1200;
     private static final int DEFAULT_MAX_ATTEMPTS = 2;
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+    private static final int DEFAULT_MAX_CONCURRENT_CALLS = 4;
 
     private final ModelGateway gateway;
     private final ModelAuditApplicationService auditService;
@@ -42,6 +44,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
     private final ExecutorService executor;
     private final Clock clock;
     private final ClasspathPromptTemplateRepository promptRepository;
+    private final Semaphore concurrencyLimiter;
 
     /** 使用固定模型治理策略创建正式 Facade。 */
     public ModelDiagnosisFacade(ModelGateway gateway, ModelAuditApplicationService auditService) {
@@ -66,6 +69,7 @@ public class ModelDiagnosisFacade implements AutoCloseable {
         this.executor = executor;
         this.clock = clock;
         this.promptRepository = new ClasspathPromptTemplateRepository();
+        this.concurrencyLimiter = new Semaphore(DEFAULT_MAX_CONCURRENT_CALLS);
     }
 
     /** 返回模型适配器是否可用，调用方据此决定是否展示真实调用入口。 */
@@ -150,11 +154,17 @@ public class ModelDiagnosisFacade implements AutoCloseable {
 
     /** 在固定时限内等待基础设施响应，超时后取消对应任务。 */
     private ModelGateway.ModelCompletion callWithTimeout(ModelGateway.ModelRequest request) throws Exception {
-        Future<ModelGateway.ModelCompletion> future = executor.submit(() -> gateway.complete(request));
+        if (!concurrencyLimiter.tryAcquire(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+            throw new TimeoutException("模型并发额度已耗尽");
+        }
+        Future<ModelGateway.ModelCompletion> future = null;
         try {
+            future = executor.submit(() -> gateway.complete(request));
             return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException exception) {
-            future.cancel(true);
+            if (future != null) {
+                future.cancel(true);
+            }
             throw exception;
         } catch (ExecutionException exception) {
             Throwable cause = exception.getCause();
@@ -162,6 +172,8 @@ public class ModelDiagnosisFacade implements AutoCloseable {
                 throw checked;
             }
             throw new IllegalStateException("模型适配器执行失败", cause);
+        } finally {
+            concurrencyLimiter.release();
         }
     }
 

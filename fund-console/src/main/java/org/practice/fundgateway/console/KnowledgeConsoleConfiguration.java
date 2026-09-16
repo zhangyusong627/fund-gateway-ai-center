@@ -18,10 +18,21 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /** 装配控制台第一阶段使用的知识库应用服务。 */
 @Configuration
 public class KnowledgeConsoleConfiguration {
+
+    /** 创建有界索引线程池，避免大文档任务占满公共线程池。 */
+    @Bean(destroyMethod = "shutdown")
+    public ExecutorService indexTaskExecutor() {
+        return new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(20), new ThreadPoolExecutor.CallerRunsPolicy());
+    }
 
     /** 创建文档版本内存仓储，后续由 PostgreSQL 实现替换。 */
     @Bean

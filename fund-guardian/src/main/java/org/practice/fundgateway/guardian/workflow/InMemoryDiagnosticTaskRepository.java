@@ -41,6 +41,22 @@ public class InMemoryDiagnosticTaskRepository implements DiagnosticTaskRepositor
         return taskId == null ? Optional.empty() : Optional.ofNullable(tasks.get(taskId));
     }
 
+    /** 按风险指纹查询尚未结束的诊断任务。 */
+    @Override
+    public synchronized Optional<DiagnosticTask> findActiveByRiskFingerprint(String riskFingerprint) {
+        return tasks.values().stream()
+                .filter(task -> task.state().riskFingerprint().equals(riskFingerprint))
+                .filter(task -> isActive(task.state().status()))
+                .findFirst();
+    }
+
+    /** 判断任务是否仍占用当前风险指纹。 */
+    private boolean isActive(DiagnosticTaskStatus status) {
+        return status == DiagnosticTaskStatus.DIAGNOSED
+                || status == DiagnosticTaskStatus.PENDING_APPROVAL
+                || status == DiagnosticTaskStatus.APPROVED;
+    }
+
     /** 按任务标识查询聚合。 */
     @Override
     public synchronized Optional<DiagnosticTask> findById(UUID taskId) {

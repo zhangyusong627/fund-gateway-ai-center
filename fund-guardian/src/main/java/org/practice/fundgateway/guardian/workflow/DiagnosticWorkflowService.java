@@ -65,6 +65,12 @@ public class DiagnosticWorkflowService {
             throw new IllegalArgumentException("创建幂等键不能为空");
         }
         requireSnapshotPermissions(snapshot, creationKey, context);
+        if (snapshot != null) {
+            Optional<DiagnosticTask> active = repository.findActiveByRiskFingerprint(snapshot.riskFingerprint());
+            if (active.isPresent()) {
+                return active.orElseThrow().toView();
+            }
+        }
         Optional<DiagnosticTask> existing = repository.findByCreationKey(creationKey);
         if (existing.isPresent()) {
             return existing.orElseThrow().toView();
@@ -77,6 +83,14 @@ public class DiagnosticWorkflowService {
         DiagnosticTask candidate = new DiagnosticTask(UUID.randomUUID(), creationKey, snapshot.snapshotId(),
                 snapshot.riskFingerprint(), report, decision, now, now.plus(reviewTtl), snapshot);
         return repository.saveIfAbsent(creationKey, candidate).toView();
+    }
+
+    /** 查询同一风险指纹下仍在处理中的任务，供模型调用前做任务级归并。 */
+    public Optional<DiagnosticTaskView> findActiveByRiskFingerprint(String riskFingerprint) {
+        if (riskFingerprint == null || riskFingerprint.isBlank()) {
+            return Optional.empty();
+        }
+        return repository.findActiveByRiskFingerprint(riskFingerprint).map(DiagnosticTask::toView);
     }
 
     /** 批准一个待审批任务。 */

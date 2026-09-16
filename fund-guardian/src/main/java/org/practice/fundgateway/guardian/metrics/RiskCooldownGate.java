@@ -24,11 +24,19 @@ public class RiskCooldownGate {
         if (fingerprint == null || fingerprint.isBlank() || now == null) {
             throw new IllegalArgumentException("风险指纹和时间不能为空");
         }
-        Instant allowedAt = nextAllowedAt.get(fingerprint);
-        if (allowedAt != null && now.isBefore(allowedAt)) {
-            return false;
-        }
-        nextAllowedAt.put(fingerprint, now.plus(cooldown));
-        return true;
+        java.util.concurrent.atomic.AtomicBoolean acquired = new java.util.concurrent.atomic.AtomicBoolean();
+        nextAllowedAt.compute(fingerprint, (ignored, allowedAt) -> {
+            if (allowedAt != null && now.isBefore(allowedAt)) {
+                return allowedAt;
+            }
+            acquired.set(true);
+            return now.plus(cooldown);
+        });
+        return acquired.get();
+    }
+
+    /** 返回冷却时长，供持久化实现复用同一策略参数。 */
+    public Duration cooldown() {
+        return cooldown;
     }
 }

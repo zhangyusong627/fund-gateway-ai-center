@@ -37,12 +37,12 @@ class GuardianConsoleServiceTest {
 
     /** 一万条组合风险消息应被十秒窗口和六十秒冷却显著降频。 */
     @Test
-    void shouldReduceTenThousandRiskMessagesToTwoTasks() throws Exception {
+    void shouldReduceTenThousandRiskMessagesToNoTaskWhenModelIsDisabled() throws Exception {
         var result = service.simulate(new GuardianSimulationRequest("COMBINED", 10000, false));
 
         assertThat(result.aggregateWindows()).isEqualTo(10);
         assertThat(result.riskWindows()).isEqualTo(10);
-        assertThat(result.diagnosticTasks()).isEqualTo(2);
+        assertThat(result.diagnosticTasks()).isZero();
         assertThat(result.suppressedTasks()).isEqualTo(8);
         assertThat(result.deterministicFindings()).allMatch(finding -> finding.matched());
     }

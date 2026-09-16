@@ -14,7 +14,7 @@ class DocumentLocatorTest {
     @Test
     void shouldLocatePdfTextBlock() {
         KnowledgeChunk chunk = chunk("guide.pdf", "PDF 第2页", 3, 3, -1, -1);
-        assertEquals("PDF 第2页#文本块=3-3", chunk.locator());
+        assertEquals("PDF 第2页", chunk.locator());
     }
 
     /** 验证 Excel 使用 Sheet 和原始行号定位。 */

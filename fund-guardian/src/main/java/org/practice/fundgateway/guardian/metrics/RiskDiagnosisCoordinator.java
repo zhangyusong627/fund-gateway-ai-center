@@ -46,7 +46,7 @@ public class RiskDiagnosisCoordinator {
                 aggregate.serviceName(), aggregate.interfacePath(), severity,
                 hits.stream().map(RiskRuleHit::ruleId).toList(), aggregate.windowStart(), aggregate.windowEnd(), now,
                 payload));
-        boolean admitted = cooldownGate.tryAcquire(fingerprint, now);
+        boolean admitted = repository.tryAcquireCooldown(fingerprint, now, cooldownGate.cooldown());
         boolean taskCreated = admitted && repository.saveDiagnosticTask(fingerprint, aggregate.windowStart(), "PENDING");
         return new CoordinationResult(true, taskCreated, fingerprint, hits);
     }

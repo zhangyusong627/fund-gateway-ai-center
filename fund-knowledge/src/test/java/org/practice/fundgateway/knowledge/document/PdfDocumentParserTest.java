@@ -2,6 +2,7 @@ package org.practice.fundgateway.knowledge.document;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,11 +25,20 @@ class PdfDocumentParserTest {
             writeTextPdf(file);
             ParsedDocument document = new PdfDocumentParser().parse(file, "fixture", "v1");
             assertEquals(1, document.elements().size());
-            assertEquals("PDF 第1页", document.elements().getFirst().sectionPath());
+            assertEquals("PDF 第1页·文本块1", document.elements().getFirst().sectionPath());
             assertEquals("applyAmt is required", document.elements().getFirst().cleanedText());
         } finally {
             Files.deleteIfExists(file);
         }
+    }
+
+    /** 验证过长页面文本会按字符上限拆成多个检索块。 */
+    @Test
+    void shouldSplitLongPageTextIntoBoundedBlocks() {
+        String text = "字段 applyAmt 说明。".repeat(200);
+        var blocks = PdfDocumentParser.splitIntoBlocks(text, 1200);
+        assertTrue(blocks.size() > 1);
+        assertTrue(blocks.stream().allMatch(block -> block.length() <= 1200));
     }
 
     /** 验证没有可提取文本的 PDF 不会被误报为解析成功。 */

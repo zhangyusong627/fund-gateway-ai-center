@@ -36,3 +36,8 @@
 - `reviews/`：阶段风险评审和设计评审。
 - [`learning/README.md`](learning/README.md)：阶段主总结、详细证据和学习验收约定。
 - [`learning/M7-visual-console-acceptance-20260911.md`](learning/M7-visual-console-acceptance-20260911.md)：本地可视化控制台的构建、运行和端到端验收证据。
+
+## 面试准备
+
+- `interview/`：个人求职面试题库。依据简历、当前项目实现和图灵面试题库整理，用于个人口述演练；**不属于项目交付物，也不作为项目证据使用**。
+- [`interview/张雨松-Java-AI-面试题库.md`](interview/张雨松-Java-AI-面试题库.md)：三部分共 274 题——知识题库 205 题（从图灵题库 1431 篇逐篇提炼）+ 项目深挖 45 题 + 求职软技能与反问 24 题。资金网关业务与生产经历部分按用户要求不纳入，由本人自行准备。

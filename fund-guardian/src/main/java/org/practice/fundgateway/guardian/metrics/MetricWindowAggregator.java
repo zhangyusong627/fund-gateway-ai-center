@@ -4,15 +4,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** 按服务和接口聚合固定时长窗口，并计算守护规则所需核心特征。 */
 public class MetricWindowAggregator {
 
     private final Duration windowSize;
-    private final Map<WindowKey, MutableWindow> windows = new HashMap<>();
+    private final Map<WindowKey, MutableWindow> windows = new ConcurrentHashMap<>();
 
     /** 创建指定大小的窗口聚合器。 */
     public MetricWindowAggregator(Duration windowSize) {
@@ -63,7 +63,7 @@ public class MetricWindowAggregator {
             this.start = start;
         }
 
-        private void add(MetricEvent event) {
+        private synchronized void add(MetricEvent event) {
             requestCount += event.requestCount();
             errorCount += event.errorCount();
             timeoutCount += event.timeoutCount();
@@ -74,7 +74,7 @@ public class MetricWindowAggregator {
             latencies.addAll(event.latencySamplesMs());
         }
 
-        private MetricWindowAggregate toAggregate(String serviceName, String interfacePath, Duration size) {
+        private synchronized MetricWindowAggregate toAggregate(String serviceName, String interfacePath, Duration size) {
             List<Long> sorted = latencies.stream().sorted(Comparator.naturalOrder()).toList();
             long p95 = percentile(sorted, 0.95);
             long p99 = percentile(sorted, 0.99);

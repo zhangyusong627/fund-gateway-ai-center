@@ -1,10 +1,10 @@
 package org.practice.fundgateway.guardian.metrics;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.kafka.annotation.KafkaListener;
 
@@ -20,7 +20,9 @@ public class MetricEventConsumer {
     private final MetricWindowAggregator aggregator;
     private final RiskDiagnosisCoordinator coordinator;
     private final MetricEventFailureRecorder failureRecorder;
-    private final Map<String, EventClaim> eventClaims = new HashMap<>();
+    private static final int LOCK_STRIPE_COUNT = 32;
+    private final Map<String, EventClaim> eventClaims = new ConcurrentHashMap<>();
+    private final Object[] eventLockStripes = new Object[LOCK_STRIPE_COUNT];
 
     /** 创建使用指定窗口聚合器的指标消费者。 */
     public MetricEventConsumer(MetricWindowAggregator aggregator) {
@@ -46,6 +48,9 @@ public class MetricEventConsumer {
         this.aggregator = aggregator;
         this.coordinator = coordinator;
         this.failureRecorder = failureRecorder;
+        for (int index = 0; index < eventLockStripes.length; index++) {
+            eventLockStripes[index] = new Object();
+        }
     }
 
     /**
@@ -53,7 +58,7 @@ public class MetricEventConsumer {
      * 进程重启后内存幂等状态会丢失，跨重启仍遵循 Kafka 至少一次语义。
      */
     @KafkaListener(topics = "guardian.metric-events.v1", autoStartup = "${guardian.metric-consumer.auto-start:false}")
-    public synchronized void consume(String payload) {
+    public void consume(String payload) {
         MetricEvent event;
         try {
             event = mapper.readValue(payload, MetricEvent.class);
@@ -63,47 +68,53 @@ public class MetricEventConsumer {
             return;
         }
 
-        EventClaim existing = eventClaims.get(event.eventId());
-        if (existing != null) {
-            if (!existing.event().equals(event)) {
-                recordFailure(MetricEventFailure.FailureType.INVALID_MESSAGE, event.eventId(), payload,
-                        new IllegalArgumentException("同一 eventId 对应了不同消息内容"));
-            } else if (existing.state() == ProcessingState.ACCEPTED && coordinator != null) {
-                try {
-                    processCoordinator(event);
-                    eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.PROCESSED));
-                } catch (Exception exception) {
-                    MetricEventFailure failure = recordFailure(MetricEventFailure.FailureType.PROCESSING_FAILURE,
-                            event.eventId(), payload, exception);
-                    throw new MetricEventProcessingException(
-                            "指标事件处理失败，等待 Kafka 重投: " + failure.failureId(), exception);
+        synchronized (eventLockStripes[stripe(event.eventId())]) {
+            EventClaim existing = eventClaims.get(event.eventId());
+            if (existing != null) {
+                if (!existing.event().equals(event)) {
+                    recordFailure(MetricEventFailure.FailureType.INVALID_MESSAGE, event.eventId(), payload,
+                            new IllegalArgumentException("同一 eventId 对应了不同消息内容"));
+                } else if (existing.state() == ProcessingState.ACCEPTED && coordinator != null) {
+                    processWithRetry(event, payload);
                 }
+                return;
             }
-            return;
-        }
 
-        boolean acceptedByAggregator = false;
+            boolean acceptedByAggregator = false;
+            try {
+                aggregator.accept(event);
+                acceptedByAggregator = true;
+                eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.ACCEPTED));
+                processWithRetry(event, payload);
+            } catch (MetricEventProcessingException exception) {
+                if (!acceptedByAggregator) {
+                    eventClaims.remove(event.eventId());
+                }
+                throw exception;
+            }
+        }
+    }
+
+    /** 执行风险编排并在失败时保留可重试的事件状态。 */
+    private void processWithRetry(MetricEvent event, String payload) {
         try {
-            aggregator.accept(event);
-            acceptedByAggregator = true;
-            eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.ACCEPTED));
             processCoordinator(event);
             eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.PROCESSED));
         } catch (Exception exception) {
-            if (!acceptedByAggregator) {
-                eventClaims.remove(event.eventId());
-            } else {
-                // 聚合已经成功，保留 ACCEPTED；重投只重试风险编排，不重复累计窗口。
-                eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.ACCEPTED));
-            }
+            eventClaims.put(event.eventId(), new EventClaim(event, ProcessingState.ACCEPTED));
             MetricEventFailure failure = recordFailure(MetricEventFailure.FailureType.PROCESSING_FAILURE,
                     event.eventId(), payload, exception);
             throw new MetricEventProcessingException("指标事件处理失败，等待 Kafka 重投: " + failure.failureId(), exception);
         }
     }
 
+    /** 将同一事件稳定映射到一条锁条带，不阻塞不同事件的处理。 */
+    private int stripe(String eventId) {
+        return Math.floorMod(eventId.hashCode(), eventLockStripes.length);
+    }
+
     /** 仅允许重放处理失败，非法消息必须先修正后以新消息重新投递。 */
-    public synchronized void replay(String failureId) {
+    public void replay(String failureId) {
         MetricEventFailure failure = failureRecorder.find(failureId)
                 .orElseThrow(() -> new IllegalArgumentException("失败记录不存在: " + failureId));
         if (!failure.replayable()) {
@@ -113,7 +124,7 @@ public class MetricEventConsumer {
     }
 
     /** 返回当前进程已接收的唯一事件数量。 */
-    public synchronized int consumedEventCount() {
+    public int consumedEventCount() {
         return eventClaims.size();
     }
 

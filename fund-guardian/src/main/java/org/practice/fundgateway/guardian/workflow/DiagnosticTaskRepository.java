@@ -16,6 +16,9 @@ public interface DiagnosticTaskRepository {
     /** 按创建幂等键查询已有任务。 */
     Optional<DiagnosticTask> findByCreationKey(String creationKey);
 
+    /** 按风险指纹查询尚未结束的诊断任务。 */
+    Optional<DiagnosticTask> findActiveByRiskFingerprint(String riskFingerprint);
+
     /** 按任务标识查询聚合。 */
     Optional<DiagnosticTask> findById(UUID taskId);
 

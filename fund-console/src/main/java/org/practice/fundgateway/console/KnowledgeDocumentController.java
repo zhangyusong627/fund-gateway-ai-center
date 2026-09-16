@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 
 import org.practice.fundgateway.knowledge.chunk.KnowledgeChunk;
 import org.practice.fundgateway.knowledge.document.DocumentElement;
@@ -35,21 +36,31 @@ public class KnowledgeDocumentController {
     private final KnowledgeDocumentApplicationService applicationService;
     private final DocumentIndexApplicationService indexApplicationService;
     private final Path storagePath;
+    private final Executor indexExecutor;
 
     /** 注入知识库应用服务和原始文档保存目录。 */
     public KnowledgeDocumentController(KnowledgeDocumentApplicationService applicationService,
                                        @Value("${console.document.storage-path}") String storagePath) {
-        this(applicationService, null, storagePath);
+        this(applicationService, null, storagePath, Runnable::run);
     }
 
     /** 注入文档服务、正式索引服务和原始文档保存目录。 */
-    @Autowired
     public KnowledgeDocumentController(KnowledgeDocumentApplicationService applicationService,
                                        DocumentIndexApplicationService indexApplicationService,
                                        @Value("${console.document.storage-path}") String storagePath) {
+        this(applicationService, indexApplicationService, storagePath, Runnable::run);
+    }
+
+    /** 注入有界索引执行器，隔离文档索引任务与公共线程池。 */
+    @Autowired
+    public KnowledgeDocumentController(KnowledgeDocumentApplicationService applicationService,
+                                       DocumentIndexApplicationService indexApplicationService,
+                                       @Value("${console.document.storage-path}") String storagePath,
+                                       Executor indexExecutor) {
         this.applicationService = applicationService;
         this.indexApplicationService = indexApplicationService;
         this.storagePath = Path.of(storagePath).toAbsolutePath().normalize();
+        this.indexExecutor = indexExecutor;
     }
 
     /** 保存并解析一份支持格式的文档，返回文档版本及首批分片预览。 */
@@ -110,8 +121,7 @@ public class KnowledgeDocumentController {
             return taskResponse(applicationService.findIndexTask(taskId));
         }
         IndexTask task = claimed.get();
-        java.util.concurrent.CompletableFuture.runAsync(() -> indexApplicationService.indexClaimed(
-                task, "fund-gateway-contracts",
+        indexExecutor.execute(() -> indexApplicationService.indexClaimed(task, "fund-gateway-contracts",
                 new EmbeddingDescriptor("local", "BAAI/bge-small-zh-v1.5", 512, true), 50));
         return new IndexTaskResponse(task.taskId(), task.documentId(), task.version(), "ACCEPTED",
                 null, task.updatedAt().toString());

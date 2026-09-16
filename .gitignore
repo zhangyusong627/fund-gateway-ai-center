@@ -8,3 +8,7 @@ models/*
 !models/.gitignore
 runtime/
 backups/
+
+# 本地面试题库与训练状态，不进入项目提交
+/docs/interview/
+/.workbuddy/

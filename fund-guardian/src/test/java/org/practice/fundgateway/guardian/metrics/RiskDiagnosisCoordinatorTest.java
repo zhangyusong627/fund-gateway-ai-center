@@ -37,6 +37,7 @@ class RiskDiagnosisCoordinatorTest {
     /** 同一风险在冷却期内只创建一个任务。 */
     @Test
     void shouldCreateOnlyOneTaskDuringCooldown() throws Exception {
+        when(repository.tryAcquireCooldown(anyString(), any(), any())).thenReturn(true, false);
         when(repository.saveDiagnosticTask(anyString(), any(), anyString())).thenReturn(true);
         assertTrue(coordinator.process(aggregate(0.40, 800)).taskCreated());
         assertFalse(coordinator.process(aggregate(0.40, 800)).taskCreated());

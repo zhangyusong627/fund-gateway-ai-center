@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+import java.time.Duration;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -31,6 +32,21 @@ public class GuardianRiskRepository {
                 + "task_id uuid primary key, risk_fingerprint varchar(64) not null references guardian.risk_events(risk_fingerprint),"
                 + "window_start timestamptz not null, status varchar(32) not null, created_at timestamptz not null default now(),"
                 + "unique (risk_fingerprint, window_start))");
+        jdbcTemplate.execute("create table if not exists guardian.risk_cooldowns ("
+                + "risk_fingerprint varchar(64) primary key, next_allowed_at timestamptz not null)");
+        jdbcTemplate.execute("create unique index if not exists uq_guardian_active_diagnostic_risk "
+                + "on guardian.diagnostic_tasks (risk_fingerprint) where status='PENDING'");
+    }
+
+    /** 以数据库原子条件更新获得集群级冷却资格。 */
+    public boolean tryAcquireCooldown(String fingerprint, Instant now, Duration cooldown) {
+        List<Boolean> acquired = jdbcTemplate.query("insert into guardian.risk_cooldowns "
+                        + "(risk_fingerprint, next_allowed_at) values (?,?) "
+                        + "on conflict (risk_fingerprint) do update set next_allowed_at=? "
+                        + "where guardian.risk_cooldowns.next_allowed_at <= ? returning true",
+                (resultSet, rowNumber) -> resultSet.getBoolean(1), fingerprint,
+                Timestamp.from(now.plus(cooldown)), Timestamp.from(now.plus(cooldown)), Timestamp.from(now));
+        return acquired.stream().findFirst().orElse(false);
     }
 
     /** 首次写入风险事件；重复指纹只增加出现次数和最近时间。 */
@@ -46,7 +62,7 @@ public class GuardianRiskRepository {
         return inserted > 0;
     }
 
-    /** 为风险窗口创建诊断任务；相同指纹和窗口只创建一次。 */
+    /** 为风险窗口创建诊断任务；同一活跃风险指纹只创建一次。 */
     public boolean saveDiagnosticTask(String fingerprint, Instant windowStart, String status) {
         int inserted = jdbcTemplate.update("insert into guardian.diagnostic_tasks "
                 + "(task_id, risk_fingerprint, window_start, status) values (?,?,?,?) on conflict do nothing",

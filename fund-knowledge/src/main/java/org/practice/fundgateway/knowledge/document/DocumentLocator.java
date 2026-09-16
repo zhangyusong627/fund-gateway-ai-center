@@ -9,7 +9,7 @@ public record DocumentLocator(DocumentFormat format, String value) {
     public static DocumentLocator from(KnowledgeChunk chunk) {
         DocumentFormat format = DocumentFormat.from(chunk.source().file().getFileName().toString());
         String value = switch (format) {
-            case PDF -> chunk.sectionPath() + "#文本块=" + chunk.firstSequence() + "-" + chunk.lastSequence();
+            case PDF -> chunk.sectionPath();
             case XLS, XLSX -> chunk.sectionPath() + "#行=" + chunk.rowIndex();
             case DOC, DOCX -> chunk.sectionPath() + "#序号=" + chunk.firstSequence() + "-" + chunk.lastSequence();
         };
