@@ -9,6 +9,8 @@ import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationRequest;
 import org.practice.fundgateway.console.ConsoleModels.GuardianSimulationResponse;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryRequest;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryResponse;
+import org.practice.fundgateway.console.ConsoleModels.RagAnswerRequest;
+import org.practice.fundgateway.console.ConsoleModels.RagAnswerResponse;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryAudit;
 import org.practice.fundgateway.console.ConsoleModels.PublishedCollection;
 import org.practice.fundgateway.console.ConsoleModels.RagEvaluationResponse;
@@ -32,17 +34,23 @@ public class DemoConsoleController {
     private final GuardianConsoleService guardianService;
     private final ConsoleOverviewService overviewService;
     private final RagEvaluationService evaluationService;
+    private final RagAnswerService answerService;
     private final String persistenceMode;
+    private final String environment;
 
     /** 注入两个可独立演示的业务能力。 */
     public DemoConsoleController(ConsoleRagService ragService, GuardianConsoleService guardianService,
                                  ConsoleOverviewService overviewService, RagEvaluationService evaluationService,
-                                 @Value("${console.persistence.mode:memory}") String persistenceMode) {
+                                 RagAnswerService answerService,
+                                 @Value("${console.persistence.mode:memory}") String persistenceMode,
+                                 @Value("${console.environment:acceptance}") String environment) {
         this.ragService = ragService;
         this.guardianService = guardianService;
         this.overviewService = overviewService;
         this.evaluationService = evaluationService;
+        this.answerService = answerService;
         this.persistenceMode = persistenceMode;
+        this.environment = environment;
     }
 
     /** 返回首页需要的真实业务计数和逐项依赖状态。 */
@@ -54,7 +62,7 @@ public class DemoConsoleController {
     /** 返回依赖就绪状态和实际技术基线。 */
     @GetMapping("/status")
     public ConsoleStatus status() {
-        return new ConsoleStatus(ragService.ready() ? "READY" : "DEGRADED",
+        return new ConsoleStatus(ragService.ready() ? "READY" : "DEGRADED", environment,
                 "PostgreSQL 16 + pgvector 混合检索", "BAAI/bge-small-zh-v1.5",
                 512, "十秒窗口 + 六十秒冷却 + Java 门禁", guardianService.deepSeekAvailable(),
                 persistenceMode.toUpperCase(java.util.Locale.ROOT), ragService.publishedCollectionCount());
@@ -108,6 +116,12 @@ public class DemoConsoleController {
     @PostMapping("/rag/query")
     public RagQueryResponse ragQuery(@RequestBody RagQueryRequest request) throws Exception {
         return ragService.query(request);
+    }
+
+    /** 触发检索、证据门禁和大模型结构化回答；纯检索接口保持独立。 */
+    @PostMapping("/rag/answer")
+    public RagAnswerResponse ragAnswer(@RequestBody RagAnswerRequest request) throws Exception {
+        return answerService.answer(request);
     }
 
     /** 返回最近在线检索审计，供检索实验室复盘。 */

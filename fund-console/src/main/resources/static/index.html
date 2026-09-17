@@ -420,6 +420,7 @@
                     <div class="field"><label for="question">业务问题</label><textarea id="question">授信申请金额字段是否必填，数据类型是什么？</textarea></div>
                     <div class="field"><label for="keywords">证据关键词，用逗号分隔</label><input id="keywords" value="applyAmt,BigDecimal,必填"></div>
                     <div class="field"><label for="topK">返回候选数量</label><select id="topK"><option>3</option><option>5</option><option>8</option></select></div>
+                    <div class="field"><label for="ragMode">执行模式</label><select id="ragMode"><option value="query">纯检索</option><option value="answer">检索并生成有引用答案</option></select></div>
                     <button id="ragRun" class="primary">开始检索</button>
                     <div class="footnote">首次运行需要加载本地 BGE 模型并初始化演示知识，耗时会高于后续查询。</div>
                     <div id="ragError"></div>
@@ -602,7 +603,7 @@
             const status = await request('/api/console/status');
             byId('stateDot').classList.toggle('ready', status.status === 'READY');
             byId('stateText').textContent = status.status === 'READY' ? '本地依赖已就绪' : '部分依赖未就绪';
-            byId('techSummary').textContent = `${status.ragEngine} · ${status.embeddingModel} · ${status.embeddingDimension} 维`;
+            byId('techSummary').textContent = `环境：${status.environment} · ${status.ragEngine} · ${status.embeddingModel} · ${status.embeddingDimension} 维`;
             byId('invokeModel').disabled = !status.deepSeekAvailable;
             if (!status.deepSeekAvailable) byId('invokeModel').title = '当前进程未读取到 DEEPSEEK_API_KEY';
         } catch (error) {
@@ -631,9 +632,10 @@
     byId('ragRun').addEventListener('click', async () => {
         const button = byId('ragRun');
         byId('ragError').innerHTML = '';
-        button.disabled = true; button.textContent = '正在生成向量并检索…';
+        const answerMode = byId('ragMode').value === 'answer';
+        button.disabled = true; button.textContent = answerMode ? '正在检索并生成答案…' : '正在生成向量并检索…';
         try {
-            const result = await request('/api/console/rag/query', {method: 'POST', body: JSON.stringify({
+            const result = await request(answerMode ? '/api/console/rag/answer' : '/api/console/rag/query', {method: 'POST', body: JSON.stringify({
                 collectionName: byId('collectionName').value || null,
                 documentId: byId('documentScope').value ? byId('documentScope').value.split('@')[0] : null,
                 documentVersion: byId('documentScope').value ? byId('documentScope').value.split('@')[1] : null,
@@ -642,6 +644,13 @@
                 topK: Number(byId('topK').value)
             })});
             byId('ragEmpty').style.display = 'none';
+            if (answerMode) {
+                const retrieval = result.retrieval;
+                byId('ragResult').innerHTML = `<div class="section-title"><h3>RAG 答案</h3><span class="badge ${result.status === 'ANSWERED' ? 'good' : 'bad'}">${escapeHtml(result.status)}</span></div><p>${escapeHtml(result.answer)}</p><div class="section-title"><h3>答案引用</h3><span class="source">${escapeHtml(result.model)} · ${escapeHtml(result.traceId)}</span></div>${(result.citations || []).map(item => `<article class="candidate"><div class="candidate-top"><span class="rank">${escapeHtml(item.chunkId)}</span></div><p>${escapeHtml(item.quote)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}<div class="section-title"><h3>底层检索证据</h3></div>${(retrieval.candidates || []).map(item => `<article class="candidate"><p>${escapeHtml(item.content)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}`;
+                byId('ragResult').classList.add('visible');
+                loadRagAuditHistory();
+                return;
+            }
             const badge = result.status === 'ACCEPTED' ? 'good' : 'bad';
             byId('ragResult').innerHTML = `
                 <div class="section-title"><h3>检索结论</h3><span class="badge ${badge}">${escapeHtml(result.status)}</span></div>

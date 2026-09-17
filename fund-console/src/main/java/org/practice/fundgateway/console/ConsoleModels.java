@@ -21,7 +21,7 @@ public final class ConsoleModels {
     }
 
     /** 控制台运行状态。 */
-    public record ConsoleStatus(String status, String ragEngine, String embeddingModel,
+    public record ConsoleStatus(String status, String environment, String ragEngine, String embeddingModel,
                                 int embeddingDimension, String guardianMode, boolean deepSeekAvailable,
                                 String persistenceMode, int publishedCollections) {
     }
@@ -46,6 +46,27 @@ public final class ConsoleModels {
     public record RagQueryResponse(String status, String collectionName, String question, int topK, long durationMs,
                                    int indexedChunks, Set<String> missingKeywords,
                                    List<RagCandidate> candidates) {
+    }
+
+    /** 面向用户的证据约束 RAG 答案请求。 */
+    public record RagAnswerRequest(String collectionName, String documentId, String documentVersion,
+                                   String question, List<String> keywords, Integer topK) {
+    }
+
+    /** 面向用户的结构化 RAG 答案；引用必须来自本次召回证据。 */
+    public record RagAnswerResponse(String status, String question, String answer, boolean evidenceSufficient,
+                                    String model, String traceId, List<RagCitation> citations,
+                                    RagQueryResponse retrieval) {
+    }
+
+    /** RAG 答案引用的原文证据。 */
+    public record RagCitation(String chunkId, String locator, String quote) {
+    }
+
+    /** RAG 生成答案的审计记录。 */
+    public record RagAnswerAudit(java.util.UUID answerId, String traceId, String question, String status,
+                                 String model, String answer, List<RagCitation> citations,
+                                 java.time.Instant answeredAt) {
     }
 
     /** 在线检索审计记录，保存一次查询的输入、门禁和候选证据。 */

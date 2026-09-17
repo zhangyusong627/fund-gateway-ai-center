@@ -2,7 +2,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: fund_integration
+      POSTGRES_DB: ${POSTGRES_DB:-fund_acceptance}
       POSTGRES_USER: fund_demo
       POSTGRES_PASSWORD: fund_demo_password
     ports:
@@ -74,7 +74,8 @@ services:
     env_file:
       - ${HOME}/.config/fund-gateway-ai-center/deepseek.env
     environment:
-      CONSOLE_JDBC_URL: jdbc:postgresql://postgres:5432/fund_integration
+      CONSOLE_ENVIRONMENT: ${CONSOLE_ENVIRONMENT:-acceptance}
+      CONSOLE_JDBC_URL: jdbc:postgresql://postgres:5432/${CONSOLE_DB_NAME:-fund_acceptance}
       CONSOLE_JDBC_USER: fund_demo
       CONSOLE_JDBC_PASSWORD: fund_demo_password
       CONSOLE_PERSISTENCE_MODE: jdbc

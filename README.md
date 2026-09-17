@@ -46,6 +46,10 @@ FG-ADC（Fund Gateway AI Decision Center）是一个 Java-first 的 AI 大模型
 
 当前 Docker Compose 会启动 `fund-console`、`fund-guardian`、`fund-integration`、PostgreSQL 和 Redpanda。默认完整业务演示通过 `fund-console` 完成；`fund-guardian` 的 Redpanda 指标消费者默认关闭，需要单独开启时再配置 `GUARDIAN_METRIC_CONSUMER_AUTO_START=true`。
 
+## 本地环境隔离
+
+同一个 PostgreSQL 实例内维护三个数据库：`fund_dev` 用于日常开发，`fund_acceptance` 用于从空环境走完整验收，`fund_baseline` 保存历史基线。每个数据库继续使用 `knowledge` 和 `guardian` 领域 schema。应用启动时通过 `CONSOLE_ENVIRONMENT` 与 `CONSOLE_DB_NAME` 固定目标，控制台不会在运行时切换数据库；状态接口和首页会显示当前环境。详细操作见 [本地环境隔离运行手册](docs/runbook/environment-isolation.md) 和 [ADR-017](docs/adr/ADR-017-environment-isolation.md)。
+
 ## 快速开始
 
 ### 前置条件

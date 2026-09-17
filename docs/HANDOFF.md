@@ -206,6 +206,22 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-181] 2026-09-17 · Codex
+
+**建立本地环境隔离方案并完成数据库初始化**
+- 采用同一 PostgreSQL 实例内三个独立数据库：`fund_dev`、`fund_acceptance`、`fund_baseline`；每个数据库保留 `knowledge` 与 `guardian` 领域 schema。
+- `fund_baseline` 由当前 `fund_integration` 历史库复制；`fund_dev` 与 `fund_acceptance` 初始化为独立空环境并启用 pgvector，未清空或修改原 `fund_integration`。
+- 控制台通过 `CONSOLE_ENVIRONMENT` 和 `CONSOLE_DB_NAME` 在启动时固定环境；`/api/console/status` 返回 `environment`，页面显示当前环境，不支持运行时动态切换数据库。
+- 新增 ADR-017 和本地环境隔离运行手册；Compose 默认目标改为 `fund_acceptance`。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS，7 个模块全部通过；知识库 2 个依赖外部数据库的既有测试按条件跳过。
+- PostgreSQL 已核对四个数据库存在：`fund_acceptance`、`fund_baseline`、`fund_dev`、原有 `fund_integration`；前三个均存在 `knowledge`、`guardian` schema。
+- `git diff --check`：通过。
+
+**下一步唯一动作**
+- 使用 `CONSOLE_ENVIRONMENT=acceptance` 连接 `fund_acceptance`，完成从空环境开始的 RAG、智能守护和受控 Agent/记忆三条独立验收；验收通过后再整理演示证据。
+
 ### [C-180] 2026-09-16 · Codex
 
 **完成高并发重构收尾、部署和回归验证**

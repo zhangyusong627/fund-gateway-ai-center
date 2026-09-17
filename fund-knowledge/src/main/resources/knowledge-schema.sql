@@ -160,3 +160,17 @@ create table if not exists knowledge.rag_query_audits (
 
 create index if not exists idx_rag_query_audits_time
     on knowledge.rag_query_audits(queried_at desc);
+
+create table if not exists knowledge.rag_answer_audits (
+    answer_id uuid primary key,
+    trace_id varchar(128) not null unique,
+    question text not null,
+    status varchar(32) not null,
+    model varchar(128) not null,
+    answer text not null,
+    citations_json jsonb not null,
+    answered_at timestamptz not null
+);
+
+create index if not exists idx_rag_answer_audits_time
+    on knowledge.rag_answer_audits(answered_at desc);
