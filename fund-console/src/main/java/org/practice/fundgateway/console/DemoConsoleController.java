@@ -124,6 +124,19 @@ public class DemoConsoleController {
         return answerService.answer(request);
     }
 
+    /** 返回 RAG 答案供应商、模型和可选模型清单。 */
+    @GetMapping("/rag/model-config")
+    public RagModelConfiguration.Selection ragModelConfig() {
+        return answerService.modelConfiguration();
+    }
+
+    /** 在当前进程内切换后续 RAG 答案调用使用的供应商和模型。 */
+    @PostMapping("/rag/model-config")
+    public RagModelConfiguration.Selection updateRagModelConfig(
+            @RequestBody RagModelConfiguration.UpdateRequest request) {
+        return answerService.selectModel(request);
+    }
+
     /** 返回最近在线检索审计，供检索实验室复盘。 */
     @GetMapping("/rag/query-audits")
     public List<RagQueryAudit> queryAudits() {

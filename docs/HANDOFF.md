@@ -206,6 +206,24 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-182] 2026-09-18 · Codex
+
+**完成模型配置与审计模块一致性更新并交付运行构建**
+- DeepSeek 模型默认值和 Guardian 固定模型统一为官方当前标识 `deepseek-flash`；保留旧兼容模型名供选择。
+- 控制台审计文案从 DeepSeek 专属调整为供应商无关的“模型调用明细/模型结构化诊断”，避免未来供应商切换时语义错误。
+- 核对数据库：`guardian.model_call_audits` 已有 `provider` 字段，`knowledge.rag_answer_audits` 已存在，本次不做 schema 变更。
+- Docker Console 改为多阶段源码构建，避免复用旧本地 JAR；已重新构建并重启 `fund-console`。
+
+**验证**
+- `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
+- Docker 镜像构建成功，容器状态正常。
+- `/api/console/rag/model-config` 返回 `provider=deepseek`、`model=deepseek-flash`、`callable=true`。
+- `git diff --check`：通过。
+
+**当前边界**
+- 模型切换目前为进程内配置，重启后恢复默认模型；若要求持久化选择，需要另立配置持久化任务。
+- 尚未执行 commit、push；本次后续由用户授权完成。
+
 ### [C-181] 2026-09-17 · Codex
 
 **建立本地环境隔离方案并完成数据库初始化**

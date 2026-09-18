@@ -34,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 public class GuardianAgentService {
 
-    private static final String MODEL = "deepseek-v4-flash";
+    private static final String MODEL = "deepseek-flash";
     private static final String TOOL_NAME = "querySyntheticContract";
     private final ConversationMemoryPort memory;
     private final SyntheticDiagnosticToolRegistry registry;

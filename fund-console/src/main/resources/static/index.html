@@ -421,6 +421,8 @@
                     <div class="field"><label for="keywords">证据关键词，用逗号分隔</label><input id="keywords" value="applyAmt,BigDecimal,必填"></div>
                     <div class="field"><label for="topK">返回候选数量</label><select id="topK"><option>3</option><option>5</option><option>8</option></select></div>
                     <div class="field"><label for="ragMode">执行模式</label><select id="ragMode"><option value="query">纯检索</option><option value="answer">检索并生成有引用答案</option></select></div>
+                    <div class="field"><label for="ragProvider">答案模型供应商</label><select id="ragProvider"></select></div>
+                    <div class="field"><label for="ragAnswerModel">答案模型</label><select id="ragAnswerModel"></select><small id="ragModelStatus" class="source"></small></div>
                     <button id="ragRun" class="primary">开始检索</button>
                     <div class="footnote">首次运行需要加载本地 BGE 模型并初始化演示知识，耗时会高于后续查询。</div>
                     <div id="ragError"></div>
@@ -477,9 +479,9 @@
         </section>
 
         <section id="observability" class="workspace">
-            <div class="page-heading"><div><h1>模型成本与审计</h1><p>统一查看 DeepSeek 调用、本地 Embedding、工具执行和系统依赖状态。</p></div><button id="refreshAudit" class="secondary">刷新审计</button></div>
+            <div class="page-heading"><div><h1>模型成本与审计</h1><p>统一查看模型调用、本地 Embedding、工具执行和系统依赖状态。</p></div><button id="refreshAudit" class="secondary">刷新审计</button></div>
             <div id="auditSummary" class="kpi-grid"><div class="kpi"><span>模型调用</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>输入 Token</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>输出 Token</span><strong>—</strong><small>正在读取</small></div><div class="kpi"><span>估算费用</span><strong>—</strong><small>按调用时价格快照</small></div></div>
-            <div class="panel"><h2>DeepSeek 调用明细</h2><p>先看摘要和调用链，再按需展开完整报文；原始请求与响应仍可复制用于复盘。</p><div class="filter-bar"><select id="auditStatusFilter"><option value="">全部状态</option><option>COMPLETED</option><option>FAILED</option><option>REJECTED</option></select><input id="auditTraceFilter" placeholder="搜索模型、traceId 或价格版本"></div><div id="auditList" class="placeholder"><div><b>正在读取模型审计</b></div></div></div>
+            <div class="panel"><h2>模型调用明细</h2><p>先看摘要和调用链，再按需展开完整报文；原始请求与响应仍可复制用于复盘。</p><div class="filter-bar"><select id="auditStatusFilter"><option value="">全部状态</option><option>COMPLETED</option><option>FAILED</option><option>REJECTED</option></select><input id="auditTraceFilter" placeholder="搜索模型、traceId 或价格版本"></div><div id="auditList" class="placeholder"><div><b>正在读取模型审计</b></div></div></div>
         </section>
     </main>
 </div>
@@ -797,6 +799,39 @@
             byId('ragError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         }
     }
+
+    /** 加载并展示当前 RAG 答案供应商和模型选择。 */
+    async function loadRagModelConfig() {
+        try {
+            const config = await request('/api/console/rag/model-config');
+            byId('ragProvider').innerHTML = Object.keys(config.availableModels).map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}${item === 'deepseek' ? '（已接入）' : '（未接入）'}</option>`).join('');
+            byId('ragProvider').value = config.provider;
+            renderRagModels(config);
+        } catch (error) {
+            byId('ragModelStatus').textContent = `模型配置读取失败：${error.message}`;
+        }
+    }
+
+    function renderRagModels(config) {
+        const models = config.availableModels[byId('ragProvider').value] || [];
+        byId('ragAnswerModel').innerHTML = models.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
+        byId('ragAnswerModel').value = config.provider === byId('ragProvider').value ? config.model : models[0];
+        const callable = byId('ragProvider').value === 'deepseek';
+        byId('ragModelStatus').textContent = `当前：${byId('ragProvider').value} / ${byId('ragAnswerModel').value} · ${callable ? '可调用' : '不可调用'}`;
+    }
+
+    byId('ragProvider').addEventListener('change', async () => {
+        const config = await request('/api/console/rag/model-config');
+        renderRagModels({...config, provider: byId('ragProvider').value});
+    });
+    byId('ragAnswerModel').addEventListener('change', async () => {
+        try {
+            const result = await request('/api/console/rag/model-config', {method: 'POST', body: JSON.stringify({provider: byId('ragProvider').value, model: byId('ragAnswerModel').value})});
+            renderRagModels(result);
+        } catch (error) {
+            byId('ragModelStatus').textContent = `模型切换失败：${error.message}`;
+        }
+    });
 
     /** 加载最近在线检索审计记录。 */
     async function loadRagAuditHistory() {
@@ -1132,7 +1167,7 @@
                 <div class="window-panel"><div class="metric-list"><b>代表窗口指标</b><div class="metric-row"><span>QPS / CPM</span><strong>${score(window.qps)} / ${score(window.cpm)}</strong></div><div class="metric-row"><span>错误率 / 超时率</span><strong>${percent(window.errorRate)} / ${percent(window.timeoutRate)}</strong></div><div class="metric-row"><span>P95 / P99</span><strong>${window.p95LatencyMs} / ${window.p99LatencyMs} ms</strong></div><div class="metric-row"><span>线程池</span><strong>${window.activeThreads} / ${window.maxThreads}</strong></div><div class="metric-row"><span>GC 次数 / 暂停</span><strong>${window.gcCount} / ${window.gcPauseMs} ms</strong></div></div>
                 <div class="rule-list"><b>确定性规则</b>${result.deterministicFindings.map(item => `<div class="rule-row"><span>${escapeHtml(item.ruleId)}</span><strong><span class="badge ${item.matched ? 'bad' : 'good'}">${item.matched ? '命中' : '未命中'}</span></strong></div>`).join('')}</div></div>
                 <details><summary>风险指纹与规则证据</summary><pre>${escapeHtml(JSON.stringify({riskFingerprint: result.riskFingerprint, ruleHits: result.ruleHits, deterministicFindings: result.deterministicFindings}, null, 2))}</pre></details>
-                ${result.modelReport ? `<details open><summary>DeepSeek 结构化诊断与 Java 门禁</summary><pre>${escapeHtml(JSON.stringify({modelReport: result.modelReport, gateDecision: result.gateDecision}, null, 2))}</pre></details>` : ''}
+                ${result.modelReport ? `<details open><summary>模型结构化诊断与 Java 门禁</summary><pre>${escapeHtml(JSON.stringify({modelReport: result.modelReport, gateDecision: result.gateDecision}, null, 2))}</pre></details>` : ''}
                 ${result.diagnosticTask ? `<div class="mini-row"><span>诊断工作流任务</span><b>${escapeHtml(result.diagnosticTask.taskId)} · ${escapeHtml(result.diagnosticTask.status)}</b></div>` : ''}
                 ${result.modelRequest ? `<details><summary>完整模型原始请求</summary><pre>${escapeHtml(result.modelRequest)}</pre></details>` : ''}
                 ${result.modelPrompt ? `<details><summary>完整模型提示词</summary><pre>${escapeHtml(result.modelPrompt)}</pre></details>` : ''}
@@ -1177,6 +1212,7 @@
 
     loadStatus();
     loadOverview();
+    loadRagModelConfig();
     loadCollections().then(() => {
         byId('evaluationCollection').innerHTML = publishedCollections.length
             ? publishedCollections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.collectionName)} · ${number(item.documentCount)} 份文档</option>`).join('')

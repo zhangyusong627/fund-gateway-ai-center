@@ -21,18 +21,19 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class RagAnswerService {
 
-    private static final String MODEL = "deepseek-chat";
     private final ConsoleRagService retrieval;
     private final ModelGateway modelGateway;
     private final ObjectMapper mapper;
     private final JdbcTemplate jdbcTemplate;
+    private final RagModelConfiguration modelConfiguration;
 
     public RagAnswerService(ConsoleRagService retrieval, ModelGateway modelGateway, ObjectMapper mapper,
-                            JdbcTemplate jdbcTemplate) {
+                            JdbcTemplate jdbcTemplate, RagModelConfiguration modelConfiguration) {
         this.retrieval = retrieval;
         this.modelGateway = modelGateway;
         this.mapper = mapper;
         this.jdbcTemplate = jdbcTemplate;
+        this.modelConfiguration = modelConfiguration;
     }
 
     /** 先完成检索和证据门禁，再让模型仅基于召回片段生成答案。 */
@@ -41,11 +42,12 @@ public class RagAnswerService {
             throw new IllegalArgumentException("问题不能为空");
         }
         String traceId = "rag-answer-" + UUID.randomUUID();
+        String model = modelConfiguration.current().model();
         RagQueryResponse retrieved = retrieval.query(new RagQueryRequest(request.collectionName(), request.documentId(),
                 request.documentVersion(), request.question(), request.keywords(), request.topK()));
         if (!"ACCEPTED".equals(retrieved.status())) {
             RagAnswerResponse response = new RagAnswerResponse("INSUFFICIENT_EVIDENCE", request.question(),
-                    "当前资方知识库没有足够证据回答该问题。", false, MODEL, traceId, List.of(), retrieved);
+                    "当前资方知识库没有足够证据回答该问题。", false, model, traceId, List.of(), retrieved);
             saveAudit(response);
             return response;
         }
@@ -54,7 +56,7 @@ public class RagAnswerService {
         }
         String prompt = buildPrompt(request.question(), retrieved.candidates());
         ModelGateway.ModelCompletion completion = modelGateway.complete(
-                new ModelGateway.ModelRequest(MODEL, prompt, 800,
+                new ModelGateway.ModelRequest(model, prompt, 800,
                         mapper.writeValueAsString(java.util.Map.of("traceId", traceId, "question", request.question()))));
         JsonNode root = parseJson(completion.content());
         String answer = requiredText(root, "answer");
@@ -62,10 +64,19 @@ public class RagAnswerService {
         if (citations.isEmpty()) {
             throw new IllegalStateException("模型答案缺少有效引用");
         }
-        RagAnswerResponse response = new RagAnswerResponse("ANSWERED", request.question(), answer, true, MODEL,
+        RagAnswerResponse response = new RagAnswerResponse("ANSWERED", request.question(), answer, true, model,
                 traceId, citations, retrieved);
         saveAudit(response);
         return response;
+    }
+
+    public RagModelConfiguration.Selection modelConfiguration() {
+        return modelConfiguration.current();
+    }
+
+    public RagModelConfiguration.Selection selectModel(RagModelConfiguration.UpdateRequest request) {
+        if (request == null) throw new IllegalArgumentException("模型选择不能为空");
+        return modelConfiguration.select(request.provider(), request.model());
     }
 
     private void saveAudit(RagAnswerResponse response) throws Exception {
