@@ -206,6 +206,19 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-190] 2026-09-21 · Codex
+
+**控制台补齐审批后的"沉淀长期案例"与"执行治理模拟"**
+- 背景：C-188 发现这两个动作只能通过接口调用，且顺序反了会被状态机拒绝（模拟执行后状态变为 `SIMULATED`，案例沉淀要求 `APPROVED`）。
+- 视图层：`DiagnosticTaskView` 新增 `reviewOperationId`（唯一构造点在 `DiagnosticTask.toView()`），页面可直接把审批操作号作为案例审批标识。
+- 页面层：`index.html` 审批通过后渲染"审批后动作"面板，按正确顺序提供"沉淀长期案例"（`POST /{taskId}/memories`）与"执行治理模拟"（`POST /{taskId}/simulations`），并就地回显结果；拒绝/退回/过期仍显示原完成提示。
+- 涉及文件：`fund-guardian/.../workflow/DiagnosticTaskView.java`、`DiagnosticTask.java`、`fund-console/src/main/resources/static/index.html`。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS（fund-knowledge 33 / fund-guardian 71 / fund-integration 14 / fund-console 9 / fund-experiments 6，0 失败）。
+- Docker Console 重建重启后，用控制台 UI 实际点击验证：任务 `52f85dfd` 批准 → "沉淀长期案例"回显 `ACTIVE / NYXJ · credit-apply · 10 条证据引用` → "执行治理模拟"回显 `SIMULATED / THROTTLE_QPS · SIMULATED_SUCCESS`；数据库核对案例 2 条、模拟 3 条、任务状态 `SIMULATED`。
+- `git diff --check`：通过。
+
 ### [C-189] 2026-09-21 · Codex
 
 **待审批任务超期后自动置 EXPIRED**

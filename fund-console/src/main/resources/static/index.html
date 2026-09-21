@@ -933,11 +933,72 @@
                 method: 'POST', body: JSON.stringify({operationId: crypto.randomUUID(), action,
                     reviewer, comment: byId('reviewComment').value})
             });
-            byId('approvalDetail').innerHTML = `<div class="placeholder"><div><b>审批已完成：${escapeHtml(task.status)}</b><span>审批结果已写入任务时间线。</span></div></div>`;
+            if (task.status === 'APPROVED') {
+                renderPostApproval(task);
+            } else {
+                byId('approvalDetail').innerHTML = `<div class="placeholder"><div><b>审批已完成：${escapeHtml(task.status)}</b><span>审批结果已写入任务时间线。</span></div></div>`;
+            }
             loadApprovalTasks();
         } catch (error) {
             byId('reviewError').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
             buttons.forEach(button => button.disabled = false);
+        }
+    }
+
+    /**
+     * 审批通过后的两个后续动作：先按审批标识沉淀长期案例，再执行无外部副作用的治理模拟。
+     * 顺序由后端状态机保证（模拟执行后状态变为 SIMULATED，案例沉淀会被拒绝）。
+     */
+    function renderPostApproval(task) {
+        byId('approvalDetail').className = '';
+        byId('approvalDetail').innerHTML = `
+            <div class="mini-row"><span>当前状态</span><b>${escapeHtml(task.status)}</b></div>
+            <div class="mini-row"><span>审批人</span><span>${escapeHtml(task.review ? task.review.reviewer : '')}</span></div>
+            <p style="color:var(--muted)">先沉淀长期案例，再执行治理模拟；治理模拟只写审计记录，不产生真实变更。</p>
+            <div class="field" style="margin-top:14px"><label for="memoryApprovalRef">案例审批标识</label><input id="memoryApprovalRef" value="${escapeHtml(task.reviewOperationId || task.taskId)}" maxlength="128" placeholder="审批操作号"></div>
+            <div class="toolbar"><button class="primary" data-post="MEMORY">沉淀长期案例</button></div>
+            <div class="field" style="margin-top:14px"><label for="simulationAction">治理动作</label><input id="simulationAction" value="THROTTLE_QPS" maxlength="64"></div>
+            <div class="field" style="margin-top:10px"><label for="simulationParams">模拟参数（k=v，逗号分隔）</label><input id="simulationParams" value="qps=80" maxlength="200"></div>
+            <div class="field" style="margin-top:10px"><label for="simulationOperator">操作人</label><input id="simulationOperator" value="local-admin" maxlength="80"></div>
+            <div class="toolbar"><button class="secondary" data-post="SIMULATE">执行治理模拟</button></div>
+            <div id="postApprovalResult"></div>`;
+        document.querySelectorAll('[data-post]').forEach(button =>
+            button.addEventListener('click', () => button.dataset.post === 'MEMORY'
+                ? submitMemoryPromotion(task.taskId) : submitGovernanceSimulation(task.taskId)));
+    }
+
+    /** 把审批通过的诊断沉淀为长期案例记忆。 */
+    async function submitMemoryPromotion(taskId) {
+        const approvalId = byId('memoryApprovalRef').value.trim();
+        byId('postApprovalResult').innerHTML = '';
+        try {
+            const memory = await request(`/api/console/guardian/diagnostics/${taskId}/memories`, {
+                method: 'POST', body: JSON.stringify({approvalId})
+            });
+            byId('postApprovalResult').innerHTML = `<div class="placeholder"><div><b>已沉淀长期案例：${escapeHtml(memory.status)}</b><span>${escapeHtml(memory.providerId)} · ${escapeHtml(memory.interfaceId)} · 证据引用 ${(memory.evidenceRefs || []).length} 条</span></div></div>`;
+        } catch (error) {
+            byId('postApprovalResult').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    /** 对已批准任务执行一次只写审计记录的治理模拟。 */
+    async function submitGovernanceSimulation(taskId) {
+        const actionType = byId('simulationAction').value.trim();
+        const operator = byId('simulationOperator').value.trim();
+        const parameters = {};
+        byId('simulationParams').value.split(',').map(item => item.trim()).filter(Boolean).forEach(item => {
+            const index = item.indexOf('=');
+            if (index > 0) parameters[item.slice(0, index).trim()] = item.slice(index + 1).trim();
+        });
+        byId('postApprovalResult').innerHTML = '';
+        try {
+            const task = await request(`/api/console/guardian/diagnostics/${taskId}/simulations`, {
+                method: 'POST', body: JSON.stringify({operationId: crypto.randomUUID(), actionType, parameters, operator})
+            });
+            const latest = (task.simulations || [])[(task.simulations || []).length - 1];
+            byId('postApprovalResult').innerHTML = `<div class="placeholder"><div><b>治理模拟已完成：${escapeHtml(task.status)}</b><span>${escapeHtml(latest ? latest.actionType + ' · ' + latest.result : '')} · 仅写入审计记录</span></div></div>`;
+        } catch (error) {
+            byId('postApprovalResult').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
         }
     }
 

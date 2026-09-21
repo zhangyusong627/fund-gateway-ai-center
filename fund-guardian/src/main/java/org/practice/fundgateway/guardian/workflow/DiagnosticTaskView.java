@@ -21,6 +21,7 @@ public record DiagnosticTaskView(
         Instant updatedAt,
         Instant reviewDeadline,
         ReviewView review,
+        String reviewOperationId,
         List<DiagnosticTimelineEvent> timeline,
         List<GovernanceSimulationRecord> simulations) {
 

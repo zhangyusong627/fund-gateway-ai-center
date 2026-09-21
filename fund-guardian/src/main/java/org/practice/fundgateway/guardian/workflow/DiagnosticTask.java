@@ -173,7 +173,7 @@ public class DiagnosticTask {
     public synchronized DiagnosticTaskView toView() {
         return new DiagnosticTaskView(taskId, creationKey, snapshotId, riskFingerprint, status,
                 gateStatus, gateReason, report, createdAt, updatedAt, reviewDeadline, review,
-                timeline, simulations);
+                reviewOperationId, timeline, simulations);
     }
 
     /** 返回任务标识供仓储建立索引。 */
