@@ -206,6 +206,37 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
 
+### [C-189] 2026-09-21 · Codex
+
+**待审批任务超期后自动置 EXPIRED**
+- 背景：C-188 发现超期任务仍保持 `PENDING_APPROVAL`，会被风险指纹去重当作活动任务，导致同场景再次模拟只返回 `ACTIVE_TASK_EXISTS`，既不产生新任务也不调用模型。用户裁定改为自动置 `EXPIRED`。
+- 领域层：`DiagnosticTask` 新增 `expireIfOverdue(Instant)`，从原 `review()` 超时分支抽出，返回是否变化并追加 `APPROVAL_EXPIRED`；`review()` 改为复用它，审批行为不变。
+- 应用层：`DiagnosticWorkflowService` 新增 `expireOverdueTasks()`，并在 `create()`、`findById()`、`findAll()` 入口先执行一次；过期任务不再占用风险指纹，也不再在控制台显示为待审批。
+- 涉及文件：`fund-guardian/.../workflow/DiagnosticTask.java`、`DiagnosticWorkflowService.java`、`fund-guardian/src/test/.../DiagnosticWorkflowServiceTest.java`。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS（fund-knowledge 33 / fund-guardian 71 / fund-integration 14 / fund-console 9 / fund-experiments 6，0 失败；guardian 新增 2 项测试）。
+- 新增用例：`shouldExpireOverdueTaskOnQuery`（查询入口自动过期）、`shouldCreateNewTaskAfterFingerprintExpired`（同指纹过期后可创建新任务）。
+- 运行验证：Docker Console 重建重启后，新建任务 `ab5153d6` 为 `PENDING_APPROVAL`；仅将其 `review_deadline` 改为过去时间后调用一次列表接口（未做任何审批动作），状态即变为 `EXPIRED`，时间线末条为 `APPROVAL_EXPIRED`。
+- `git diff --check`：通过。
+- 证据文件：`docs/learning/M8-AI代跑验收执行记录-20260921.md`（已补充修复说明）。
+
+### [C-188] 2026-09-21 · Codex
+
+**M8 三条验收由 Codex 代跑完成（已运行层），并发现两个待裁决问题**
+- 执行方式：Computer Use 操作 Chrome 控制台 + 调用控制台接口；环境 `acceptance`，代码版本 `06dd626`。
+- 已跑通：智能守护模拟（LATENCY 与 COMBINED 各一次，各 1 次真实模型调用）、UI 审批 `APPROVED`、案例沉淀 `ACTIVE`（10 条证据引用）、治理模拟 `SIMULATED`、RAG 检索 `ACCEPTED`（`nyxj-api@v1`，融合分 0.6989 = 0.7×0.5699 + 0.3）、受控 Agent `turn=2 / toolCalls=1`、记忆跨任务隔离拒绝、长期案例按资方/接口召回。
+- 审批过期分支：对三条超期任务执行批准，均返回"审批已过期"并落为 `EXPIRED`。
+- 证据文件：`docs/learning/M8-AI代跑验收执行记录-20260921.md`；当日 4 次模型调用，估算成本 $0.0031574。
+
+**两个待裁决问题（未改动代码）**
+1. 控制台 UI 没有"治理模拟"和"案例沉淀"按钮，两步只能走接口；且必须先沉淀案例再治理模拟，顺序反了会因状态已变 `SIMULATED` 被拒绝。建议补按钮并按正确顺序串联。
+2. 超期任务仍保持 `PENDING_APPROVAL`，会被风险指纹去重当作活动任务，导致同场景再次模拟返回 `ACTIVE_TASK_EXISTS`，既不产生新任务也不调用模型。需决定自动置 `EXPIRED` 还是让去重忽略超期任务。
+
+**口径**
+- 本轮属于"已运行"证据，**不构成学习者的已独立验证**；学习者需自行复跑并可口述后方可记录为独立验证。
+- 尚未执行 commit、push。
+
 ### [C-187] 2026-09-21 · Codex
 
 **术语统一：智能守护一律称“模拟”，全文不再使用“回放”**

@@ -66,6 +66,7 @@ public class DiagnosticWorkflowService {
         }
         requireSnapshotPermissions(snapshot, creationKey, context);
         if (snapshot != null) {
+            expireOverdueTasks();
             Optional<DiagnosticTask> active = repository.findActiveByRiskFingerprint(snapshot.riskFingerprint());
             if (active.isPresent()) {
                 return active.orElseThrow().toView();
@@ -140,6 +141,7 @@ public class DiagnosticWorkflowService {
 
     /** 查询一条诊断任务详情及完整时间线。 */
     public Optional<DiagnosticTaskView> findById(UUID taskId) {
+        expireOverdueTasks();
         return repository.findById(taskId).map(DiagnosticTask::toView);
     }
 
@@ -150,10 +152,31 @@ public class DiagnosticWorkflowService {
 
     /** 按更新时间倒序查询任务，可按状态过滤。 */
     public List<DiagnosticTaskView> findAll(DiagnosticTaskStatus status) {
+        expireOverdueTasks();
         return repository.findAll().stream().map(DiagnosticTask::toView)
                 .filter(view -> status == null || view.status() == status)
                 .sorted(Comparator.comparing(DiagnosticTaskView::updatedAt).reversed())
                 .toList();
+    }
+
+    /**
+     * 把已超过审批截止时间但仍处于待审批的任务统一置为 EXPIRED，并返回本次过期的任务标识。
+     * 查询与创建入口都会先执行一次，避免过期任务继续占用风险指纹或被展示为待审批。
+     */
+    public List<UUID> expireOverdueTasks() {
+        Instant now = Instant.now(clock);
+        List<UUID> expired = new java.util.ArrayList<>();
+        for (DiagnosticTask task : repository.findAll()) {
+            if (task.state().status() != DiagnosticTaskStatus.PENDING_APPROVAL) {
+                continue;
+            }
+            DiagnosticTaskState before = task.state();
+            if (task.expireIfOverdue(now) && !before.equals(task.state())) {
+                repository.save(task);
+                expired.add(task.taskId());
+            }
+        }
+        return expired;
     }
 
     /** 执行指定的人工审批动作。 */

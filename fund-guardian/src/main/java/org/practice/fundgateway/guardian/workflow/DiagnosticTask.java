@@ -115,10 +115,7 @@ public class DiagnosticTask {
         if (status != DiagnosticTaskStatus.PENDING_APPROVAL) {
             throw new DiagnosticWorkflowException("当前任务状态不允许审批：" + status);
         }
-        if (now == null || now.isAfter(reviewDeadline)) {
-            status = DiagnosticTaskStatus.EXPIRED;
-            updatedAt = now == null ? reviewDeadline : now;
-            append("APPROVAL_EXPIRED", "SYSTEM", "审批已超过截止时间", updatedAt);
+        if (expireIfOverdue(now)) {
             throw new DiagnosticWorkflowException("审批已过期");
         }
         if (action == null || isBlank(reviewer)) {
@@ -130,6 +127,24 @@ public class DiagnosticTask {
         updatedAt = now;
         completedOperations.add(operationId);
         append("APPROVAL_" + action.name(), reviewer, review.comment(), now);
+    }
+
+    /**
+     * 待审批任务超过审批截止时间时置为 EXPIRED。
+     * 返回是否发生了状态变化，便于调用方只在真正过期时保存聚合。
+     */
+    public synchronized boolean expireIfOverdue(Instant now) {
+        if (status != DiagnosticTaskStatus.PENDING_APPROVAL || reviewDeadline == null) {
+            return false;
+        }
+        if (now != null && !now.isAfter(reviewDeadline)) {
+            return false;
+        }
+        Instant stamp = now == null ? reviewDeadline : now;
+        status = DiagnosticTaskStatus.EXPIRED;
+        updatedAt = stamp;
+        append("APPROVAL_EXPIRED", "SYSTEM", "审批已超过截止时间", stamp);
+        return true;
     }
 
     /** 在人工批准后写入一条无真实副作用的治理模拟记录。 */

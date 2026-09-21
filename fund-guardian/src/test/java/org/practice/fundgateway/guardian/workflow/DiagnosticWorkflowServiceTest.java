@@ -1,6 +1,7 @@
 package org.practice.fundgateway.guardian.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -152,6 +153,32 @@ class DiagnosticWorkflowServiceTest {
         assertEquals(1, repeated.simulations().size());
         assertEquals("SIMULATED_SUCCESS", simulated.simulations().get(0).result());
         assertEquals(1, service.findAll(DiagnosticTaskStatus.SIMULATED).size());
+    }
+
+    /** 超过审批期限后，查询入口应自动把待审批任务置为已过期。 */
+    @Test
+    void shouldExpireOverdueTaskOnQuery() {
+        DiagnosticTaskView task = service.create("request-9", snapshot(true), report(false, false));
+        clock.advance(Duration.ofMinutes(16));
+
+        DiagnosticTaskView expired = service.findById(task.taskId()).orElseThrow();
+
+        assertEquals(DiagnosticTaskStatus.EXPIRED, expired.status());
+        assertEquals("APPROVAL_EXPIRED", expired.timeline().get(expired.timeline().size() - 1).eventType());
+        assertEquals(0, service.findAll(DiagnosticTaskStatus.PENDING_APPROVAL).size());
+    }
+
+    /** 同指纹任务自动过期后再次创建应生成新任务，不再复用过期任务。 */
+    @Test
+    void shouldCreateNewTaskAfterFingerprintExpired() {
+        DiagnosticTaskView first = service.create("request-10", snapshot(true), report(false, false));
+        clock.advance(Duration.ofMinutes(16));
+
+        DiagnosticTaskView second = service.create("request-11", snapshot(true), report(false, false));
+
+        assertNotEquals(first.taskId(), second.taskId());
+        assertEquals(DiagnosticTaskStatus.PENDING_APPROVAL, second.status());
+        assertEquals(DiagnosticTaskStatus.EXPIRED, service.findById(first.taskId()).orElseThrow().status());
     }
 
     /** 未经人工批准的任务不得执行治理模拟。 */
