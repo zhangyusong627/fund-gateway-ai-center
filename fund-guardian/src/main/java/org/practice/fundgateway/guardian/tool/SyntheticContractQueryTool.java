@@ -21,6 +21,6 @@ public class SyntheticContractQueryTool implements ToolCallback {
     @Override
     public String call(String toolInput) {
         SyntheticToolInput.require(toolInput, "只支持合成资方的授信申请查询");
-        return "{\"provider\":\"synthetic-provider\",\"interface\":\"credit-apply\",\"qpsLimit\":20,\"timeoutMs\":3000}";
+        return "{\"provider\":\"NYXJ\",\"interface\":\"credit-apply\",\"qpsLimit\":20,\"timeoutMs\":3000}";
     }
 }

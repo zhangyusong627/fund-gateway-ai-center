@@ -17,9 +17,9 @@
 - `fund-guardian`：指标消费、窗口、规则、风险、诊断快照、Agent、门禁、审核和模拟治理。
 - `fund-guardian` 的 Agent 上下文由 `conversationId`、`diagnosticTaskId`、有限会话消息、诊断快照、RAG 引用和工具轨迹组成；会话记忆与长期案例记忆不放入 `fund-common`。
 - Prompt 使用 classpath 版本资源；Agent 由应用层实现有界循环，Java 控制工具白名单、权限、轮次、超时和终止状态。
-- `fund-console`：当前统一管理后台、REST 入站接口和跨模块只读聚合，并装配本期知识库、评测、守护回放、Agent、审批和审计闭环；长期领域规则仍应归属对应能力模块。
+- `fund-console`：当前统一管理后台、REST 入站接口和跨模块只读聚合，并装配本期知识库、评测、守护模拟、Agent、审批和审计闭环；长期领域规则仍应归属对应能力模块。
 - `fund-common`：通用标识、错误和审计关联信息，不放领域实体。
-- `fund-experiments`：历史实验与回放入口，不进入最终业务边界。
+- `fund-experiments`：历史实验与模拟入口，不进入最终业务边界。
 
 知识库和智能守护内部采用轻量 DDD 与六边形依赖：入站适配器调用应用用例，应用层编排领域对象，基础设施实现出站端口。
 

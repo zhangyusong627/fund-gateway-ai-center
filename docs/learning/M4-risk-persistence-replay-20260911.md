@@ -1,4 +1,4 @@
-# M4 风险落库幂等回放
+# M4 风险落库幂等模拟
 
 - Profile：`m4-persistence`
 - 数据库：本地 PostgreSQL `fund_integration`

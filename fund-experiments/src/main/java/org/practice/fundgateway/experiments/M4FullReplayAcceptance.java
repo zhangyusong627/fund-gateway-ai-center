@@ -51,7 +51,7 @@ public class M4FullReplayAcceptance implements CommandLineRunner {
             }
         }
         if (result == null) {
-            throw new IllegalStateException("完整回放没有识别出风险");
+            throw new IllegalStateException("完整模拟没有识别出风险");
         }
         MetricEvent first = events.get(0);
         Integer riskEvents = jdbcTemplate.queryForObject(
@@ -106,7 +106,7 @@ public class M4FullReplayAcceptance implements CommandLineRunner {
             }
         }
         if (events.size() != 20) {
-            throw new IllegalStateException("M4 回放消息数量不是 20，实际=" + events.size());
+            throw new IllegalStateException("M4 模拟消息数量不是 20，实际=" + events.size());
         }
         return events;
     }

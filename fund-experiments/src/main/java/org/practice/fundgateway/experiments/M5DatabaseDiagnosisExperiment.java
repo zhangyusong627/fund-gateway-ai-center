@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** M5 端到端回放：读取数据库待诊断任务，调用模型并执行 Java 门禁。 */
+/** M5 端到端模拟：读取数据库待诊断任务，调用模型并执行 Java 门禁。 */
 @Component
 @Profile("m5-e2e")
 public class M5DatabaseDiagnosisExperiment implements CommandLineRunner {
@@ -32,7 +32,7 @@ public class M5DatabaseDiagnosisExperiment implements CommandLineRunner {
     private static final String BASE_URL = "https://api.deepseek.com";
     private final JsonMapper mapper = JsonMapper.builder().build();
 
-    /** 启动后消费一条待诊断任务，完成一次可回放的端到端诊断。 */
+    /** 启动后消费一条待诊断任务，完成一次可复现的端到端诊断。 */
     @Override
     public void run(String... args) throws Exception {
         execute();

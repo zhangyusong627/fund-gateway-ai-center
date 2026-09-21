@@ -74,6 +74,12 @@ public class DemoConsoleController {
         return ragService.publishedCollections();
     }
 
+    /** 返回智能守护可以选择的资方诊断上下文，而不是文档列表。 */
+    @GetMapping("/guardian/providers")
+    public List<ConsoleModels.GuardianProvider> guardianProviders() {
+        return ragService.publishedGuardianProviders();
+    }
+
     /** 浏览指定已发布文档的分片，避免用户手工查询向量数据库。 */
     @GetMapping("/rag/chunks")
     public ConsoleModels.KnowledgeChunkPage browseChunks(
@@ -143,7 +149,7 @@ public class DemoConsoleController {
         return ragService.queryAudits();
     }
 
-    /** 触发一次智能守护指标回放。 */
+    /** 触发一次智能守护指标诊断模拟。 */
     @PostMapping("/guardian/simulate")
     public GuardianSimulationResponse guardianSimulation(@RequestBody GuardianSimulationRequest request)
             throws Exception {

@@ -42,7 +42,7 @@ FG-ADC（Fund Gateway AI Decision Center）是一个 Java-first 的 AI 大模型
 | `fund-guardian` | 指标、窗口、风险、诊断、Agent、记忆、门禁、审核和模拟治理 | 智能守护能力与独立应用 |
 | `fund-integration` | 既有 SPI/资方接入助手 | 暂缓能力，当前主要是内存实现 |
 | `fund-console` | 统一管理后台、REST API、跨模块聚合和当前演示编排 | 默认完整演示入口 |
-| `fund-experiments` | 单点实验和历史回放 | 不属于正式控制台边界 |
+| `fund-experiments` | 单点实验和历史模拟 | 不属于正式控制台边界 |
 
 当前 Docker Compose 会启动 `fund-console`、`fund-guardian`、`fund-integration`、PostgreSQL 和 Redpanda。默认完整业务演示通过 `fund-console` 完成；`fund-guardian` 的 Redpanda 指标消费者默认关闭，需要单独开启时再配置 `GUARDIAN_METRIC_CONSUMER_AUTO_START=true`。
 
@@ -104,7 +104,7 @@ java -jar fund-console/target/fund-console-0.0.1-SNAPSHOT.jar \
 2. 在“索引任务”执行解析、分片和向量索引，确认集合为 `PUBLISHED`。
 3. 在“检索实验室”查看 Top-K 结果、分数、分片和来源定位。
 4. 在“RAG 评测”创建评测集；标准分片和定位信息可从“浏览分片”中选择。
-5. 在“智能守护”执行合成指标回放，查看风险、诊断快照、模型调用和门禁结果。
+5. 在“智能守护”执行合成指标模拟，查看风险、诊断快照、模型调用和门禁结果。
 6. 对需要人工确认的诊断执行审批；治理操作只生成模拟记录。
 7. 在“模型成本与审计”按币种查看 Token、调用、价格版本和预估费用。
 
@@ -122,8 +122,8 @@ java -jar fund-console/target/fund-console-0.0.1-SNAPSHOT.jar \
 | `POST /rag/query` | 执行 RAG 检索 |
 | `POST /rag/evaluation-sets` | 创建评测集 |
 | `POST /rag/evaluation-sets/{setId}/runs` | 执行评测集 |
-| `POST /guardian/simulate` | 执行智能守护回放 |
-| `POST /guardian/agent/replay` | 启动受控 Agent 回放 |
+| `POST /guardian/simulate` | 执行智能守护模拟 |
+| `POST /guardian/agent/replay` | 启动受控 Agent 模拟 |
 | `GET /audit/model-costs` | 查看模型成本汇总 |
 
 实际请求字段以 `fund-console` 控制器和页面为准。

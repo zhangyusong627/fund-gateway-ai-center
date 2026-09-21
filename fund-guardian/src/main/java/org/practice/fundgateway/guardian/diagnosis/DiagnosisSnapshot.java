@@ -3,7 +3,7 @@ package org.practice.fundgateway.guardian.diagnosis;
 import java.time.Instant;
 import java.util.List;
 
-/** 保存一次诊断所使用的只读事实，确保模型输入可以回放。 */
+/** 保存一次诊断所使用的只读事实，确保模型输入可以模拟。 */
 public record DiagnosisSnapshot(
         String snapshotId,
         Instant capturedAt,

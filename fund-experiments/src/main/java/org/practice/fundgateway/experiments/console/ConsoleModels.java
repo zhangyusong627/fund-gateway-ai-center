@@ -38,11 +38,11 @@ public final class ConsoleModels {
                                String documentVersion, String locator) {
     }
 
-    /** 智能守护回放参数。 */
+    /** 智能守护模拟参数。 */
     public record GuardianSimulationRequest(String scenario, Integer messageCount, Boolean invokeModel) {
     }
 
-    /** 智能守护回放结果。 */
+    /** 智能守护模拟结果。 */
     public record GuardianSimulationResponse(String scenario, int metricMessages, int aggregateWindows,
                                              int riskWindows, int diagnosticTasks, int suppressedTasks,
                                              int actualModelCalls, long durationMs,

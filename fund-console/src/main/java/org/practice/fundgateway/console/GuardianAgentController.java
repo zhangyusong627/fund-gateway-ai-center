@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 提供可复现的会话记忆和真实两轮 Agent 回放入口。 */
+/** 提供可复现的会话记忆和真实两轮 Agent 模拟入口。 */
 @RestController
 @RequestMapping("/api/console/guardian/agent")
 public class GuardianAgentController {
@@ -21,7 +21,7 @@ public class GuardianAgentController {
         this.agentService = agentService;
     }
 
-    /** 执行一次绑定会话和诊断任务的受控 Agent 回放。 */
+    /** 执行一次绑定会话和诊断任务的受控 Agent 模拟。 */
     @PostMapping("/replay")
     public GuardianAgentService.AgentReplayResponse replay(@RequestBody AgentReplayRequest request)
             throws Exception {
@@ -44,7 +44,7 @@ public class GuardianAgentController {
         return agentService.resume(conversationId, diagnosticTaskId);
     }
 
-    /** Agent 回放请求。 */
+    /** Agent 模拟请求。 */
     public record AgentReplayRequest(String conversationId, UUID diagnosticTaskId, String prompt) {
     }
 }

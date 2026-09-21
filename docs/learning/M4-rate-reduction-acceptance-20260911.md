@@ -12,4 +12,4 @@
 M4 降频验收：metricMessages=20，riskEvents=1，diagnosticTasks=1，taskCreated=false
 ```
 
-`taskCreated=false` 表示本次回放发现该风险窗口已有幂等任务；数据库中最终仍只有 1 条诊断任务，重复回放没有新增任务。
+`taskCreated=false` 表示本次模拟发现该风险窗口已有幂等任务；数据库中最终仍只有 1 条诊断任务，重复模拟没有新增任务。

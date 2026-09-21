@@ -97,7 +97,7 @@ create table if not exists knowledge.rag_evaluation_sets (
     collection_name varchar(128) not null references knowledge.rag_collections(collection_name),
     document_id varchar(128) not null,
     document_version varchar(64) not null,
-    top_k integer not null check (top_k between 1 and 10),
+    top_k integer not null check (top_k between 1 and 50),
     created_at timestamptz not null default now(),
     unique (name, document_id, document_version)
 );
@@ -149,8 +149,12 @@ create table if not exists knowledge.rag_query_audits (
     document_version varchar(64),
     question text not null,
     keywords jsonb not null,
-    top_k integer not null check (top_k between 1 and 10),
+    top_k integer not null check (top_k between 1 and 50),
     status varchar(32) not null,
+    actual_candidate_count integer not null check (actual_candidate_count >= 0),
+    retrieval_mode varchar(32) not null,
+    matched_candidate_count integer not null check (matched_candidate_count >= 0),
+    truncated boolean not null,
     indexed_chunks integer not null,
     duration_ms bigint not null check (duration_ms >= 0),
     missing_keywords jsonb not null,

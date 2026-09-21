@@ -41,7 +41,7 @@ public class DemoConsoleController {
         return ragService.query(request);
     }
 
-    /** 触发一次智能守护指标回放。 */
+    /** 触发一次智能守护指标模拟。 */
     @PostMapping("/guardian/simulate")
     public GuardianSimulationResponse guardianSimulation(@RequestBody GuardianSimulationRequest request)
             throws Exception {

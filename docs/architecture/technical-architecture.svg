@@ -52,7 +52,7 @@
   <rect x="1740" y="670" width="235" height="76" rx="8" stroke="#377fbd" class="card"/><text x="1858" y="697" text-anchor="middle" class="cardTitle">不可变版本发布</text><text x="1858" y="720" text-anchor="middle" class="cardNote">接口规范 V1 / 发布事件</text>
   <path d="M1425 588H1465 M1700 588H1740 M1858 626V670 M1740 708H1700 M1465 708H1425" class="flow"/>
 
-  <rect x="280" y="825" width="1690" height="28" rx="6" fill="#d6e2ef" stroke="#708aa4"/><text x="1125" y="844" text-anchor="middle" class="cardNote">fund-console：当前装配知识库、RAG、评测、守护回放、Agent、审批与审计；fund-common 只提供通用对象</text>
+  <rect x="280" y="825" width="1690" height="28" rx="6" fill="#d6e2ef" stroke="#708aa4"/><text x="1125" y="844" text-anchor="middle" class="cardNote">fund-console：当前装配知识库、RAG、评测、守护模拟、Agent、审批与审计；fund-common 只提供通用对象</text>
   <path d="M845 364V430H398V550 M1750 364V430H1308V550" class="flow"/>
   <path d="M1285 364V430H1130V650H535V708H515" class="flow"/>
   <path d="M1858 550V430H1285V300" class="event"/>
@@ -62,7 +62,7 @@
   <rect x="270" y="955" width="480" height="78" rx="8" stroke="#7552aa" class="card"/><text x="510" y="983" text-anchor="middle" class="cardTitle">fund-knowledge · 共享 Java 能力模块</text><text x="510" y="1007" text-anchor="middle" class="cardNote">文档解析 / 切分 / 本地 BGE Embedding / RAG / 引用追踪</text>
   <rect x="810" y="955" width="350" height="78" rx="8" stroke="#7552aa" class="card"/><text x="985" y="983" text-anchor="middle" class="cardTitle">DeepSeek API</text><text x="985" y="1007" text-anchor="middle" class="cardNote">诊断推理 / 候选事实抽取</text>
   <rect x="1220" y="955" width="350" height="78" rx="8" stroke="#7552aa" class="card"/><text x="1395" y="983" text-anchor="middle" class="cardTitle">只读工具与证据组装</text><text x="1395" y="1007" text-anchor="middle" class="cardNote">Java 先准备快照，模型按需补充读取</text>
-  <rect x="1630" y="955" width="340" height="78" rx="8" stroke="#7552aa" class="card"/><text x="1800" y="983" text-anchor="middle" class="cardTitle">评测与证据回放</text><text x="1800" y="1007" text-anchor="middle" class="cardNote">检索指标 / 失败案例 / 全链路证据</text>
+  <rect x="1630" y="955" width="340" height="78" rx="8" stroke="#7552aa" class="card"/><text x="1800" y="983" text-anchor="middle" class="cardTitle">评测与证据追溯</text><text x="1800" y="1007" text-anchor="middle" class="cardNote">检索指标 / 失败案例 / 全链路证据</text>
   <path d="M948 746V895H510V955 M948 746V895H985V955 M1858 746V895H510V955 M1858 626V895H985V955 M1858 746V895H1800V955" class="dash"/>
 
   <rect x="220" y="1130" width="1820" height="190" rx="10" fill="#fce5cf" stroke="#d59b62" class="band"/>
@@ -73,7 +73,7 @@
   <rect x="680" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="865" y="1225" text-anchor="middle" class="cardTitle">integration Schema（预留）</text><text x="865" y="1247" text-anchor="middle" class="cardNote">暂缓能力；当前候选与发布主要在内存</text>
   <rect x="1085" y="1200" width="370" height="60" rx="7" stroke="#c87931" class="card"/><text x="1270" y="1225" text-anchor="middle" class="cardTitle">knowledge Schema</text><text x="1270" y="1247" text-anchor="middle" class="cardNote">文档 / 分块 / 向量 / 来源及其审计</text>
   <rect x="1535" y="1160" width="220" height="125" rx="8" stroke="#c87931" class="card"/><text x="1645" y="1205" text-anchor="middle" class="cardTitle">模型证据文件</text><text x="1645" y="1229" text-anchor="middle" class="cardNote">提示词 / 请求响应</text><text x="1645" y="1251" text-anchor="middle" class="cardNote">工具 / 门禁 / 审核</text>
-  <rect x="1790" y="1160" width="220" height="125" rx="8" stroke="#c87931" class="card"/><text x="1900" y="1205" text-anchor="middle" class="cardTitle">评测与回放文件</text><text x="1900" y="1229" text-anchor="middle" class="cardNote">问题集 / 指标结果</text><text x="1900" y="1251" text-anchor="middle" class="cardNote">失败样例 / 运行报告</text>
+  <rect x="1790" y="1160" width="220" height="125" rx="8" stroke="#c87931" class="card"/><text x="1900" y="1205" text-anchor="middle" class="cardTitle">评测与模拟文件</text><text x="1900" y="1229" text-anchor="middle" class="cardNote">问题集 / 指标结果</text><text x="1900" y="1251" text-anchor="middle" class="cardNote">失败样例 / 运行报告</text>
   <path d="M510 1033V1110H1270V1200 M985 1033V1110H870V1160 M1395 1033V1110H1900V1160" class="dash"/>
 
   <rect x="220" y="1360" width="1820" height="105" rx="10" fill="#e6ebf0" stroke="#95a3b0" class="band"/>
@@ -84,6 +84,6 @@
 
   <rect x="220" y="1505" width="1820" height="58" rx="10" fill="#dce8f3" stroke="#7393ad" stroke-width="2"/>
   <rect x="34" y="1510" width="155" height="48" rx="24" fill="#4f718c"/><text x="112" y="1541" text-anchor="middle" class="layerTitle" fill="#fff">横切治理</text>
-  <text x="1130" y="1541" text-anchor="middle" class="cardTitle">认证授权　｜　数据所有权　｜　工具白名单　｜　密钥安全　｜　版本追踪　｜　审计回放　｜　成本预算　｜　人工审核</text>
+  <text x="1130" y="1541" text-anchor="middle" class="cardTitle">认证授权　｜　数据所有权　｜　工具白名单　｜　密钥安全　｜　版本追踪　｜　审计追溯　｜　成本预算　｜　人工审核</text>
   <text x="48" y="1588" class="subtitle">实现边界：轻量 DDD 与六边形依赖；不引入微服务平台、Flink、Event Sourcing、Saga、CQRS 框架或状态机框架。</text>
 </svg>

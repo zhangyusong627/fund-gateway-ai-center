@@ -178,8 +178,8 @@ public class RagEvaluationService {
                 || blank(request.documentId()) || blank(request.documentVersion())) {
             throw new IllegalArgumentException("评测集名称、集合和文档版本不能为空");
         }
-        if (request.topK() == null || request.topK() < 1 || request.topK() > 10) {
-            throw new IllegalArgumentException("Top-K 必须在 1 到 10 之间");
+        if (request.topK() == null || request.topK() < 1 || request.topK() > 50) {
+            throw new IllegalArgumentException("Top-K 必须在 1 到 50 之间");
         }
         if (request.cases() == null || request.cases().isEmpty()) {
             throw new IllegalArgumentException("评测集至少包含一道题");

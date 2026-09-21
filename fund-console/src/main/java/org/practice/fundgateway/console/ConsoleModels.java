@@ -39,21 +39,34 @@ public final class ConsoleModels {
 
     /** RAG 查询参数。 */
     public record RagQueryRequest(String collectionName, String documentId, String documentVersion,
-                                  String question, List<String> keywords, Integer topK) {
+                                  String question, List<String> keywords, Integer topK, String providerId) {
+        public RagQueryRequest(String collectionName, String documentId, String documentVersion,
+                               String question, List<String> keywords, Integer topK) {
+            this(collectionName, documentId, documentVersion, question, keywords, topK, null);
+        }
     }
 
     /** RAG 查询结果。 */
-    public record RagQueryResponse(String status, String collectionName, String question, int topK, long durationMs,
-                                   int indexedChunks, Set<String> missingKeywords,
+    public record RagQueryResponse(String status, String collectionName, String question, int topK,
+                                   int actualCandidateCount, String retrievalMode, int matchedCandidateCount,
+                                   boolean truncated, long durationMs, int indexedChunks, Set<String> missingKeywords,
                                    List<RagCandidate> candidates) {
     }
 
     /** 面向用户的证据约束 RAG 答案请求。 */
     public record RagAnswerRequest(String collectionName, String documentId, String documentVersion,
-                                   String question, List<String> keywords, Integer topK) {
+                                   String question, List<String> keywords, Integer topK, String providerId) {
+        public RagAnswerRequest(String collectionName, String documentId, String documentVersion,
+                                String question, List<String> keywords, Integer topK) {
+            this(collectionName, documentId, documentVersion, question, keywords, topK, null);
+        }
     }
 
-    /** 面向用户的结构化 RAG 答案；引用必须来自本次召回证据。 */
+    /**
+     * 面向用户的结构化 RAG 答案；引用必须来自本次召回证据。
+     * {@code model} 表示本次实际调用的模型；证据门禁在调用前拒绝时为 {@code NOT_INVOKED}，
+     * 此时不得按“已调用模型”解读。
+     */
     public record RagAnswerResponse(String status, String question, String answer, boolean evidenceSufficient,
                                     String model, String traceId, List<RagCitation> citations,
                                     RagQueryResponse retrieval) {
@@ -72,7 +85,9 @@ public final class ConsoleModels {
     /** 在线检索审计记录，保存一次查询的输入、门禁和候选证据。 */
     public record RagQueryAudit(java.util.UUID queryId, String collectionName, String documentId,
                                 String documentVersion, String question, List<String> keywords, int topK,
-                                String status, int indexedChunks, long durationMs, Set<String> missingKeywords,
+                                int actualCandidateCount, String retrievalMode, int matchedCandidateCount,
+                                boolean truncated, String status, int indexedChunks, long durationMs,
+                                Set<String> missingKeywords,
                                 List<RagCandidate> candidates, java.time.Instant queriedAt) {
     }
 
@@ -84,6 +99,10 @@ public final class ConsoleModels {
 
     /** 已发布集合内可供限定检索范围的文档版本。 */
     public record PublishedDocument(String documentId, String documentVersion, int chunkCount) {
+    }
+
+    /** 可供智能守护选择的资方诊断上下文。 */
+    public record GuardianProvider(String providerId, String displayName) {
     }
 
     /** 文档分片浏览结果，供评测集选择标准证据。 */
@@ -140,11 +159,24 @@ public final class ConsoleModels {
                                String documentVersion, String locator) {
     }
 
-    /** 智能守护回放参数。 */
-    public record GuardianSimulationRequest(String scenario, Integer messageCount, Boolean invokeModel) {
+    /** 智能守护诊断模拟参数。 */
+    // knowledgeCollectionName 保留用于兼容旧请求；文档和版本字段已不再作为诊断选择维度。
+    public record GuardianSimulationRequest(String scenario, Integer messageCount, Boolean invokeModel,
+                                            String knowledgeCollectionName, String knowledgeDocumentId,
+                                            String knowledgeDocumentVersion, String providerId) {
+        public GuardianSimulationRequest(String scenario, Integer messageCount, Boolean invokeModel) {
+            this(scenario, messageCount, invokeModel, null, null, null, "NYXJ");
+        }
+
+        public GuardianSimulationRequest(String scenario, Integer messageCount, Boolean invokeModel,
+                                         String knowledgeCollectionName, String knowledgeDocumentId,
+                                         String knowledgeDocumentVersion) {
+            this(scenario, messageCount, invokeModel, knowledgeCollectionName, knowledgeDocumentId,
+                    knowledgeDocumentVersion, "NYXJ");
+        }
     }
 
-    /** 智能守护回放结果。 */
+    /** 智能守护诊断模拟结果。 */
     public record GuardianSimulationResponse(String scenario, int metricMessages, int aggregateWindows,
                                              int riskWindows, int diagnosticTasks, int suppressedTasks,
                                              int actualModelCalls, long durationMs,

@@ -133,7 +133,7 @@ class ModelDiagnosisFacadeTest {
                 timeout, maxAttempts, Executors.newVirtualThreadPerTaskExecutor(), java.time.Clock.systemUTC());
     }
 
-    /** 构造包含确定性规则证据的可回放诊断快照。 */
+    /** 构造包含确定性规则证据的可复现诊断快照。 */
     private DiagnosisSnapshot snapshot() {
         return new DiagnosisSnapshot("snapshot-1", Instant.parse("2026-09-13T00:00:00Z"),
                 new MetricsEvidence("synthetic-provider", "credit-apply", 100, 800, 0.1, 45, 50),

@@ -21,7 +21,8 @@ public final class DeepSeekPricingPolicy {
         if (model == null || model.isBlank()) {
             throw new IllegalArgumentException("模型名称不能为空");
         }
-        if (!model.equalsIgnoreCase("deepseek-v4-flash")
+        if (!model.equalsIgnoreCase("deepseek-flash")
+                && !model.equalsIgnoreCase("deepseek-v4-flash")
                 && !model.equalsIgnoreCase("deepseek-v4.1-flash")) {
             throw new IllegalArgumentException("没有预置 DeepSeek 模型价格：" + model);
         }

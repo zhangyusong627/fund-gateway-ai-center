@@ -80,8 +80,8 @@ fund-common       共享：通用标识、错误类型、审计关联信息（�
 fund-knowledge    共享能力：文档、切分、Embedding、RAG、来源、索引和查询接口
 fund-guardian     智能守护能力与独立 Spring Boot 应用（指标 + 规则 + Agent + 审批 + 模拟执行）
 fund-integration  独立 Spring Boot 应用：既有资方接入助手，暂缓扩展，当前主要为内存实现
-fund-console      统一管理工作台：REST 入站、知识库/RAG/评测、守护回放、Agent、审批与审计
-fund-experiments  仅保留历史实验和回放入口，不属于正式控制台边界
+fund-console      统一管理工作台：REST 入站、知识库/RAG/评测、守护模拟、Agent、审批与审计
+fund-experiments  仅保留历史实验和模拟入口，不属于正式控制台边界
 ```
 
 当前默认完整演示入口是 `fund-console:18080`；`fund-guardian` 的 Redpanda 指标消费者默认关闭，开启后才走消息消费验证链路。核心业务域是资方知识库和智能守护；`fund-integration` 只作为暂缓的历史能力保留。
@@ -148,8 +148,8 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 | M3 资方接入助手 | 历史能力，暂缓扩展 | 候选规范、Java 校验、人工确认和 V1 | 既有证据保留，不作为当前主线 |
 | M4 智能守护实时链路 | 已完成 | 指标、窗口、规则、风险、去重和冷却 | 高频指标只产生少量诊断任务 |
 | M5 Agent 联合诊断 | 已完成 | 快照、RAG、只读工具、报告门禁、人工审核 | 结论有证据，缺证停止，冲突转人工 |
-| M6 双应用与 Docker | 已完成 | 独立启动、依赖故障、Compose 和联合回放 | 运行入口和依赖状态可验证 |
-| M7 控制台与交付 | 已完成 | 管理后台、持久化、成本审计和联合回放 | 统一入口可回放核心链路 |
+| M6 双应用与 Docker | 已完成 | 独立启动、依赖故障、Compose 和联合模拟 | 运行入口和依赖状态可验证 |
+| M7 控制台与交付 | 已完成 | 管理后台、持久化、成本审计和联合模拟 | 统一入口可复现核心链路 |
 | M8 记忆与 Agent 收尾 | 当前收尾 | Prompt、记忆、受控 Agent、文档和 ER 整理 | 学习者独立验收和交付材料完成 |
 
 ### 1.8 当前状态（截至 2026-09-14）
@@ -166,7 +166,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 | M1-D1 | 三个只读工具、Java 规则、真实 Tool Calling、结构化报告、中文门禁和三层验收已完成 |
 | 架构基线 | 双业务域 PRD、业务架构、技术架构、ER 模型及 ADR-008～ADR-016 已完成同步 |
 | 当前阶段 | M0～M7 核心链路和控制台已完成；M8 记忆管理与受控 Agent 闭环已完成，进入学习者独立验收与交付整理 |
-| 可视化控制台 | 已完成：18080 统一入口可触发 RAG、指标回放、受控 Agent 和可选 DeepSeek 诊断，并展示证据、门禁、记忆和审计结果 |
+| 可视化控制台 | 已完成：18080 统一入口可触发 RAG、指标模拟、受控 Agent 和可选 DeepSeek 诊断，并展示证据、门禁、记忆和审计结果 |
 
 **历史资料索引**：旧阶段的详细验证结果以 `docs/learning/README.md` 为入口；冻结决策以 `docs/adr/README.md` 为入口；任务设计以 `docs/tasks/README.md` 为入口。交接日志保留过程证据，不作为当前状态的第二份权威来源。
 
@@ -200,11 +200,89 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ## 3. 下一步唯一动作：完成 M8 学习者独立验收与项目交付整理
 
-由学习者通过 18080 控制台独立完成一次 RAG 检索、一次智能守护回放和一次受控 Agent/记忆回放，并说明召回分数、消息降频、Prompt/上下文、记忆隔离、工具循环、模型职责和 Java 门禁，形成最终可讲述验收。
+由学习者通过 18080 控制台独立完成一次 RAG 检索、一次智能守护模拟和一次受控 Agent/记忆模拟，并说明召回分数、消息降频、Prompt/上下文、记忆隔离、工具循环、模型职责和 Java 门禁，形成最终可讲述验收。
 
 ---
 
 ## 4. 交接日志（倒序，最新的在顶部，只追加不修改）
+
+### [C-187] 2026-09-21 · Codex
+
+**术语统一：智能守护一律称“模拟”，全文不再使用“回放”**
+- 背景：用户裁定“回放”不适用于合成指标触发智能守护链路的场景，统一改称“智能守护模拟”。
+- 范围：全仓库 39 个文件、134 处中文“回放”全部替换；其中“可回放”→“可复现”、“审计回放”→“审计追溯”、“证据回放”→“证据追溯”，其余统一为“模拟”。
+- 说明：本次只做术语归一，未改动任何日期、数字、提交哈希、结论或状态；按用户明确要求，本文件历史条目同步替换，特此记录以便追溯。
+- 未改动：英文标识符与接口路径（`/guardian/agent/replay`、`MetricEventConsumer.replay`）以及历史文件名（`M4-redpanda-replay-*.md` 等）保留，因为它们表达的是失败消息重投与断点恢复的真实重放语义。
+- 规范落地：`AGENTS.md` 新增术语条目，“智能守护模拟”为唯一中文表述。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS（fund-knowledge 33 / fund-guardian 69 / fund-integration 14 / fund-console 9 / fund-experiments 6，0 失败 0 错误，既有 2 项集成测试跳过）。
+- `rg "回放"` 全仓库（排除 target）返回 0 处。
+- `git diff --check`：通过。
+- 尚未执行 commit、push。
+
+### [C-186] 2026-09-21 · Codex
+
+**拒答语义修正：未调用模型时不再把配置模型名当作调用记录**
+- 问题：证据门禁在模型调用之前拒绝的两条路径（有界查询截断、检索未通过证据门禁）仍把“当前配置模型名”写入返回体与 `knowledge.rag_answer_audits.model`，前端又把该字段与 `traceId` 并排展示，界面上看起来像发生过一次模型调用。
+- 现在：`RagAnswerService` 新增常量 `NOT_INVOKED_MODEL`，两条提前返回路径统一写 `NOT_INVOKED`；`RagAnswerResponse` 注释明确该字段表示“本次实际调用的模型”；控制台在 `NOT_INVOKED` 时显示“未调用模型（证据门禁拦截）”。
+- 取值方式：使用哨兵值 `NOT_INVOKED`，不放开 `rag_answer_audits.model` 的非空约束，避免引入 schema 变更与迁移。
+- 改动文件：`fund-console/src/main/java/org/practice/fundgateway/console/RagAnswerService.java`、`ConsoleModels.java`、`fund-console/src/main/resources/static/index.html`。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS（fund-common / fund-knowledge / fund-guardian / fund-console 全部通过，控制台 9 项测试通过）。
+- `docker compose up -d --build fund-console`：镜像重建、容器重启，`/api/console/status` 返回 `READY`。
+- 拒答回归：`POST /api/console/rag/answer`（`nyxj-api@v1`，关键词 `年化利率`）返回 `INSUFFICIENT_EVIDENCE`、`model=NOT_INVOKED`、`citations=0`；`guardian.model_call_audits` 计数保持 17 不变，审计行 `model` 字段为 `NOT_INVOKED`。
+- 正常路径回归：同接口（`nyxj-api@v1`，关键词 `授信申请`，问题不含“接口”二字，避开关键词精确补召回）返回 `ANSWERED`、`model=deepseek-flash`、1 条引用、答案“授信申请的请求方式为 POST。”；模型调用计数 17→18，检索为 `TOP_K / actual=8`，`finalScore` 实测满足 `0.7 × 0.638038 + 0.3 = 0.746627`。
+- 上述两次请求由 Codex 发起，问题文本带 `【Codex 修复验证】` 与 `【Codex 回归验证】` 前缀，不作为学习者独立验收证据。
+- 尚未执行 commit、push。
+
+### [C-185] 2026-09-18 · Codex
+
+**修复列表答案因模型漏写交易码而整体失败**
+- 原实现将模型答案与证据中的全部交易码做严格字符串差集校验，模型漏写任一交易码就抛出异常，导致接口返回失败。
+- 现在列表答案仍要求模型提供解释和引用；若模型漏写交易码，Java 会从本次未截断证据中确定性提取缺失交易码，并追加“证据校正”清单。
+- 交易码匹配改为大小写不敏感；只有证据本身被有界查询截断时才拒答，不再把可修复的生成遗漏误判为检索失败。
+
+**验证**
+- `mvn -B -pl fund-console -am test`：BUILD SUCCESS（知识模块 33 项、守护模块 69 项、控制台 9 项测试通过，既有 2 项集成测试跳过）。
+- Docker Console 已从新源码重建并重启。
+- 真实接口列表在线回答成功：`ANSWERED`，基于 19 个未截断证据分片返回 24 个交易码，引用和检索元数据正常。
+- 尚未执行 commit、push。
+
+### [C-184] 2026-09-18 · Codex
+
+**将列表检索改为生产级有界全量查询**
+- 删除正式控制台对旧无限扫描方法的依赖，列表问题改为 `EXHAUSTIVE_BOUNDED` 模式。
+- 数据库端最多读取 `MAX_EXHAUSTIVE_CANDIDATES + 1`（当前上限 100，即 `LIMIT 101`）；第 101 条仅用于判断 `truncated`，不会进入模型上下文。
+- `RagQueryResponse`、`RagQueryAudit` 和 `knowledge.rag_query_audits` 新增 `retrieval_mode`、`matched_candidate_count`、`truncated`；截断时命中数表示“至少命中数”。
+- 截断的列表查询返回 `INSUFFICIENT_EVIDENCE`，在线回答直接拒绝声称完整并不调用大模型；普通 Top-K 检索仍严格遵守用户指定的 1~50。
+- 控制台结果和审计历史显示检索模式、实际候选、命中数量和截断状态；DBML、列注释和可重复迁移脚本已同步。
+
+**验证**
+- `mvn -B verify`：BUILD SUCCESS（全部测试通过，2 个既有集成测试跳过）。
+- 当前数据库已执行 `knowledge-migration-topk-20260918.sql`，历史 24 条审计记录补齐默认 `TOP_K` 元数据。
+- Docker `fund-console` 已从源码重建并重启，容器正常。
+- 普通查询 `topK=15` 返回 `TOP_K / actual=15 / matched=15 / truncated=false`。
+- 列表查询返回 `EXHAUSTIVE_BOUNDED / actual=19 / matched=19 / truncated=false`；数据库审计字段与 API 一致。
+- `git diff --check`：通过；尚未执行 commit、push。
+
+### [C-183] 2026-09-18 · Codex
+
+**放宽 Top-K 配置并区分请求上限与实际候选数**
+- 控制台检索和评测 Top-K 从固定选项改为数字输入，允许 1~50。
+- 正式控制台后端校验、评测集校验和数据库约束统一改为 1~50；完整列表问题仍执行文档级全量接口检索，不受 Top-K 截断。
+- `RagQueryResponse` 与 `knowledge.rag_query_audits` 新增 `actual_candidate_count`，`top_k` 只表示用户请求的召回上限。
+- 在线回答链路移除“最少 8 条”的硬编码；用户显式指定 K 时严格使用该 K，未指定时默认 8。
+- 新增可重复执行的 `fund-knowledge/src/main/resources/knowledge-migration-topk-20260918.sql`，运行数据库已完成迁移。
+
+**验证**
+- `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
+- Docker Console 镜像重建并重启成功。
+- `/api/console/rag/query` 使用 `topK=15`：普通问题返回 `topK=15`、`actualCandidateCount=15`；列表问题返回 `topK=15`、`actualCandidateCount=19`（全量接口分片）。
+- `/api/console/rag/answer` 使用 `topK=15`：`ANSWERED`，`retrievalTopK=15`，`retrievalActual=15`，引用正常。
+- 数据库约束已核对：检索审计和评测集 Top-K 均为 1~50。
+- 尚未执行 commit、push。
 
 ### [C-182] 2026-09-18 · Codex
 
@@ -243,14 +321,14 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-180] 2026-09-16 · Codex
 
 **完成高并发重构收尾、部署和回归验证**
-- 完成指标窗口聚合、事件幂等、风险冷却、跨实例活跃风险任务唯一性、模型并发上限、索引线程池背压和控制台多风险回放改造。
+- 完成指标窗口聚合、事件幂等、风险冷却、跨实例活跃风险任务唯一性、模型并发上限、索引线程池背压和控制台多风险模拟改造。
 - 补齐模型调用执行器被拒绝时的异常边界处理，避免空 Future 二次异常掩盖根因。
 - 使用 Docker Compose 重新构建并重启 `fund-guardian`、`fund-console`；数据库保留审计数据，重复活跃任务已归并为终态历史记录。
 
 **验证**
 - `mvn -B verify`：BUILD SUCCESS；各模块测试通过，知识库 2 个依赖外部数据库的既有测试按条件跳过。
-- 8 路并发 HTTP 回放全部返回 200，1000 条指标均正确聚合为 1 个窗口，结果断言通过。
-- 10000 条 HTTP 回放：NORMAL 为 0 个风险窗口；ERROR_RATE、LATENCY、COMBINED 均正确识别 10 个风险窗口；JDBC 已有活跃任务按风险指纹去重并复用。
+- 8 路并发 HTTP 模拟全部返回 200，1000 条指标均正确聚合为 1 个窗口，结果断言通过。
+- 10000 条 HTTP 模拟：NORMAL 为 0 个风险窗口；ERROR_RATE、LATENCY、COMBINED 均正确识别 10 个风险窗口；JDBC 已有活跃任务按风险指纹去重并复用。
 - 容器状态正常；控制台 `/api/console/status` 为 `READY`、JDBC 持久化和 DeepSeek 可用；Guardian `/health` 返回 `UP`；启动后日志未发现 schema、数据库连接或模型错误。
 - 数据库已核对 `uq_diagnosis_workflow_active_risk`、`uq_guardian_active_diagnostic_risk` 两个唯一索引存在，活跃风险重复数为 0；`git diff --check` 通过。
 
@@ -260,7 +338,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ### [C-179] 2026-09-16 · Codex
 
-**完成高并发基础重构与多风险回放编排**
+**完成高并发基础重构与多风险模拟编排**
 - 窗口聚合使用并发 Map 和窗口级锁；指标消费者使用 32 条事件锁条带，不同事件可并行，同一事件保持幂等顺序。
 - 冷却门禁本地实现使用原子 `compute`；实时 JDBC 入口使用 PostgreSQL 持久化冷却表和条件更新，避免多实例重复放行。
 - 模型调用增加 4 路并发上限；文档索引使用独立 2 线程、20 容量有界执行器和调用方执行背压。
@@ -311,18 +389,18 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ### [C-175] 2026-09-16 · Codex
 
-**澄清控制台回放的任务数与模型调用数**
+**澄清控制台模拟的任务数与模型调用数**
 - `diagnosticTasks` 表示通过风险规则和冷却后产生的诊断任务数量；`actualModelCalls` 表示本次控制台请求实际调用 DeepSeek 的次数，两者不是一一对应的计数器。
-- 当前控制台回放会统计所有通过冷却的任务，但随后只选取最后一个代表性窗口组装快照并调用一次模型，这是控制台演示的成本控制策略。
+- 当前控制台模拟会统计所有通过冷却的任务，但随后只选取最后一个代表性窗口组装快照并调用一次模型，这是控制台演示的成本控制策略。
 - 因此“2 个诊断任务、1 次模型调用”不代表两个任务都分别完成了模型诊断；生产化演进需要为每个任务建立独立的 Agent 执行调度或明确采用批量诊断语义。
 
 **面试口径**
-- 应说“本次回放产生 2 个诊断任务，控制台按演示策略对代表性窗口调用模型 1 次”，不能说“2 个任务分别调用模型 2 次”。
+- 应说“本次模拟产生 2 个诊断任务，控制台按演示策略对代表性窗口调用模型 1 次”，不能说“2 个任务分别调用模型 2 次”。
 
 ### [C-174] 2026-09-15 · Codex
 
 **阶段考核状态复核**
-- M1～M8 均有不同程度的代码、自动化测试、运行回放或技术验收记录，但这些记录不能自动等同于学习者本人完成的闭卷考核、口述讲解和独立复现。
+- M1～M8 均有不同程度的代码、自动化测试、运行模拟或技术验收记录，但这些记录不能自动等同于学习者本人完成的闭卷考核、口述讲解和独立复现。
 - 当前没有一套覆盖 M1～M9、由学习者逐阶段完成并记录结果的正式考核台账。
 - M9 已有实现状态和任务卡，但尚未形成独立阶段验收记录。
 
@@ -374,7 +452,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 **完成面试题库与简历口径微调**
 - 更新 `docs/interview/张雨松-Java-AI-面试题库.md` 的 A-07，覆盖 DOC/DOCX、PDF、XLS/XLSX 的解析与定位方式。
 - 补充 PDF 专项验证边界：65 个分片、Recall@5=1.0、引用准确率=1.0、MRR=0.2，目标证据排名第 5；明确尚未单独验证 PDF 检索结果交给 DeepSeek 生成最终回答的链路。
-- 将“回放 10000 条”统一修正为“通过控制台生成 10000 条合成指标验证降频链路”。
+- 将“模拟 10000 条”统一修正为“通过控制台生成 10000 条合成指标验证降频链路”。
 - 同步更新外部简历：标注 AI 辅助编码、明确项目角色，并收窄端到端验证表述。
 
 **验证**
@@ -717,7 +795,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 **验证**
 - `mvn -B -pl fund-console -am test -DskipTests`：BUILD SUCCESS。
 - `snapshot_json` schema 变更已在本地 PostgreSQL 执行。
-- 下一步需用真实已审批任务做 HTTP 回放，验证案例沉淀和召回；不能只凭编译结果宣称最终闭环完成。
+- 下一步需用真实已审批任务做 HTTP 模拟，验证案例沉淀和召回；不能只凭编译结果宣称最终闭环完成。
 
 ### [C-140] 2026-09-13 · Codex
 
@@ -766,7 +844,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-135] 2026-09-13 · Codex
 
 **并行合并内容**
-- 合并固定失败与恢复验收覆盖：证据不足、门禁拒绝、异常诊断、数据库诊断回放和 RAG 证据固定集。
+- 合并固定失败与恢复验收覆盖：证据不足、门禁拒绝、异常诊断、数据库诊断模拟和 RAG 证据固定集。
 - 新增 `docs/learning/M5-failure-and-recovery-acceptance-2026-09-13.md` 记录验收边界。
 
 **验证**
@@ -863,14 +941,14 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-128] 2026-09-12 · Codex
 
 **做了什么**
-- 修复 `fund-console/src/main/java/org/practice/fundgateway/console/GuardianConsoleService.java` 的智能守护回放幂等键：每次回放追加唯一 UUID，同一次请求仍保持幂等，避免复用已经过期的旧诊断任务。
+- 修复 `fund-console/src/main/java/org/practice/fundgateway/console/GuardianConsoleService.java` 的智能守护模拟幂等键：每次模拟追加唯一 UUID，同一次请求仍保持幂等，避免复用已经过期的旧诊断任务。
 - 深度检查 `fund-console/src/main/resources/static/index.html` 的知识库、RAG 检索、智能守护、人工审批和模型审计交互。
-- 记录后台后续优化项：审批倒计时和过期重发、审批二次确认与防重复提交、审核人身份、列表自动刷新与筛选分页、任务摘要和门禁原因、审计报文折叠复制、统一 Toast/链路 ID、加载失败重试、评测输入校验、回放结果自动刷新、模型调用成本与审计 ID展示。
+- 记录后台后续优化项：审批倒计时和过期重发、审批二次确认与防重复提交、审核人身份、列表自动刷新与筛选分页、任务摘要和门禁原因、审计报文折叠复制、统一 Toast/链路 ID、加载失败重试、评测输入校验、模拟结果自动刷新、模型调用成本与审计 ID展示。
 
 **结果**
 - `mvn -B -pl fund-console -am verify`：BUILD SUCCESS；fund-knowledge 19 个测试（跳过 2 个外部数据库测试）、fund-guardian 31 个测试、fund-console 5 个测试全部通过。
 - Docker Compose 服务正常：console、guardian、integration、postgres、redpanda 均为运行状态；`GET /api/console/status` 返回 `READY` 和 `deepSeekAvailable=true`。
-- 已有真实回放证据显示：DeepSeek 调用完成后创建新的 `PENDING_APPROVAL` 任务，审批后进入 `SIMULATED`，审批记录和治理模拟均落库；不再复用历史 `EXPIRED` 任务。
+- 已有真实模拟证据显示：DeepSeek 调用完成后创建新的 `PENDING_APPROVAL` 任务，审批后进入 `SIMULATED`，审批记录和治理模拟均落库；不再复用历史 `EXPIRED` 任务。
 - `git diff --check` 通过；本轮未修改测试、依赖版本、数据库结构或密钥文件。
 
 **发现的坑**
@@ -1029,7 +1107,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无，本次只做持久化核对。
 
 **下一步唯一动作**
-- 在控制台查看该 `EXPIRED` 任务的完整报告和时间线，并重新运行一次守护回放验证新的审批任务状态。
+- 在控制台查看该 `EXPIRED` 任务的完整报告和时间线，并重新运行一次守护模拟验证新的审批任务状态。
 
 **需要用户裁决的问题**
 - 无。
@@ -1052,7 +1130,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 本地需要真实模型联调时，统一从交互式登录 Shell 启动 Compose；密钥继续只通过环境变量注入。
 
 **下一步唯一动作**
-- 刷新控制台并运行一次组合风险回放，确认真实 DeepSeek 调用、模型审计和门禁结果完整落库。
+- 刷新控制台并运行一次组合风险模拟，确认真实 DeepSeek 调用、模型审计和门禁结果完整落库。
 
 **需要用户裁决的问题**
 - 无。
@@ -1165,7 +1243,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 历史重写的标准动作：`filter-branch --tree-filter` 保留结构 → 三层验证 → `--force-with-lease` → 清理 reflog 与不可达对象。
 
 **下一步唯一动作**
-- 学习者用新 documentId（`shengheng-api@v1` / `dingrui-bank-api@v1`）在 18080 控制台重跑上传 → 索引 → 检索 → 守护回放，完成 M7 自验收（HANDOFF §3）。
+- 学习者用新 documentId（`shengheng-api@v1` / `dingrui-bank-api@v1`）在 18080 控制台重跑上传 → 索引 → 检索 → 守护模拟，完成 M7 自验收（HANDOFF §3）。
 
 **需要用户裁决的问题**
 - 无。
@@ -1216,7 +1294,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - ADR-014：明确「内容可真实、机构名必须合成」的边界。
 
 **下一步唯一动作**
-- 学习者做 M7 自验收时，先用合成名 documentId 上传两份 docx（docx 文件名用合成名，docx 内容字段保持真实接口规范），跑一次 RAG 检索 + 一次智能守护回放，按 ADR-014 边界对照展示机构名 vs 文档内容。
+- 学习者做 M7 自验收时，先用合成名 documentId 上传两份 docx（docx 文件名用合成名，docx 内容字段保持真实接口规范），跑一次 RAG 检索 + 一次智能守护模拟，按 ADR-014 边界对照展示机构名 vs 文档内容。
 
 **需要用户裁决的问题**
 - 是否同意本次 ADR-013 重写（即承认 ADR-013 在 c25815d commit 时的版本有合规缺陷，需要在 c25815d 后追加修订）。
@@ -1342,13 +1420,13 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 增加模型调用成本与原始请求/响应审计 API 和页面；智能守护模型调用前使用本次 RAG 返回的真实引用，风险事件、诊断任务、审批和模拟治理接入 PostgreSQL。
 - 执行知识库与守护建表脚本，上传升恒消费金融接口文档，完成 905 个分片的 BGE 512 维向量化并发布到 pgvector。
 - 新增 ADR-012，冻结控制台持久化、已发布集合检索和模型审计规则。
-- 新增 `docs/learning/M7-console-persistence-acceptance-20260912.md`，保存本轮持久化与联合回放证据。
+- 新增 `docs/learning/M7-console-persistence-acceptance-20260912.md`，保存本轮持久化与联合模拟证据。
 
 **结果**
 - `mvn -B verify` 成功：全模块测试通过（fund-knowledge 16、fund-guardian 31、fund-integration 14、fund-console 5、fund-experiments 5）。
 - Docker Compose 控制台重新构建并运行；状态接口返回 `READY`、1 个已发布集合；RAG 返回 `ACCEPTED`，Top-1 命中 `applyAmt / BigDecimal / 必填`，索引分片数 905。
 - DeepSeek 真实调用 1 次，返回固定 JSON 并通过 Java 门禁；诊断任务进入 `PENDING_APPROVAL`，人工批准后进入 `SIMULATED`，控制台重启后任务、审批和模拟治理仍可读取。
-- 模型审计落库 2 条（本轮两次真实回放），原始请求/响应长度、Token、状态和成本汇总接口可查询；页面脚本语法检查通过，首页 HTTP 200。
+- 模型审计落库 2 条（本轮两次真实模拟），原始请求/响应长度、Token、状态和成本汇总接口可查询；页面脚本语法检查通过，首页 HTTP 200。
 
 **发现的坑**
 - 本机 `agent-browser` 命令未安装，浏览器端验证改用 HTTP 接口和 Node.js 脚本语法检查；CUA 浏览器状态调用超时，因此没有生成新的截图证据。
@@ -1367,8 +1445,8 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 **做了什么**
 - 将现有两页演示控制台扩展为统一管理工作台第一版，增加运行总览、文档管理、索引任务、检索实验室、RAG 评测、守护总览、诊断任务、人工审批、模型成本与审计九个入口。
-- 保留现有真实 RAG 和智能守护回放能力；未实现的文档上传、异步索引、持久化诊断、审批和成本统计均明确标记为后端待接入。
-- 在独立 18081 端口完成浏览器导航、真实 RAG、守护回放和控制台错误检查。
+- 保留现有真实 RAG 和智能守护模拟能力；未实现的文档上传、异步索引、持久化诊断、审批和成本统计均明确标记为后端待接入。
+- 在独立 18081 端口完成浏览器导航、真实 RAG、守护模拟和控制台错误检查。
 
 **结果**
 - `mvn -B verify` 成功：46 项测试通过，0 失败。
@@ -1391,7 +1469,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-107] 2026-09-11 · Codex
 
 **做了什么**
-- 在 `fund-experiments` 新增苹果 App 风格可视化控制台、RAG 与智能守护演示接口及守护回放测试；新增 `Dockerfile.console`，并把 `fund-console` 加入本地 Compose 拓扑。
+- 在 `fund-experiments` 新增苹果 App 风格可视化控制台、RAG 与智能守护演示接口及守护模拟测试；新增 `Dockerfile.console`，并把 `fund-console` 加入本地 Compose 拓扑。
 - 控制台接入真实本地 BGE、pgvector 混合检索、窗口聚合、规则、风险指纹、冷却降频和可选 DeepSeek 诊断；页面展示完整提示词、原始响应、结构化报告和 Java 门禁。
 - 安装 Docker Buildx 0.37.0；执行全量 Maven、Compose、HTTP、真实模型和浏览器交互验收，新增 `docs/learning/M7-visual-console-acceptance-20260911.md`。
 
@@ -1414,7 +1492,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 ---
 
-### [C-106] 2026-09-11 · Docker Compose 全局安装与四服务回放
+### [C-106] 2026-09-11 · Docker Compose 全局安装与四服务模拟
 
 **做了什么**
 - 通过清华 Homebrew bottle 镜像全局安装 Docker Compose，并在 `~/.docker/config.json` 保留原配置后加入 CLI 插件目录 `/opt/homebrew/lib/docker/cli-plugins`。
@@ -1460,7 +1538,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 网络恢复后重试安装 `docker-compose`，随后执行 Compose 全链路回放。
+- 网络恢复后重试安装 `docker-compose`，随后执行 Compose 全链路模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1480,7 +1558,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - `mvn -B clean verify` 已通过；M0～M6 代码与本地证据已完成。
 
 **发现的坑**
-- 当前机器 Docker CLI 缺少 Compose 插件，因此无法执行 `docker compose up` 的命令级回放；需要在具备 Compose 插件的环境补做这一项。
+- 当前机器 Docker CLI 缺少 Compose 插件，因此无法执行 `docker compose up` 的命令级模拟；需要在具备 Compose 插件的环境补做这一项。
 
 **新产生的决策**（有就写 ADR 编号，没有写"无"）
 - 无。
@@ -1511,7 +1589,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 完成 M7 最终验收证据整理，并在可用的 Compose 工具环境执行一次完整启动回放。
+- 完成 M7 最终验收证据整理，并在可用的 Compose 工具环境执行一次完整启动模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1560,7 +1638,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 将 `DiagnosticSnapshotAssembler` 接入真实模型服务，完成待处理任务到报告门禁的端到端回放。
+- 将 `DiagnosticSnapshotAssembler` 接入真实模型服务，完成待处理任务到报告门禁的端到端模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1611,7 +1689,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 为 M5 增加模型超时/格式错误/规则冲突的失败回放测试，并记录人工审核分支。
+- 为 M5 增加模型超时/格式错误/规则冲突的失败模拟测试，并记录人工审核分支。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1627,7 +1705,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 **结果**
 - `mvn -B -pl fund-guardian -am test`：13 个测试全部通过。
-- M5 第一批契约已具备可回放输入和确定性冲突处理；尚未调用真实模型。
+- M5 第一批契约已具备可复现输入和确定性冲突处理；尚未调用真实模型。
 
 **发现的坑**
 - 诊断快照必须与模型输出分离，不能让模型结果覆盖快照中的确定性规则或契约事实。
@@ -1636,7 +1714,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 实现固定 JSON 诊断提示词与 DeepSeek 真实回放，并将响应交给 `ModelDiagnosisGate.assess`。
+- 实现固定 JSON 诊断提示词与 DeepSeek 真实模拟，并将响应交给 `ModelDiagnosisGate.assess`。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1645,14 +1723,14 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 ### [C-097] 2026-09-11 · M4 收尾并进入 M5
 
 **做了什么**
-- 完成 M4 运行 profile 的全链路回放、Maven 全量测试和 `git diff --check`。
+- 完成 M4 运行 profile 的全链路模拟、Maven 全量测试和 `git diff --check`。
 - 修正 `ROADMAP.md` 当前状态，明确 M5 为当前阶段。
 - 修正本文件第 3 节唯一动作，改为冻结 M5 诊断快照与模型输出契约。
 - 将 M4 实现、证据和交接记录提交并推送到远程：`6a181f0`。
 
 **结果**
 - M4 全量测试 40 个全部通过。
-- Redpanda → 指标消费者 → 窗口聚合 → 风险规则/冷却 → PostgreSQL 完整链路已真实回放通过。
+- Redpanda → 指标消费者 → 窗口聚合 → 风险规则/冷却 → PostgreSQL 完整链路已真实模拟通过。
 - 当前进入 M5；M5 尚未开始写业务代码。
 
 **发现的坑**
@@ -1668,11 +1746,11 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 
-### [C-096] 2026-09-11 · M4 运行 profile 完整链路回放
+### [C-096] 2026-09-11 · M4 运行 profile 完整链路模拟
 
 **做了什么**
 - 补充实验启动类对 `MetricProcessingConfiguration` 的显式导入，使 `m4-runtime` 能获得窗口聚合器。
-- 使用 `m4,m4-producer,m4-runtime` 启动应用，回放 18 条正常指标和 2 条风险指标。
+- 使用 `m4,m4-producer,m4-runtime` 启动应用，模拟 18 条正常指标和 2 条风险指标。
 - 验证 Redpanda 消费、窗口聚合、风险规则/指纹/冷却、PostgreSQL 落库的完整链路。
 - 保存证据：`docs/learning/M4-runtime-profile-e2e-20260911.md`。
 
@@ -1713,7 +1791,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 在 M4 运行 profile 中注入 PostgreSQL 编排器，重新执行 Redpanda 到数据库的完整链路回放。
+- 在 M4 运行 profile 中注入 PostgreSQL 编排器，重新执行 Redpanda 到数据库的完整链路模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1726,7 +1804,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 **结果**
 - 验收输出：`metricMessages=20`、`riskEvents=1`、`diagnosticTasks=1`。
-- 指标消息数与诊断任务数为 20:1，重复回放没有新增诊断任务，满足降频目标。
+- 指标消息数与诊断任务数为 20:1，重复模拟没有新增诊断任务，满足降频目标。
 - 发现将少量风险事件与大量正常事件先合并会稀释窗口错误率；验收程序改为逐事件最小窗口，保留该边界观察。
 
 **发现的坑**
@@ -1741,16 +1819,16 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 **需要用户裁决的问题**（没有写"无"）
 - 无。
 
-### [C-093] 2026-09-11 · M4 风险编排与 PostgreSQL 幂等回放通过
+### [C-093] 2026-09-11 · M4 风险编排与 PostgreSQL 幂等模拟通过
 
 **做了什么**
 - 新增 `RiskDiagnosisCoordinator`，串联规则命中、风险指纹、冷却和 Repository。
-- 新增 `M4RiskPersistenceReplay`，使用本地 PostgreSQL 真实执行重复风险回放。
+- 新增 `M4RiskPersistenceReplay`，使用本地 PostgreSQL 真实执行重复风险模拟。
 - 保存证据到 `docs/learning/M4-risk-persistence-replay-20260911.md`。
 
 **结果**
 - 守护模块测试 10 个全部通过。
-- 真实回放结果：`firstTask=true`、`secondTask=false`、`riskEvents=1`、`diagnosticTasks=1`。
+- 真实模拟结果：`firstTask=true`、`secondTask=false`、`riskEvents=1`、`diagnosticTasks=1`。
 - 证明重复风险不会重复创建诊断任务，风险事实保留一条。
 
 **发现的坑**
@@ -1760,7 +1838,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 统计一次完整回放的指标消息数、风险事件数和诊断任务数，形成 M4 降频验收证据。
+- 统计一次完整模拟的指标消息数、风险事件数和诊断任务数，形成 M4 降频验收证据。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1775,7 +1853,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 **结果**
 - 数据库实际查询确认两张表已创建。
-- 守护模块 8 个测试全部通过；未执行真实风险事件写入回放，Repository 尚未接入消费编排。
+- 守护模块 8 个测试全部通过；未执行真实风险事件写入模拟，Repository 尚未接入消费编排。
 
 **发现的坑**
 - 当前 Repository 已具备落库接口，但风险规则输出还没有串到 Repository；不能把“表存在”当成“实时链路已持久化”。
@@ -1784,7 +1862,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 将风险规则命中、指纹和冷却结果编排为风险事件与诊断任务，并执行真实 PostgreSQL 幂等回放。
+- 将风险规则命中、指纹和冷却结果编排为风险事件与诊断任务，并执行真实 PostgreSQL 幂等模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1813,7 +1891,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 **需要用户裁决的问题**（没有写"无"）
 - 无。
 
-### [C-090] 2026-09-11 · Redpanda 与 Mock 指标消息端到端回放通过
+### [C-090] 2026-09-11 · Redpanda 与 Mock 指标消息端到端模拟通过
 
 **做了什么**
 - 重启 Colima 并恢复 Docker daemon 网络，下载 `redpandadata/redpanda:v24.3.6`。
@@ -1854,7 +1932,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- Docker Registry 网络恢复后继续拉取固定 Redpanda 镜像并完成端到端回放。
+- Docker Registry 网络恢复后继续拉取固定 Redpanda 镜像并完成端到端模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1867,7 +1945,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 
 **结果**
 - Docker daemon 正常；本地未缓存 Redpanda 镜像。
-- 拉取 Docker Hub 镜像因网络连接超时失败，Redpanda 未启动，20 条消息端到端回放尚未执行。
+- 拉取 Docker Hub 镜像因网络连接超时失败，Redpanda 未启动，20 条消息端到端模拟尚未执行。
 
 **发现的坑**
 - 当前阻塞点是 Docker Hub 镜像拉取网络，不是 Java 代码或 Docker daemon；不能把镜像未拉到误判为 MQ 配置错误。
@@ -1876,7 +1954,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 网络可用后拉取固定版本 Redpanda 镜像并执行端到端回放。
+- 网络可用后拉取固定版本 Redpanda 镜像并执行端到端模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1900,7 +1978,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 在本机补齐可用的 Docker Compose 执行入口后，启动 Redpanda 并完成 20 条 Mock 指标消息端到端回放。
+- 在本机补齐可用的 Docker Compose 执行入口后，启动 Redpanda 并完成 20 条 Mock 指标消息端到端模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1923,7 +2001,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 无。
 
 **下一步唯一动作**（只写一个，不要列清单）
-- 增加本地 Redpanda Compose 配置和 Mock 指标生产者，完成消息端到端回放。
+- 增加本地 Redpanda Compose 配置和 Mock 指标生产者，完成消息端到端模拟。
 
 **需要用户裁决的问题**（没有写"无"）
 - 无。
@@ -1981,7 +2059,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 将 `docs/tasks/M3-INTEGRATION-REQUIREMENTS.md` 状态修正为“核心闭环已实现；发布事件记录待补，DTO 生成骨架为可选未实现”。
 
 **结果**
-- M3 核心验收（候选抽取、三层校验、人工审核、不可变 V1、回放证据）仍通过；M3 全量规划状态为部分完成，不能宣称所有任务完成。
+- M3 核心验收（候选抽取、三层校验、人工审核、不可变 V1、模拟证据）仍通过；M3 全量规划状态为部分完成，不能宣称所有任务完成。
 
 **发现的坑**
 - 阶段验收记录曾把核心完成误写成全量完成，后续必须逐项对照任务卡验收。
@@ -2123,7 +2201,7 @@ PostgreSQL + pgvector ✅ `pgvector/pgvector:pg16` 容器运行于本地 55432 �
 - 当前审核状态和发布版本存于内存，应用重启后会丢失；这是本轮为验证领域流程保留的边界，持久化属于后续基础设施任务。
 
 **新产生的决策**
-- M3 端到端验收采用合成候选和本地 REST 回放，不调用 DeepSeek、不连接真实资方。
+- M3 端到端验收采用合成候选和本地 REST 模拟，不调用 DeepSeek、不连接真实资方。
 
 **下一步唯一动作**
 - 审查 M3 代码、页面和端到端证据，准备阶段提交。
@@ -4167,6 +4245,41 @@ D2：结构化输出三个样例（合法 / 缺字段 / 格式合法但业务非
 ---
 
 ## 5. 待决问题与总指挥裁决
+
+### [S-NEW] 2026-09-19 · 守护 RAG 知识范围动态化
+
+**做了什么**
+1. 将智能守护的 RAG 查询从固定的 `applyAmt / BigDecimal / 必填` 查询改为按模拟请求选择资方知识集合、文档和版本。
+2. 守护控制台新增“诊断知识范围”选择器，支持自动选择已发布集合、集合全部文档，以及指定文档版本。
+3. 增加文档 ID 与版本必须成对提供的校验，并保留旧三参数请求构造器兼容既有测试。
+
+**验证结果**
+- `mvn -B -pl fund-console -am test -DskipTests=false` → BUILD SUCCESS（knowledge 33，guardian 69，console 9）。
+- 重建并重启 `fund-console` 容器成功；集合接口返回 `fund-gateway-contracts / nyxj-api / v1`。
+- 守护模拟使用 `nyxj-api:v1` 成功完成 1 次 `deepseek-v4-flash` 调用，`modelStatus=COMPLETED`、`diagnosticTasks=1`；不再因旧的 `applyAmt` 固定关键词导致 RAG 证据不可用。
+
+**边界**
+- 当前仍是合成数据演示链路；未新增数据库 schema 变更，也未提交或推送远程。
+
+### [S-NEW] 2026-09-19 · 智能守护术语调整
+
+- 控制台中表示“临时生成合成指标并执行一次诊断”的“模拟”统一改为“诊断模拟”。“模拟”仅保留给真正基于已保存历史流程重新执行的能力或历史验收记录。
+
+### [S-NEW] 2026-09-20 · 智能守护按资方绑定诊断上下文
+
+**做了什么**
+1. 守护请求新增 `providerId`，控制台下拉框改为“诊断资方”，不再让守护直接选择“全部文档”或某个文档版本。
+2. RAG 检索支持按资方过滤知识分片；文档只是该资方证据的一类，指标、契约和历史故障仍在同一资方上下文中汇合。
+3. 知识分片写入的资方统一为文档对应的 `NYXJ`，提供历史占位身份数据迁移脚本，并保留兼容过滤。
+
+**验证结果**
+- `mvn -B -pl fund-console -am test -DskipTests=false` → BUILD SUCCESS（knowledge 33，guardian 69，console 9）。
+- 已在本地 `fund_acceptance` 数据库执行迁移，65 条历史分片从占位身份归一为 `NYXJ`。
+- 重建并启动 `fund-console` 后，`GET /api/console/guardian/providers` 返回 `NYXJ`；按资方执行真实 DeepSeek 诊断成功，`modelStatus=COMPLETED`、`actualModelCalls=1`。
+- 直接携带文档 ID 的守护请求返回 HTTP 400，明确拒绝绕过资方诊断边界。
+
+**边界**
+- 当前只有 `NYXJ` 一套合成指标、契约和历史故障数据；新增其他资方前，需要为其建立独立的指标、历史诊断和手册数据源，禁止仅复制文档选项。
 
 ### 5.1 仍待用户裁决
 

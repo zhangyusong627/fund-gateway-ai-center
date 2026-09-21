@@ -22,7 +22,7 @@ public class SyntheticIncidentHistoryTool implements ToolCallback {
     @Override
     public String call(String toolInput) {
         SyntheticToolInput.require(toolInput, "只支持合成资方的授信申请历史查询");
-        return "{\"provider\":\"synthetic-provider\",\"interface\":\"credit-apply\","
+        return "{\"provider\":\"NYXJ\",\"interface\":\"credit-apply\","
                 + "\"incidentId\":\"incident-001\",\"status\":\"confirmed\","
                 + "\"cause\":\"upstream-timeout\",\"occurredAt\":\"2026-09-08T10:00:00+08:00\"}";
     }

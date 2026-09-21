@@ -392,7 +392,7 @@
                 <div class="panel"><h2>资方知识库</h2><p>当前数据来自已发布文档版本；没有数据时不会显示预置分片数字。</p><div id="overviewKnowledgeFlow" class="flow-line"><div class="flow-node"><b>等待</b>真实文档</div></div></div>
                 <div class="panel"><h2>运行环境</h2><p id="techSummary">正在读取本地模型和基础设施状态…</p><div id="overviewDependencies"></div></div>
             </div>
-            <div class="panel" style="margin-top:16px"><h2>智能守护处理链</h2><p>处理链统计来自真实诊断任务；容量比例请到智能守护页面运行合成回放查看。</p><div id="overviewGuardianFlow" class="flow-line"><div class="flow-node"><b>0</b>今日诊断任务</div></div></div>
+            <div class="panel" style="margin-top:16px"><h2>智能守护处理链</h2><p>处理链统计来自真实诊断任务；容量比例请到智能守护页面运行诊断模拟查看。</p><div id="overviewGuardianFlow" class="flow-line"><div class="flow-node"><b>0</b>今日诊断任务</div></div></div>
         </section>
 
         <section id="documents" class="workspace">
@@ -419,7 +419,7 @@
                     <div class="field"><label for="documentScope">检索范围</label><select id="documentScope"><option value="">全部文档</option></select></div>
                     <div class="field"><label for="question">业务问题</label><textarea id="question">授信申请金额字段是否必填，数据类型是什么？</textarea></div>
                     <div class="field"><label for="keywords">证据关键词，用逗号分隔</label><input id="keywords" value="applyAmt,BigDecimal,必填"></div>
-                    <div class="field"><label for="topK">返回候选数量</label><select id="topK"><option>3</option><option>5</option><option>8</option></select></div>
+                    <div class="field"><label for="topK">返回候选数量 K（1~50）</label><input id="topK" type="number" min="1" max="50" step="1" value="8"></div>
                     <div class="field"><label for="ragMode">执行模式</label><select id="ragMode"><option value="query">纯检索</option><option value="answer">检索并生成有引用答案</option></select></div>
                     <div class="field"><label for="ragProvider">答案模型供应商</label><select id="ragProvider"></select></div>
                     <div class="field"><label for="ragAnswerModel">答案模型</label><select id="ragAnswerModel"></select><small id="ragModelStatus" class="source"></small></div>
@@ -439,25 +439,26 @@
         <section id="evaluation" class="workspace">
             <div class="page-heading"><div><h1>RAG 评测中心</h1><p>评测集绑定集合和文档版本，运行结果保存后可复查和比较。</p></div><div class="toolbar"><select id="evaluationSet"><option value="">选择评测集</option></select><button id="runEvaluation" class="secondary">运行评测</button></div></div>
             <div id="evaluationSummary" class="kpi-grid"><div class="kpi"><span>Recall@3</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>MRR</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>引用命中率</span><strong>—</strong><small>点击运行评测</small></div><div class="kpi"><span>拒答准确率</span><strong>—</strong><small>点击运行评测</small></div></div>
-            <div class="page-grid"><div class="panel"><h2>创建评测集版本</h2><p>先从已发布文档中选择标准分片，再生成评测题；高级用户也可以直接编辑 JSON。</p><div class="field"><label for="evaluationName">评测集名称</label><input id="evaluationName" value="授信申请接口合成基线 v2"></div><div class="field"><label for="evaluationCollection">已发布集合</label><select id="evaluationCollection"><option value="">正在读取集合…</option></select></div><div class="field"><label for="evaluationDocument">文档版本</label><select id="evaluationDocument"><option value="">请先选择集合</option></select></div><div class="field"><label for="evaluationChunkKeyword">查找文档分片</label><div class="row"><input id="evaluationChunkKeyword" placeholder="按关键词、章节或 chunkId 查找"><button id="browseEvaluationChunks" class="secondary">浏览分片</button></div><div id="evaluationChunkStatus" class="inline-status" aria-live="polite"></div></div><div id="evaluationChunks" class="placeholder"><div><b>选择文档版本后浏览标准分片</b><span>选择分片即可自动填入评测题 JSON。</span></div></div><div class="field"><label for="evaluationQuestion">当前题目</label><input id="evaluationQuestion" placeholder="例如：授信申请金额字段是什么类型，是否必填？"></div><div class="field"><label for="evaluationExpectedKeyword">期望关键词</label><input id="evaluationExpectedKeyword" placeholder="例如：applyAmt"></div><div class="field"><label for="evaluationTopK">Top-K</label><select id="evaluationTopK"><option>3</option><option>5</option><option>8</option></select></div><div class="field"><label for="evaluationCasesJson">评测题 JSON 数组（可高级编辑）</label><textarea id="evaluationCasesJson" rows="7">[{"question":"授信申请金额字段是什么类型，是否必填？","expectedKeyword":"applyAmt","expectedChunkId":"","expectedLocator":"","refusalExpected":false}]</textarea></div><button id="createEvaluationSet" class="secondary">创建不可变评测集</button><div id="evaluationCreateError"></div></div><div class="panel"><h2>当前评测结果</h2><div id="evaluationList" class="placeholder"><div><b>请选择评测集并运行</b></div></div><h2 style="margin-top:20px">历史运行</h2><div id="evaluationHistory" class="placeholder"><div><b>正在读取历史运行</b></div></div></div></div>
+            <div class="page-grid"><div class="panel"><h2>创建评测集版本</h2><p>先从已发布文档中选择标准分片，再生成评测题；高级用户也可以直接编辑 JSON。</p><div class="field"><label for="evaluationName">评测集名称</label><input id="evaluationName" value="授信申请接口合成基线 v2"></div><div class="field"><label for="evaluationCollection">已发布集合</label><select id="evaluationCollection"><option value="">正在读取集合…</option></select></div><div class="field"><label for="evaluationDocument">文档版本</label><select id="evaluationDocument"><option value="">请先选择集合</option></select></div><div class="field"><label for="evaluationChunkKeyword">查找文档分片</label><div class="row"><input id="evaluationChunkKeyword" placeholder="按关键词、章节或 chunkId 查找"><button id="browseEvaluationChunks" class="secondary">浏览分片</button></div><div id="evaluationChunkStatus" class="inline-status" aria-live="polite"></div></div><div id="evaluationChunks" class="placeholder"><div><b>选择文档版本后浏览标准分片</b><span>选择分片即可自动填入评测题 JSON。</span></div></div><div class="field"><label for="evaluationQuestion">当前题目</label><input id="evaluationQuestion" placeholder="例如：授信申请金额字段是什么类型，是否必填？"></div><div class="field"><label for="evaluationExpectedKeyword">期望关键词</label><input id="evaluationExpectedKeyword" placeholder="例如：applyAmt"></div><div class="field"><label for="evaluationTopK">Top-K（1~50）</label><input id="evaluationTopK" type="number" min="1" max="50" step="1" value="8"></div><div class="field"><label for="evaluationCasesJson">评测题 JSON 数组（可高级编辑）</label><textarea id="evaluationCasesJson" rows="7">[{"question":"授信申请金额字段是什么类型，是否必填？","expectedKeyword":"applyAmt","expectedChunkId":"","expectedLocator":"","refusalExpected":false}]</textarea></div><button id="createEvaluationSet" class="secondary">创建不可变评测集</button><div id="evaluationCreateError"></div></div><div class="panel"><h2>当前评测结果</h2><div id="evaluationList" class="placeholder"><div><b>请选择评测集并运行</b></div></div><h2 style="margin-top:20px">历史运行</h2><div id="evaluationHistory" class="placeholder"><div><b>正在读取历史运行</b></div></div></div></div>
         </section>
 
         <section id="guardian" class="workspace">
-        <div class="page-heading"><div><h1>智能守护运行总览</h1><p>回放指标，观察消息如何经过窗口、规则、指纹和冷却后形成少量诊断任务。</p></div><span class="status-pill ok">已接入真实回放</span></div>
+        <div class="page-heading"><div><h1>智能守护运行总览</h1><p>模拟指标，观察消息如何经过窗口、规则、指纹和冷却后形成少量诊断任务。</p></div><span class="status-pill ok">已接入真实模拟</span></div>
         <div class="grid">
             <div class="card">
-                <div class="card-head"><h2>运行回放</h2><p>按 100 条/秒生成合成指标，使用十秒窗口和六十秒冷却。</p></div>
+                <div class="card-head"><h2>运行诊断模拟</h2><p>按 100 条/秒生成合成指标，使用十秒窗口和六十秒冷却。</p></div>
                 <div class="card-body">
                     <div class="field"><label for="scenario">指标场景</label><select id="scenario"><option value="NORMAL">正常流量</option><option value="ERROR_RATE">错误率升高</option><option value="LATENCY">长尾延迟</option><option value="COMBINED" selected>错误 + 超时 + 线程池组合风险</option></select></div>
                     <div class="field"><label for="messageCount">指标消息数量</label><select id="messageCount"><option value="100">100 条</option><option value="1000">1,000 条</option><option value="10000" selected>10,000 条</option></select></div>
+                    <div class="field"><label for="guardianProvider">诊断资方</label><select id="guardianProvider"><option value="">正在读取可用资方…</option></select><small class="source">诊断会在该资方边界内汇合文档、实时指标、历史诊断和手册证据。</small></div>
                     <div class="switch-line"><span>同时真实调用一次 DeepSeek</span><label class="switch"><input id="invokeModel" type="checkbox"><span class="slider"></span></label></div>
                     <button id="guardianRun" class="primary">运行智能守护</button>
-                    <div class="footnote">模型开关只对已经产生诊断任务的场景生效；一次页面回放最多真实调用一次模型。</div>
+                    <div class="footnote">模型开关只对已经产生诊断任务的场景生效；一次页面模拟最多真实调用一次模型。</div>
                     <div id="guardianError"></div>
                 </div>
             </div>
             <div class="card">
-                <div id="guardianEmpty" class="empty"><div><div class="empty-icon">⌁</div><b>等待一次指标回放</b><p>结果会解释指标消息如何收敛成风险窗口和诊断任务。</p></div></div>
+                <div id="guardianEmpty" class="empty"><div><div class="empty-icon">⌁</div><b>等待一次诊断模拟</b><p>结果会解释指标消息如何收敛成风险窗口和诊断任务。</p></div></div>
                 <div id="guardianResult" class="result"></div>
             </div>
         </div>
@@ -531,7 +532,7 @@
         container.querySelector('[data-page="prev"]').addEventListener('click', () => onChange(current - 1));
         container.querySelector('[data-page="next"]').addEventListener('click', () => onChange(current + 1));
     }
-    let lastGuardianReplayRequest = null;
+    let lastGuardianSimulationRequest = null;
     let approvalRefreshTimer = null;
     let diagnosisRefreshTimer = null;
     const formatDeadline = deadline => deadline ? new Date(deadline).toLocaleString('zh-CN') : '—';
@@ -648,7 +649,8 @@
             byId('ragEmpty').style.display = 'none';
             if (answerMode) {
                 const retrieval = result.retrieval;
-                byId('ragResult').innerHTML = `<div class="section-title"><h3>RAG 答案</h3><span class="badge ${result.status === 'ANSWERED' ? 'good' : 'bad'}">${escapeHtml(result.status)}</span></div><p>${escapeHtml(result.answer)}</p><div class="section-title"><h3>答案引用</h3><span class="source">${escapeHtml(result.model)} · ${escapeHtml(result.traceId)}</span></div>${(result.citations || []).map(item => `<article class="candidate"><div class="candidate-top"><span class="rank">${escapeHtml(item.chunkId)}</span></div><p>${escapeHtml(item.quote)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}<div class="section-title"><h3>底层检索证据</h3></div>${(retrieval.candidates || []).map(item => `<article class="candidate"><p>${escapeHtml(item.content)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}`;
+                const modelLabel = result.model === 'NOT_INVOKED' ? '未调用模型（证据门禁拦截）' : escapeHtml(result.model);
+                byId('ragResult').innerHTML = `<div class="section-title"><h3>RAG 答案</h3><span class="badge ${result.status === 'ANSWERED' ? 'good' : 'bad'}">${escapeHtml(result.status)}</span></div><p>${escapeHtml(result.answer)}</p><div class="section-title"><h3>答案引用</h3><span class="source">${modelLabel} · ${escapeHtml(result.traceId)}</span></div>${(result.citations || []).map(item => `<article class="candidate"><div class="candidate-top"><span class="rank">${escapeHtml(item.chunkId)}</span></div><p>${escapeHtml(item.quote)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}<div class="section-title"><h3>底层检索证据</h3></div>${(retrieval.candidates || []).map(item => `<article class="candidate"><p>${escapeHtml(item.content)}</p><div class="source">${escapeHtml(item.locator)}</div></article>`).join('')}`;
                 byId('ragResult').classList.add('visible');
                 loadRagAuditHistory();
                 return;
@@ -656,7 +658,8 @@
             const badge = result.status === 'ACCEPTED' ? 'good' : 'bad';
             byId('ragResult').innerHTML = `
                 <div class="section-title"><h3>检索结论</h3><span class="badge ${badge}">${escapeHtml(result.status)}</span></div>
-                <div class="stats"><div class="stat"><span>索引分片</span><strong>${number(result.indexedChunks)}</strong></div><div class="stat"><span>返回 Top-K</span><strong>${result.topK}</strong></div><div class="stat"><span>检索耗时</span><strong>${number(result.durationMs)}<small> ms</small></strong></div><div class="stat"><span>缺失关键词</span><strong>${result.missingKeywords.length}</strong></div></div>
+                <div class="stats"><div class="stat"><span>索引分片</span><strong>${number(result.indexedChunks)}</strong></div><div class="stat"><span>检索模式</span><strong>${escapeHtml(result.retrievalMode === 'EXHAUSTIVE_BOUNDED' ? '有界全量' : 'Top-K')}</strong></div><div class="stat"><span>请求 Top-K</span><strong>${result.topK}</strong></div><div class="stat"><span>实际候选</span><strong>${result.actualCandidateCount}</strong></div><div class="stat"><span>命中数量</span><strong>${result.matchedCandidateCount}${result.truncated ? '+' : ''}</strong></div><div class="stat"><span>检索耗时</span><strong>${number(result.durationMs)}<small> ms</small></strong></div><div class="stat"><span>缺失关键词</span><strong>${result.missingKeywords.length}</strong></div></div>
+                ${result.truncated ? '<div class="error">结果超过有界安全上限，已截断；不能据此声称列表完整，请缩小文档或范围。</div>' : ''}
                 <div class="section-title"><h3>召回证据</h3><span class="source">融合分 = 向量 70% + 关键词 30%</span></div>
                 ${result.candidates.map(item => `<article class="candidate"><div class="candidate-top"><span class="rank">TOP ${item.rank}</span><span class="score">向量 ${score(item.vectorScore)} · 关键词 ${score(item.keywordScore)} · 融合 ${score(item.finalScore)}</span></div><p>${escapeHtml(item.content)}</p><div class="source">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${escapeHtml(item.locator)}</div></article>`).join('')}`;
             byId('ragResult').classList.add('visible');
@@ -785,6 +788,14 @@
             + documents.map(item => `<option value="${escapeHtml(item.documentId)}@${escapeHtml(item.documentVersion)}">${escapeHtml(item.documentId)} · ${escapeHtml(item.documentVersion)} · ${number(item.chunkCount)} 个分片</option>`).join('');
     }
 
+    /** 加载智能守护的资方诊断上下文，不把文档误当成诊断主体。 */
+    async function loadGuardianProviders() {
+        const providers = await request('/api/console/guardian/providers');
+        byId('guardianProvider').innerHTML = providers.length
+            ? providers.map(item => `<option value="${escapeHtml(item.providerId)}">${escapeHtml(item.displayName)}</option>`).join('')
+            : '<option value="">暂无可用资方</option>';
+    }
+
     /** 加载已发布知识集合及其文档版本。 */
     async function loadCollections() {
         try {
@@ -793,6 +804,7 @@
                 ? publishedCollections.map(item => `<option value="${escapeHtml(item.collectionName)}">${escapeHtml(item.collectionName)} · ${number(item.documentCount)} 份文档 · ${number(item.chunkCount)} 个分片</option>`).join('')
                 : '<option value="">暂无已发布集合</option>';
             loadDocumentScopes();
+            await loadGuardianProviders();
             loadRagAuditHistory();
         } catch (error) {
             byId('collectionName').innerHTML = `<option value="">集合读取失败</option>`;
@@ -838,7 +850,7 @@
         try {
             const audits = await request('/api/console/rag/query-audits');
             byId('ragAuditHistory').className = '';
-            byId('ragAuditHistory').innerHTML = audits.length ? audits.map(item => `<details class="audit-item"><summary>${escapeHtml(item.status)} · ${escapeHtml(item.question)} · ${number(item.durationMs)} ms</summary><div class="source">${escapeHtml(item.collectionName)} · ${escapeHtml(item.documentId || '全部文档')}@${escapeHtml(item.documentVersion || '')} · Top-${item.topK} · ${escapeHtml(item.queriedAt)}</div><pre>${escapeHtml(JSON.stringify({missingKeywords: item.missingKeywords, candidates: item.candidates}, null, 2))}</pre></details>`).join('') : '<div class="placeholder"><div><b>暂无检索历史</b><span>执行一次在线检索后会自动记录。</span></div></div>';
+            byId('ragAuditHistory').innerHTML = audits.length ? audits.map(item => `<details class="audit-item"><summary>${escapeHtml(item.status)} · ${escapeHtml(item.question)} · ${number(item.durationMs)} ms</summary><div class="source">${escapeHtml(item.collectionName)} · ${escapeHtml(item.documentId || '全部文档')}@${escapeHtml(item.documentVersion || '')} · ${escapeHtml(item.retrievalMode === 'EXHAUSTIVE_BOUNDED' ? '有界全量' : 'Top-K')} · 请求 Top-${item.topK} · 实际候选 ${item.actualCandidateCount} · 命中 ${item.matchedCandidateCount}${item.truncated ? '+' : ''} · ${item.truncated ? '已截断' : '未截断'} · ${escapeHtml(item.queriedAt)}</div><pre>${escapeHtml(JSON.stringify({missingKeywords: item.missingKeywords, candidates: item.candidates}, null, 2))}</pre></details>`).join('') : '<div class="placeholder"><div><b>暂无检索历史</b><span>执行一次在线检索后会自动记录。</span></div></div>';
         } catch (error) {
             byId('ragAuditHistory').innerHTML = `<div class="error">检索历史读取失败：${escapeHtml(error.message)}</div>`;
         }
@@ -869,12 +881,12 @@
                 <div class="mini-row"><span>当前状态</span><span class="status-pill ${taskBadge(task.status)}">${escapeHtml(task.status)}</span></div>
                 <div class="mini-row"><span>审批截止时间</span><span>${escapeHtml(formatDeadline(task.reviewDeadline))} <b class="countdown ${task.status === 'EXPIRED' ? 'expired' : ''}" data-deadline="${escapeHtml(task.reviewDeadline || '')}">${escapeHtml(remainingText(task.reviewDeadline))}</b></span></div>
                 <div class="mini-row"><span>Java 门禁</span><b>${escapeHtml(task.gateStatus)} · ${escapeHtml(task.gateReason)}</b></div>
-                ${task.status === 'EXPIRED' ? `<div class="error">该任务已过审批截止时间。${lastGuardianReplayRequest ? '<button class="tiny-button" id="replayExpired">重新发起最近一次诊断</button>' : '请在智能守护页面重新运行一次回放。'}</div>` : ''}
+                ${task.status === 'EXPIRED' ? `<div class="error">该任务已过审批截止时间。${lastGuardianSimulationRequest ? '<button class="tiny-button" id="rerunExpired">重新发起最近一次诊断</button>' : '请在智能守护页面重新运行一次诊断模拟。'}</div>` : ''}
                 <details open><summary>结构化诊断报告</summary><pre>${escapeHtml(JSON.stringify(task.report, null, 2))}</pre></details>
                 <details open><summary>状态时间线</summary><pre>${escapeHtml(JSON.stringify(task.timeline, null, 2))}</pre></details>
                 <details><summary>审批与模拟治理</summary><pre>${escapeHtml(JSON.stringify({review: task.review, simulations: task.simulations}, null, 2))}</pre></details>`;
-            const replayButton = byId('replayExpired');
-            if (replayButton) replayButton.addEventListener('click', replayLastGuardianRun);
+            const rerunButton = byId('rerunExpired');
+            if (rerunButton) rerunButton.addEventListener('click', rerunLastGuardianSimulation);
         } catch (error) {
             byId('diagnosisDetail').innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button class="tiny-button" id="retryDiagnosisDetail">重试</button></div>`;
             byId('retryDiagnosisDetail').addEventListener('click', () => loadDiagnosticDetail(taskId));
@@ -929,13 +941,14 @@
         }
     }
 
-    /** 重新执行最近一次回放，为已过期任务生成新的审批任务。 */
-    function replayLastGuardianRun() {
-        if (!lastGuardianReplayRequest) return;
+    /** 重新运行最近一次诊断模拟，为已过期任务生成新的审批任务。 */
+    function rerunLastGuardianSimulation() {
+        if (!lastGuardianSimulationRequest) return;
         document.querySelector('[data-tab="guardian"]').click();
-        byId('scenario').value = lastGuardianReplayRequest.scenario;
-        byId('messageCount').value = String(lastGuardianReplayRequest.messageCount);
-        byId('invokeModel').checked = Boolean(lastGuardianReplayRequest.invokeModel);
+        byId('scenario').value = lastGuardianSimulationRequest.scenario;
+        byId('messageCount').value = String(lastGuardianSimulationRequest.messageCount);
+        byId('invokeModel').checked = Boolean(lastGuardianSimulationRequest.invokeModel);
+        byId('guardianProvider').value = lastGuardianSimulationRequest.providerId || '';
         byId('guardianRun').click();
     }
 
@@ -1104,7 +1117,7 @@
                 <div class="audit-summary"><div>输入 Token<b>${number(call.inputTokens)}</b></div><div>输出 Token<b>${number(call.outputTokens)}</b></div><div>调用结果<b>${escapeHtml(call.status)}</b></div></div>
                 <details><summary>原始请求 <button type="button" class="tiny-button copy-button" data-copy-audit="request-${key}">复制</button></summary><pre id="request-${key}">${escapeHtml(requestText)}</pre></details>
                 <details><summary>原始响应 <button type="button" class="tiny-button copy-button" data-copy-audit="response-${key}">复制</button></summary><pre id="response-${key}">${escapeHtml(responseText)}</pre></details></details>`;
-        }).join('') : '<div class="placeholder"><div><b>暂无匹配的模型调用</b><span>调整筛选条件或先执行一次真实模型回放。</span></div></div>';
+        }).join('') : '<div class="placeholder"><div><b>暂无匹配的模型调用</b><span>调整筛选条件或先执行一次真实模型调用。</span></div></div>';
         document.querySelectorAll('[data-copy-audit]').forEach(button => button.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
@@ -1147,15 +1160,17 @@
         byId('guardianError').innerHTML = '';
         button.disabled = true; button.textContent = '正在聚合并诊断…';
         try {
-            lastGuardianReplayRequest = {
+            lastGuardianSimulationRequest = {
                 scenario: byId('scenario').value,
                 messageCount: Number(byId('messageCount').value),
-                invokeModel: byId('invokeModel').checked
+                invokeModel: byId('invokeModel').checked,
+                providerId: byId('guardianProvider').value
             };
             const result = await request('/api/console/guardian/simulate', {method: 'POST', body: JSON.stringify({
                 scenario: byId('scenario').value,
                 messageCount: Number(byId('messageCount').value),
-                invokeModel: byId('invokeModel').checked
+                invokeModel: byId('invokeModel').checked,
+                providerId: byId('guardianProvider').value || null
             })});
             const window = result.representativeWindow;
             const modelBadge = result.modelStatus === 'COMPLETED' ? 'good' : (result.modelStatus === 'SKIPPED' ? 'warn' : 'bad');
@@ -1163,7 +1178,7 @@
             byId('guardianResult').innerHTML = `
                 <div class="section-title"><h3>降频链路</h3><span class="badge ${result.diagnosticTasks > 0 ? 'warn' : 'good'}">${result.diagnosticTasks > 0 ? '发现风险' : '运行正常'}</span></div>
                 <div class="pipeline"><div class="stage"><b>${number(result.metricMessages)}</b><span>指标消息</span></div><div class="stage"><b>${number(result.aggregateWindows)}</b><span>聚合窗口</span></div><div class="stage"><b>${number(result.riskWindows)}</b><span>风险窗口</span></div><div class="stage"><b>${number(result.diagnosticTasks)}</b><span>诊断任务</span></div><div class="stage"><b>${number(result.actualModelCalls)}</b><span>实际模型调用</span></div></div>
-                <div class="stats"><div class="stat"><span>被冷却抑制</span><strong>${number(result.suppressedTasks)}</strong></div><div class="stat"><span>消息/任务比</span><strong>${result.diagnosticTasks ? Math.round(result.metricMessages / result.diagnosticTasks) : '∞'}</strong></div><div class="stat"><span>回放耗时</span><strong>${number(result.durationMs)}<small> ms</small></strong></div><div class="stat"><span>模型状态</span><strong style="font-size:13px"><span class="badge ${modelBadge}">${escapeHtml(result.modelStatus)}</span></strong></div></div>
+                <div class="stats"><div class="stat"><span>被冷却抑制</span><strong>${number(result.suppressedTasks)}</strong></div><div class="stat"><span>消息/任务比</span><strong>${result.diagnosticTasks ? Math.round(result.metricMessages / result.diagnosticTasks) : '∞'}</strong></div><div class="stat"><span>模拟耗时</span><strong>${number(result.durationMs)}<small> ms</small></strong></div><div class="stat"><span>模型状态</span><strong style="font-size:13px"><span class="badge ${modelBadge}">${escapeHtml(result.modelStatus)}</span></strong></div></div>
                 <div class="window-panel"><div class="metric-list"><b>代表窗口指标</b><div class="metric-row"><span>QPS / CPM</span><strong>${score(window.qps)} / ${score(window.cpm)}</strong></div><div class="metric-row"><span>错误率 / 超时率</span><strong>${percent(window.errorRate)} / ${percent(window.timeoutRate)}</strong></div><div class="metric-row"><span>P95 / P99</span><strong>${window.p95LatencyMs} / ${window.p99LatencyMs} ms</strong></div><div class="metric-row"><span>线程池</span><strong>${window.activeThreads} / ${window.maxThreads}</strong></div><div class="metric-row"><span>GC 次数 / 暂停</span><strong>${window.gcCount} / ${window.gcPauseMs} ms</strong></div></div>
                 <div class="rule-list"><b>确定性规则</b>${result.deterministicFindings.map(item => `<div class="rule-row"><span>${escapeHtml(item.ruleId)}</span><strong><span class="badge ${item.matched ? 'bad' : 'good'}">${item.matched ? '命中' : '未命中'}</span></strong></div>`).join('')}</div></div>
                 <details><summary>风险指纹与规则证据</summary><pre>${escapeHtml(JSON.stringify({riskFingerprint: result.riskFingerprint, ruleHits: result.ruleHits, deterministicFindings: result.deterministicFindings}, null, 2))}</pre></details>
@@ -1187,9 +1202,9 @@
         try {
             const result = await request('/api/console/guardian/evaluation', {method: 'POST', body: JSON.stringify({
                 cases: [
-                    {caseId: 'baseline-timeout', providerId: 'synthetic-provider', interfaceId: 'credit-apply',
+                    {caseId: 'baseline-timeout', providerId: 'NYXJ', interfaceId: 'credit-apply',
                         symptoms: ['上游超时'], expectedConclusion: '上游超时', requiredEvidence: ['metrics', 'incident']},
-                    {caseId: 'baseline-insufficient-evidence', providerId: 'synthetic-provider', interfaceId: 'credit-apply',
+                    {caseId: 'baseline-insufficient-evidence', providerId: 'NYXJ', interfaceId: 'credit-apply',
                         symptoms: ['证据缺失'], expectedConclusion: '', requiredEvidence: []}
                 ],
                 observations: [

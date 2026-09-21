@@ -22,7 +22,7 @@ public class RiskDiagnosisCoordinator {
                 JsonMapper.builder().build(), Clock.systemUTC());
     }
 
-    /** 注入规则、冷却、仓储和时钟，便于测试与回放。 */
+    /** 注入规则、冷却、仓储和时钟，便于测试与模拟。 */
     public RiskDiagnosisCoordinator(RiskRuleEvaluator ruleEvaluator, RiskCooldownGate cooldownGate,
                                     GuardianRiskRepository repository, JsonMapper mapper, Clock clock) {
         this.ruleEvaluator = ruleEvaluator;

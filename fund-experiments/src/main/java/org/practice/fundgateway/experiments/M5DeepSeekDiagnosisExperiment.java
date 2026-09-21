@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** M5 真实诊断回放：固定 JSON 输出并执行 Java 最终门禁。 */
+/** M5 真实诊断模拟：固定 JSON 输出并执行 Java 最终门禁。 */
 @Component
 @Profile("m5-real")
 public class M5DeepSeekDiagnosisExperiment implements CommandLineRunner {
@@ -30,7 +30,7 @@ public class M5DeepSeekDiagnosisExperiment implements CommandLineRunner {
     private static final String MODEL = "deepseek-v4-flash";
     private final JsonMapper mapper = JsonMapper.builder().build();
 
-    /** Spring Boot 启动后执行一次合成诊断回放。 */
+    /** Spring Boot 启动后执行一次合成诊断模拟。 */
     @Override
     public void run(String... args) throws Exception {
         execute();
@@ -61,7 +61,7 @@ public class M5DeepSeekDiagnosisExperiment implements CommandLineRunner {
         System.out.println("M5 真实诊断完成，门禁状态=" + decision.status() + "，证据目录=" + evidenceDir);
     }
 
-    /** 构造本次回放使用的合成快照，模拟 M4 已产生的风险窗口。 */
+    /** 构造本次模拟使用的合成快照，模拟 M4 已产生的风险窗口。 */
     private DiagnosisSnapshot snapshot() {
         MetricsEvidence metrics = new MetricsEvidence("synthetic-provider", "credit-apply", 95, 820,
                 0.18, 48, 50);

@@ -116,6 +116,10 @@ comment on column knowledge.rag_query_audits.document_version is '限定文档�
 comment on column knowledge.rag_query_audits.question is '检索问题';
 comment on column knowledge.rag_query_audits.keywords is '门禁关键词';
 comment on column knowledge.rag_query_audits.top_k is '本次召回条数';
+comment on column knowledge.rag_query_audits.actual_candidate_count is '本次实际返回的候选证据数量';
+comment on column knowledge.rag_query_audits.retrieval_mode is '检索模式：TOP_K 或 EXHAUSTIVE_BOUNDED';
+comment on column knowledge.rag_query_audits.matched_candidate_count is '有界查询观察到的命中数；截断时表示至少命中数';
+comment on column knowledge.rag_query_audits.truncated is '是否因有界安全上限截断';
 comment on column knowledge.rag_query_audits.status is '检索结论';
 comment on column knowledge.rag_query_audits.indexed_chunks is '参与检索的分片数';
 comment on column knowledge.rag_query_audits.duration_ms is '耗时（毫秒）';

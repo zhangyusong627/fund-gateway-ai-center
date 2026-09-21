@@ -63,7 +63,7 @@
 
   <rect x="220" y="1065" width="1640" height="105" rx="10" fill="#fce5cf" stroke="#d59b62" class="band"/>
   <rect x="38" y="1094" width="150" height="48" rx="24" fill="#c87931"/><text x="113" y="1125" text-anchor="middle" class="layerTitle" fill="#fff">业务成果</text>
-  <rect x="285" y="1090" width="680" height="55" rx="8" stroke="#c87931" class="card"/><text x="625" y="1114" text-anchor="middle" class="cardTitle">可追溯诊断报告、人工决定与模拟治理结果</text><text x="625" y="1135" text-anchor="middle" class="cardNote">支持回放、故障复盘和规则改进</text>
+  <rect x="285" y="1090" width="680" height="55" rx="8" stroke="#c87931" class="card"/><text x="625" y="1114" text-anchor="middle" class="cardTitle">可追溯诊断报告、人工决定与模拟治理结果</text><text x="625" y="1135" text-anchor="middle" class="cardNote">支持模拟、故障复盘和规则改进</text>
   <rect x="1110" y="1090" width="680" height="55" rx="8" stroke="#c87931" class="card"/><text x="1450" y="1114" text-anchor="middle" class="cardTitle">可追溯候选事实与已发布接口规范</text><text x="1450" y="1135" text-anchor="middle" class="cardNote">支持人工复核、版本追踪和诊断引用</text>
   <text x="48" y="1200" class="subtitle">业务边界：两条链路可独立使用；模型只生成候选事实、候选根因和建议；发布、规则、权限与审核由 Java 和人工控制。</text>
 </svg>

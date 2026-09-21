@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -18,6 +20,7 @@ import org.practice.fundgateway.console.ConsoleModels.PublishedDocument;
 import org.practice.fundgateway.console.ConsoleModels.KnowledgeChunkPage;
 import org.practice.fundgateway.console.ConsoleModels.KnowledgeChunkPreview;
 import org.practice.fundgateway.console.ConsoleModels.RagQueryAudit;
+import org.practice.fundgateway.console.ConsoleModels.GuardianProvider;
 import org.practice.fundgateway.common.permission.PermissionAuditRecorder;
 import org.practice.fundgateway.common.permission.PermissionContext;
 import org.practice.fundgateway.common.permission.PermissionGuard;
@@ -32,6 +35,8 @@ import tools.jackson.databind.ObjectMapper;
 /** 为可视化控制台提供真实 BGE 向量和 pgvector 混合检索。 */
 @Service
 public class ConsoleRagService {
+
+    private static final int MAX_EXHAUSTIVE_CANDIDATES = 100;
 
     private final JdbcTemplate jdbcTemplate;
     private final Path modelPath;
@@ -88,25 +93,85 @@ public class ConsoleRagService {
         int topK = request.topK() == null ? 3 : request.topK();
         Set<String> keywords = new TreeSet<>(request.keywords());
         float[] queryVector = model().embed(request.question());
-        List<HybridPgvectorRetriever.HybridRetrievedChunk> candidates =
-                new HybridPgvectorRetriever(jdbcTemplate).search(collectionName, request.documentId(),
-                        request.documentVersion(), queryVector, keywords, topK);
+        HybridPgvectorRetriever retriever = new HybridPgvectorRetriever(jdbcTemplate);
+        boolean exhaustiveList = isExhaustiveListQuestion(request.question());
+        String retrievalMode = "TOP_K";
+        int matchedCandidateCount;
+        boolean truncated = false;
+        List<HybridPgvectorRetriever.HybridRetrievedChunk> candidates;
+        if (exhaustiveList) {
+            HybridPgvectorRetriever.BoundedInterfaceSearchResult bounded =
+                    retriever.searchBoundedInterfaceChunks(collectionName, request.documentId(),
+                            request.documentVersion(), request.providerId(), MAX_EXHAUSTIVE_CANDIDATES);
+            candidates = bounded.candidates();
+            matchedCandidateCount = bounded.matchedCount();
+            truncated = bounded.truncated();
+            retrievalMode = "EXHAUSTIVE_BOUNDED";
+        } else {
+            candidates = retriever.search(collectionName, request.documentId(), request.documentVersion(),
+                    request.providerId(), queryVector, keywords, topK);
+            matchedCandidateCount = candidates.size();
+        }
+        if (candidates.isEmpty() && exhaustiveList) {
+            candidates = retriever.search(collectionName, request.documentId(), request.documentVersion(),
+                    request.providerId(), queryVector, keywords, topK);
+            exhaustiveList = false;
+            retrievalMode = "TOP_K";
+            matchedCandidateCount = candidates.size();
+            truncated = false;
+        }
+        if (!exhaustiveList && isInterfaceDetailQuestion(request.question())) {
+            List<HybridPgvectorRetriever.HybridRetrievedChunk> exactMatches =
+                    retriever.searchKeywordInterfaceChunks(collectionName, request.documentId(),
+                            request.documentVersion(), request.providerId(), keywords);
+            candidates = mergeAndLimit(candidates, exactMatches, topK);
+        }
         EvidenceAcceptanceGate.AcceptanceResult acceptance =
                 new EvidenceAcceptanceGate().evaluate(candidates, keywords);
-        List<RagCandidate> mapped = java.util.stream.IntStream.range(0, candidates.size())
+        List<HybridPgvectorRetriever.HybridRetrievedChunk> selectedCandidates = candidates;
+        List<RagCandidate> mapped = java.util.stream.IntStream.range(0, selectedCandidates.size())
                 .mapToObj(index -> {
-                    HybridPgvectorRetriever.HybridRetrievedChunk candidate = candidates.get(index);
+                    HybridPgvectorRetriever.HybridRetrievedChunk candidate = selectedCandidates.get(index);
                     var chunk = candidate.chunk();
                     return new RagCandidate(index + 1, chunk.chunkId(), chunk.content(), chunk.score(),
                             candidate.keywordScore(), candidate.finalScore(), chunk.documentId(),
                             chunk.documentVersion(), chunk.locator());
                 }).toList();
-        int indexedChunks = countIndexedChunks(collectionName, request.documentId(), request.documentVersion());
-        RagQueryResponse response = new RagQueryResponse(acceptance.accepted() ? "ACCEPTED" : "INSUFFICIENT_EVIDENCE",
-                collectionName, request.question(), topK, Duration.ofNanos(System.nanoTime() - startedAt).toMillis(),
+        int indexedChunks = countIndexedChunks(collectionName, request.documentId(), request.documentVersion(),
+                request.providerId());
+        String status = truncated || !acceptance.accepted() ? "INSUFFICIENT_EVIDENCE" : "ACCEPTED";
+        RagQueryResponse response = new RagQueryResponse(status,
+                collectionName, request.question(), topK, mapped.size(), retrievalMode, matchedCandidateCount, truncated,
+                Duration.ofNanos(System.nanoTime() - startedAt).toMillis(),
                 indexedChunks, acceptance.missingKeywords(), mapped);
         saveAudit(request, response, keywords);
         return response;
+    }
+
+    /** 识别需要文档级穷举的列表问题，避免把局部 Top-K 当成完整清单。 */
+    private boolean isExhaustiveListQuestion(String question) {
+        String normalized = question == null ? "" : question.replaceAll("\\s+", "");
+        return normalized.matches(".*(包含哪些|有哪些|列出.*(接口|交易码)|完整.*(接口|交易码)|全部.*(接口|交易码)|接口.*列表|交易码.*列表).* ".trim());
+    }
+
+    /** 识别具体接口细节问题，触发关键词精确补召回。 */
+    private boolean isInterfaceDetailQuestion(String question) {
+        String normalized = question == null ? "" : question.replaceAll("\\s+", "");
+        return normalized.contains("接口") && !normalized.matches(".*(包含哪些|有哪些|列出.*(接口|交易码)|完整.*(接口|交易码)|全部.*(接口|交易码)|接口.*列表|交易码.*列表).*");
+    }
+
+    /** 将精确关键词命中与向量候选去重合并，仍保持请求 Top-K 上限。 */
+    private List<HybridPgvectorRetriever.HybridRetrievedChunk> mergeAndLimit(
+            List<HybridPgvectorRetriever.HybridRetrievedChunk> ranked,
+            List<HybridPgvectorRetriever.HybridRetrievedChunk> exactMatches,
+            int topK) {
+        Map<String, HybridPgvectorRetriever.HybridRetrievedChunk> merged = new LinkedHashMap<>();
+        ranked.forEach(item -> merged.put(item.chunk().chunkId(), item));
+        exactMatches.forEach(item -> merged.put(item.chunk().chunkId(), item));
+        return merged.values().stream()
+                .sorted((left, right) -> Double.compare(right.finalScore(), left.finalScore()))
+                .limit(topK)
+                .toList();
     }
 
     /** 将在线检索输入、结果和证据写入审计表；审计失败不改变检索结论。 */
@@ -114,16 +179,26 @@ public class ConsoleRagService {
         try {
             jdbcTemplate.update("insert into knowledge.rag_query_audits "
                             + "(query_id,collection_name,document_id,document_version,question,keywords,top_k,status,"
-                            + "indexed_chunks,duration_ms,missing_keywords,candidates_json,queried_at) "
-                            + "values (?,?,?,?,?,CAST(? AS jsonb),?,?,?, ?,CAST(? AS jsonb),CAST(? AS jsonb),now())", UUID.randomUUID(),
+                            + "actual_candidate_count,retrieval_mode,matched_candidate_count,truncated,indexed_chunks,duration_ms,missing_keywords,candidates_json,queried_at) "
+                            + "values (?,?,?,?,?,CAST(? AS jsonb),?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),now())", UUID.randomUUID(),
                     response.collectionName(), request.documentId(), request.documentVersion(), request.question(),
-                    objectMapper.writeValueAsString(keywords), response.topK(), response.status(), response.indexedChunks(),
+                    objectMapper.writeValueAsString(keywords), auditTopK(request), response.status(), response.actualCandidateCount(),
+                    response.retrievalMode(), response.matchedCandidateCount(), response.truncated(),
+                    response.indexedChunks(),
                     response.durationMs(), objectMapper.writeValueAsString(response.missingKeywords()),
                     objectMapper.writeValueAsString(response.candidates()));
         } catch (Exception exception) {
             System.err.println("在线检索审计写入失败：" + exception);
             exception.printStackTrace(System.err);
         }
+    }
+
+    /**
+     * 审计表的 top_k 表示用户请求的 Top-K（1~50）；完整列表模式的实际候选数单独记录。
+     */
+    private int auditTopK(RagQueryRequest request) {
+        int requested = request.topK() == null ? 3 : request.topK();
+        return Math.max(1, Math.min(50, requested));
     }
 
     /** 查询最近五十条在线检索审计记录。 */
@@ -140,7 +215,8 @@ public class ConsoleRagService {
                         return new RagQueryAudit(resultSet.getObject("query_id", UUID.class),
                                 resultSet.getString("collection_name"), resultSet.getString("document_id"),
                                 resultSet.getString("document_version"), resultSet.getString("question"), keywords,
-                                resultSet.getInt("top_k"), resultSet.getString("status"), resultSet.getInt("indexed_chunks"),
+                                resultSet.getInt("top_k"), resultSet.getInt("actual_candidate_count"), resultSet.getString("retrieval_mode"),
+                                resultSet.getInt("matched_candidate_count"), resultSet.getBoolean("truncated"), resultSet.getString("status"), resultSet.getInt("indexed_chunks"),
                                 resultSet.getLong("duration_ms"), missing, candidates,
                                 resultSet.getTimestamp("queried_at").toInstant());
                     } catch (Exception exception) {
@@ -176,6 +252,26 @@ public class ConsoleRagService {
                     visibleDocuments.stream().mapToInt(PublishedDocument::chunkCount).sum(),
                     collection.embeddingModel(), collection.embeddingDimension(), visibleDocuments);
         }).filter(collection -> !collection.documents().isEmpty()).toList();
+    }
+
+    /** 返回当前权限范围内可用于智能守护的资方诊断上下文。 */
+    public List<GuardianProvider> publishedGuardianProviders() {
+        return publishedGuardianProviders(defaultPermissionContext);
+    }
+
+    /** 返回当前权限范围内可用于智能守护的资方诊断上下文。 */
+    public List<GuardianProvider> publishedGuardianProviders(PermissionContext permissionContext) {
+        List<String> providerIds = jdbcTemplate.query("select distinct "
+                        + "case when institution in ('synthetic-source','synthetic-provider') then 'NYXJ' "
+                        + "else nullif(institution,'') end as provider_id "
+                        + "from knowledge.knowledge_chunks c join knowledge.rag_collections r "
+                        + "on r.collection_name=c.collection_name where r.status='PUBLISHED' "
+                        + "and (institution is not null and institution <> '') order by provider_id",
+                (resultSet, rowNumber) -> resultSet.getString("provider_id"));
+        return providerIds.stream().filter(providerId -> providerId != null && !providerId.isBlank())
+                .filter(providerId -> permissionContext == null || permissionContext.allowsProvider(providerId))
+                .map(providerId -> new GuardianProvider(providerId, providerId))
+                .toList();
     }
 
     /** 分页浏览已发布文档分片，供评测人员选择标准证据。 */
@@ -274,13 +370,24 @@ public class ConsoleRagService {
     }
 
     /** 统计本次集合或文档范围内实际参与检索的向量分片。 */
-    private int countIndexedChunks(String collectionName, String documentId, String documentVersion) {
+    private int countIndexedChunks(String collectionName, String documentId, String documentVersion,
+                                   String providerId) {
+        boolean providerScoped = providerId != null && !providerId.isBlank();
         if (documentId == null || documentId.isBlank()) {
-            return jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+            return providerScoped
+                    ? jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                    + "where collection_name=? and (institution=? or (?='NYXJ' and institution in ('synthetic-source','synthetic-provider')))",
+                    Integer.class, collectionName, providerId, providerId)
+                    : jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
                     + "where collection_name=?", Integer.class, collectionName);
         }
-        return jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
-                        + "where collection_name=? and document_id=? and document_version=?",
+        return providerScoped
+                ? jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                + "where collection_name=? and document_id=? and document_version=? "
+                + "and (institution=? or (?='NYXJ' and institution in ('synthetic-source','synthetic-provider')))",
+                Integer.class, collectionName, documentId, documentVersion, providerId, providerId)
+                : jdbcTemplate.queryForObject("select count(*) from knowledge.knowledge_chunks "
+                + "where collection_name=? and document_id=? and document_version=?",
                 Integer.class, collectionName, documentId, documentVersion);
     }
 
@@ -307,8 +414,8 @@ public class ConsoleRagService {
         if (request.keywords() == null || request.keywords().stream().noneMatch(value -> value != null && !value.isBlank())) {
             throw new IllegalArgumentException("至少提供一个证据关键词");
         }
-        if (request.topK() != null && (request.topK() < 1 || request.topK() > 10)) {
-            throw new IllegalArgumentException("Top-K 必须在 1 到 10 之间");
+        if (request.topK() != null && (request.topK() < 1 || request.topK() > 50)) {
+            throw new IllegalArgumentException("Top-K 必须在 1 到 50 之间");
         }
         boolean hasDocumentId = request.documentId() != null && !request.documentId().isBlank();
         boolean hasDocumentVersion = request.documentVersion() != null && !request.documentVersion().isBlank();

@@ -1,4 +1,4 @@
-# M4 Redpanda 指标消息回放
+# M4 Redpanda 指标消息模拟
 
 - 日期：2026-09-11
 - 镜像：`redpandadata/redpanda:v24.3.6`

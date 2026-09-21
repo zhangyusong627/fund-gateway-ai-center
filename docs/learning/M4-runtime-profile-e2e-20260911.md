@@ -1,4 +1,4 @@
-# M4 运行 profile 完整链路回放（2026-09-11）
+# M4 运行 profile 完整链路模拟（2026-09-11）
 
 ## 目的
 
@@ -27,7 +27,7 @@ java -jar fund-experiments/target/fund-experiments-0.0.1-SNAPSHOT.jar \
 
 - 首次启动发现实验启动类没有显式导入 `MetricProcessingConfiguration`，导致窗口聚合器未注册；补充显式配置导入后重新构建。
 - 第二次启动成功：Spring Boot 正常启动，Kafka 消费组 `fund-guardian-m4` 成功订阅 `guardian.metric-events.v1`，Mock Producer 发送 20 条消息。
-- PostgreSQL 在本次回放新增 1 条风险事件和 1 条诊断任务；数据库总量为 3 条风险事件、4 条诊断任务，历史记录未清理。
+- PostgreSQL 在本次模拟新增 1 条风险事件和 1 条诊断任务；数据库总量为 3 条风险事件、4 条诊断任务，历史记录未清理。
 - 本次运行证明链路已接通：`Redpanda → MetricEventConsumer → MetricWindowAggregator → RiskDiagnosisCoordinator → PostgreSQL`。
 
 ## 验收判断

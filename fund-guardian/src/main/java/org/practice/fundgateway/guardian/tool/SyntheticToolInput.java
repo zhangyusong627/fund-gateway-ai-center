@@ -28,10 +28,11 @@ final class SyntheticToolInput {
                     || providerValue.isBlank() || interfaceValue.isBlank()) {
                 throw new IllegalArgumentException(errorMessage);
             }
-            if (!"synthetic-provider".equals(providerValue) || !"credit-apply".equals(interfaceValue)) {
+            if (!("NYXJ".equals(providerValue) || "synthetic-provider".equals(providerValue))
+                    || !"credit-apply".equals(interfaceValue)) {
                 throw new IllegalArgumentException(errorMessage);
             }
-            return new Target(providerValue, interfaceValue);
+            return new Target("NYXJ", interfaceValue);
         } catch (IllegalArgumentException exception) {
             throw exception;
         } catch (Exception exception) {

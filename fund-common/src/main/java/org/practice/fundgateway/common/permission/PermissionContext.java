@@ -27,13 +27,13 @@ public record PermissionContext(
 
     /** 创建当前控制台使用的合成演示权限，不代表真实用户身份。 */
     public static PermissionContext syntheticConsole() {
-        return new PermissionContext("synthetic-console-demo", Set.of("synthetic-provider"),
+        return new PermissionContext("synthetic-console-demo", Set.of("NYXJ"),
                 Set.of(new KnowledgeScope("*", "*", "*")), SYNTHETIC_DIAGNOSTIC_TOOLS, true);
     }
 
     /** 创建旧工具实验使用的显式合成权限上下文。 */
     public static PermissionContext syntheticDiagnostic() {
-        return new PermissionContext("synthetic-diagnostic-experiment", Set.of("synthetic-provider"),
+        return new PermissionContext("synthetic-diagnostic-experiment", Set.of("NYXJ"),
                 Set.of(new KnowledgeScope("*", "*", "*")), SYNTHETIC_DIAGNOSTIC_TOOLS, false);
     }
 

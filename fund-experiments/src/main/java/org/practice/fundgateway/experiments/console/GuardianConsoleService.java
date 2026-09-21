@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** 为控制台执行可复算的智能守护回放，并按需调用 DeepSeek。 */
+/** 为控制台执行可复算的智能守护模拟，并按需调用 DeepSeek。 */
 @Service
 public class GuardianConsoleService {
 

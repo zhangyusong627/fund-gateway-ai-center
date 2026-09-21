@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** 为控制台执行可复算的智能守护回放，并按需调用 DeepSeek。 */
+/** 为控制台执行可复算的智能守护诊断模拟，并按需调用 DeepSeek。 */
 @Service
 public class GuardianConsoleService {
 
@@ -88,13 +88,14 @@ public class GuardianConsoleService {
         return simulate(request, permissionContext);
     }
 
-    /** 使用指定权限上下文执行诊断回放，便于验证越权请求在业务入口被拒绝。 */
+    /** 使用指定权限上下文执行诊断模拟，便于验证越权请求在业务入口被拒绝。 */
     public GuardianSimulationResponse simulate(GuardianSimulationRequest request,
                                                 PermissionContext requestContext) throws Exception {
         validate(request);
-        String replayId = UUID.randomUUID().toString();
-        permissionGuard.requireProvider(requestContext, "synthetic-provider", "GUARDIAN_DIAGNOSTIC_READ",
-                "console-guardian-" + replayId);
+        String simulationId = UUID.randomUUID().toString();
+        String providerId = providerId(request);
+        permissionGuard.requireProvider(requestContext, providerId, "GUARDIAN_DIAGNOSTIC_READ",
+                "console-guardian-" + simulationId);
         long startedAt = System.nanoTime();
         Scenario scenario = Scenario.valueOf(request.scenario());
         int messageCount = request.messageCount();
@@ -130,22 +131,22 @@ public class GuardianConsoleService {
         RiskCandidate primaryCandidate = admittedCandidates.values().stream().findFirst()
                 .orElse(new RiskCandidate(windows.get(0), List.of(), null));
         MetricWindowAggregate representative = primaryCandidate.aggregate();
-        DiagnosisResult deterministic = deterministicDiagnosis(representative, scenario);
+        DiagnosisResult deterministic = deterministicDiagnosis(representative, scenario, providerId);
         ModelDiagnosisFacade.DiagnosisOutcome model = ModelDiagnosisFacade.DiagnosisOutcome.skipped("NO_DIAGNOSTIC_TASK");
         DiagnosticTaskView diagnosticTask = null;
         int diagnosticTasks = 0;
         int actualModelCalls = 0;
         for (RiskCandidate candidate : admittedCandidates.values()) {
             DiagnosticTaskView activeTask = workflowService.findActiveByRiskFingerprint(candidate.fingerprint()).orElse(null);
-            DiagnosisResult candidateDeterministic = deterministicDiagnosis(candidate.aggregate(), scenario);
+            DiagnosisResult candidateDeterministic = deterministicDiagnosis(candidate.aggregate(), scenario, providerId);
             ModelDiagnosisFacade.DiagnosisOutcome candidateModel = activeTask == null
                     ? invokeModelIfRequested(request, candidate.aggregate(), candidateDeterministic,
-                            candidate.fingerprint(), 1, "console-" + scenario.name() + "-" + replayId,
+                            providerId, candidate.fingerprint(), 1, "console-" + scenario.name() + "-" + simulationId,
                             requestContext)
                     : ModelDiagnosisFacade.DiagnosisOutcome.skipped("ACTIVE_TASK_EXISTS");
             DiagnosticTaskView candidateTask = activeTask != null ? activeTask
                     : createWorkflowTask(scenario, candidateModel, candidate.aggregate(), candidate.hits(),
-                            replayId, requestContext);
+                            simulationId, requestContext);
             actualModelCalls += candidateModel.actualCalls();
             if (candidateTask != null) {
                 diagnosticTasks++;
@@ -176,7 +177,7 @@ public class GuardianConsoleService {
     /** 先落风险事件再创建工作流，保证 PostgreSQL 外键和审计链完整。 */
     private DiagnosticTaskView createWorkflowTask(Scenario scenario, ModelDiagnosisFacade.DiagnosisOutcome model,
                                                    MetricWindowAggregate aggregate,
-                                                   List<RiskRuleHit> hits, String replayId,
+                                                   List<RiskRuleHit> hits, String simulationId,
                                                    PermissionContext requestContext) throws Exception {
         if (model.report() == null) {
             return null;
@@ -187,7 +188,7 @@ public class GuardianConsoleService {
                     hits.stream().map(RiskRuleHit::ruleId).toList(), aggregate.windowStart(),
                     aggregate.windowStart().plus(WINDOW_SIZE), Instant.now(), mapper.writeValueAsString(aggregate)));
         }
-        return workflowService.create("console-" + scenario.name() + "-" + BASE_TIME + "-" + replayId,
+        return workflowService.create("console-" + scenario.name() + "-" + BASE_TIME + "-" + simulationId,
                 model.snapshot(), model.report(), requestContext);
     }
 
@@ -197,13 +198,14 @@ public class GuardianConsoleService {
     }
 
     /** 使用现有五条确定性诊断规则生成模型对照基线。 */
-    private DiagnosisResult deterministicDiagnosis(MetricWindowAggregate aggregate, Scenario scenario) {
-        MetricsEvidence metrics = new MetricsEvidence("synthetic-provider", "credit-apply",
+    private DiagnosisResult deterministicDiagnosis(MetricWindowAggregate aggregate, Scenario scenario,
+                                                   String providerId) {
+        MetricsEvidence metrics = new MetricsEvidence(providerId, "credit-apply",
                 (int) Math.round(aggregate.qps()), scenario.averageLatencyMs,
                 aggregate.timeoutRate(), (int) aggregate.activeThreads(), (int) aggregate.maxThreads());
         DiagnosisEvidence evidence = new DiagnosisEvidence(
-                new ContractEvidence("synthetic-provider", "credit-apply", 100, 1000), metrics,
-                new IncidentEvidence("synthetic-provider", "credit-apply", "incident-demo-001",
+                new ContractEvidence(providerId, "credit-apply", 100, 1000), metrics,
+                new IncidentEvidence(providerId, "credit-apply", "incident-demo-001",
                         "CONFIRMED", "upstream-timeout", "2026-09-10T10:00:00Z"));
         return new DeterministicDiagnosisService().diagnose(evidence);
     }
@@ -212,6 +214,7 @@ public class GuardianConsoleService {
     private ModelDiagnosisFacade.DiagnosisOutcome invokeModelIfRequested(GuardianSimulationRequest request,
                                                 MetricWindowAggregate aggregate,
                                                 DiagnosisResult deterministic,
+                                                String providerId,
                                                 String fingerprint,
                                                 int diagnosticTasks, String traceId,
                                                 PermissionContext requestContext) throws Exception {
@@ -224,23 +227,24 @@ public class GuardianConsoleService {
         if (!modelFacade.available()) {
             return ModelDiagnosisFacade.DiagnosisOutcome.skipped("MODEL_UNAVAILABLE");
         }
-        MetricsEvidence metrics = new MetricsEvidence("synthetic-provider", "credit-apply",
+        MetricsEvidence metrics = new MetricsEvidence(providerId, "credit-apply",
                 (int) Math.round(aggregate.qps()), (int) aggregate.p95LatencyMs(), aggregate.timeoutRate(),
                 (int) aggregate.activeThreads(), (int) aggregate.maxThreads());
-        List<DiagnosisSnapshot.RagCitation> citations = loadRagCitations(requestContext, traceId);
+        List<DiagnosisSnapshot.RagCitation> citations = loadRagCitations(request, requestContext, traceId);
         if (citations.isEmpty()) {
             return ModelDiagnosisFacade.DiagnosisOutcome.skipped("RAG_EVIDENCE_UNAVAILABLE");
         }
         DiagnosisSnapshot snapshot = new DiagnosisSnapshot(traceId,
                 Instant.now(), metrics, deterministic.findings(),
-                new ContractEvidence("synthetic-provider", "credit-apply", 100, 1000),
+                new ContractEvidence(providerId, "credit-apply", 100, 1000),
                 citations,
                 fingerprint);
         return modelFacade.diagnose(snapshot, traceId);
     }
 
     /** 从本次在线检索结果生成诊断引用，禁止使用展示层硬编码证据。 */
-    private List<DiagnosisSnapshot.RagCitation> loadRagCitations(PermissionContext requestContext, String traceId)
+    private List<DiagnosisSnapshot.RagCitation> loadRagCitations(GuardianSimulationRequest request,
+                                                                  PermissionContext requestContext, String traceId)
             throws Exception {
         if (ragService == null) {
             permissionGuard.requireKnowledge(requestContext, "*", "synthetic", "v1",
@@ -249,8 +253,20 @@ public class GuardianConsoleService {
                     "接口 QPS 上限为 100，超时时间为 1000 毫秒。", "synthetic", "v1", "授信申请"));
         }
         try {
-            var response = ragService.query(new ConsoleModels.RagQueryRequest("fund-gateway-contracts", null, null,
-                    "授信申请金额字段的类型和必填要求是什么？", List.of("applyAmt", "BigDecimal", "必填"), 3),
+            String collectionName = request.knowledgeCollectionName();
+            // 守护以资方为边界；文档只是资方证据的一类，不能由调用方单独切换文档造成上下文漂移。
+            String documentId = null;
+            String documentVersion = null;
+            if (collectionName == null || collectionName.isBlank()) {
+                var collections = ragService.publishedCollections(requestContext);
+                if (collections.isEmpty()) {
+                    return List.of();
+                }
+                collectionName = collections.getFirst().collectionName();
+            }
+            var response = ragService.query(new ConsoleModels.RagQueryRequest(collectionName, documentId,
+                    documentVersion, "该资方知识上下文中与当前接口调用相关的契约约束、字段和性能基线是什么？",
+                    List.of("接口"), 5, providerId(request)),
                     requestContext);
             if (!"ACCEPTED".equals(response.status())) {
                 return List.of();
@@ -286,6 +302,16 @@ public class GuardianConsoleService {
                 || !List.of(100, 1000, 10000).contains(request.messageCount())) {
             throw new IllegalArgumentException("消息数量只能是 100、1000 或 10000");
         }
+        if ((request.knowledgeDocumentId() != null && !request.knowledgeDocumentId().isBlank())
+                || (request.knowledgeDocumentVersion() != null && !request.knowledgeDocumentVersion().isBlank())) {
+            throw new IllegalArgumentException("智能守护按资方选择诊断上下文，不支持直接指定文档");
+        }
+    }
+
+    /** 兼容历史请求，同时确保新的诊断入口始终具有明确资方。 */
+    private String providerId(GuardianSimulationRequest request) {
+        String providerId = request == null ? null : request.providerId();
+        return providerId == null || providerId.isBlank() ? "NYXJ" : providerId.trim();
     }
 
     /** 四类合成指标场景，参数均可由结果反算。 */

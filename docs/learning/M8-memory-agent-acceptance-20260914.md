@@ -10,7 +10,7 @@
 - 两轮请求均通过上下文渲染器注入历史摘要、最近消息和工具轨迹；超过字符预算时生成版本化摘要。
 - 长期案例要求证据引用和人工审批标识，并支持有效案例匹配召回。
 - 新诊断任务已将完整 `DiagnosisSnapshot` 写入 `snapshot_json`，重启后可恢复；旧的 `snapshot_json` 为空记录仍可查询。
-- 真实 HTTP 回放已完成：DeepSeek 首轮选择只读工具、Java 执行并回灌、第二轮返回最终回答，执行状态为 `COMPLETED / turn=2 / toolCalls=1`。
+- 真实 HTTP 模拟已完成：DeepSeek 首轮选择只读工具、Java 执行并回灌、第二轮返回最终回答，执行状态为 `COMPLETED / turn=2 / toolCalls=1`。
 - 已完成 `PENDING_APPROVAL -> APPROVED -> ACTIVE` 案例链路；重启 Console 后长期案例仍可召回，`evidenceRefs` 恢复为 `List<String>`。
 - 版本化诊断 Prompt 增加严格 JSON 字段示例，模型输出不符合固定结构时仍由门禁转人工审核，不放宽 Java 校验。
 
@@ -23,7 +23,7 @@ fund-guardian: 63 tests, 0 failures; fund-console: 9 tests, 0 failures
 git diff --check
 通过
 
-HTTP / PostgreSQL 回放：
+HTTP / PostgreSQL 模拟：
 - 新建诊断任务：`68b8dc56-792e-4c81-a563-134d031a2b66`，重启后状态仍为 `APPROVED`，数据库 `tasks_with_snapshot=1`。
 - 长期案例查询：重启前后均返回 1 条 `ACTIVE` 案例，证据引用为 JSON 数组并恢复为 Java 列表。
 - Agent 状态：`COMPLETED`，`turn=2`，`toolCalls=1`；执行游标在 Console 重启后仍可查询。

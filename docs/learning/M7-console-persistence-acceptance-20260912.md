@@ -1,4 +1,4 @@
-# M7 管理后台持久化与联合回放验收
+# M7 管理后台持久化与联合模拟验收
 
 ## 验证范围
 
@@ -14,7 +14,7 @@
 | 文档解析 | 通过，1187 个元素、375 个段落、812 个表格行、905 个分片 |
 | 离线索引 | 通过，905 个分片写入 `fund-gateway-contracts` 并发布为 `PUBLISHED` |
 | 在线检索 | 通过，`applyAmt / BigDecimal / 必填` Top-1 命中，状态 `ACCEPTED` |
-| 指标降频 | 通过，10000 条消息回放收敛为 10 个窗口和 2 个诊断任务 |
+| 指标降频 | 通过，10000 条消息模拟收敛为 10 个窗口和 2 个诊断任务 |
 | 真实模型 | 通过，DeepSeek `deepseek-v4-flash` 调用 1 次，JSON 门禁 `ACCEPTED` |
 | 审批与治理 | 通过，`PENDING_APPROVAL → APPROVED → SIMULATED`，结果为 `SIMULATED_SUCCESS` |
 | 成本审计 | 通过，原始请求/响应、Token、状态、价格版本和估算成本可查询 |

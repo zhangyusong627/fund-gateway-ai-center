@@ -64,7 +64,7 @@ public class PgvectorKnowledgeVectorStore implements KnowledgeVectorStore {
         String locator = chunk.locator();
         jdbcTemplate.update(sql, chunk.chunkId(), collectionName, chunk.sectionPath(), chunk.text(),
                 vectorLiteral(vector), metadataJson(chunk), chunk.source().documentId(), chunk.source().version(),
-                "synthetic-source", "fund-gateway", chunk.sectionPath(), "text", "document", "knowledge",
+                "NYXJ", "fund-gateway", chunk.sectionPath(), "text", "document", "knowledge",
                 locator, descriptor.provider(), descriptor.model(), descriptor.dimension(), descriptor.normalized());
     }
 

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.practice.fundgateway.experiments.console.ConsoleModels.GuardianSimulationRequest;
 
-/** 验证控制台守护回放的正常分支和万条消息降频分支。 */
+/** 验证控制台守护模拟的正常分支和万条消息降频分支。 */
 class GuardianConsoleServiceTest {
 
     private final GuardianConsoleService service = new GuardianConsoleService();

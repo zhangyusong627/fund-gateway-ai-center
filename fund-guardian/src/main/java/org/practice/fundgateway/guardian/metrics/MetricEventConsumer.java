@@ -40,7 +40,7 @@ public class MetricEventConsumer {
         this(mapper, aggregator, coordinator, new InMemoryMetricEventFailureRecorder());
     }
 
-    /** 注入失败记录器，允许测试和本地回放观察失败边界。 */
+    /** 注入失败记录器，允许测试和本地模拟观察失败边界。 */
     public MetricEventConsumer(JsonMapper mapper, MetricWindowAggregator aggregator,
                                RiskDiagnosisCoordinator coordinator,
                                MetricEventFailureRecorder failureRecorder) {

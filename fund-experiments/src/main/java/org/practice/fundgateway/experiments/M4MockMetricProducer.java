@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** 向本地 Redpanda 发送合成指标事件，用于回放 M4 消费链路。 */
+/** 向本地 Redpanda 发送合成指标事件，用于模拟 M4 消费链路。 */
 @Component
 @Profile("m4-producer")
 public class M4MockMetricProducer implements CommandLineRunner {
@@ -28,7 +28,7 @@ public class M4MockMetricProducer implements CommandLineRunner {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    /** 发送正常和风险两组指标事件，并输出回放数量。 */
+    /** 发送正常和风险两组指标事件，并输出模拟数量。 */
     @Override
     public void run(String... args) throws Exception {
         int sent = 0;

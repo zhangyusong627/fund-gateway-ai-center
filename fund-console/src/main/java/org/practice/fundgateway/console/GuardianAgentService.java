@@ -157,12 +157,12 @@ public class GuardianAgentService {
     /** 生成本地 Agent 上下文使用的合成诊断事实。 */
     private DiagnosisSnapshot syntheticSnapshot() {
         return new DiagnosisSnapshot("agent-console-snapshot", Instant.now(),
-                new MetricsEvidence("synthetic-provider", "credit-apply", 95, 820, 0.18, 48, 50),
-                List.of(), new ContractEvidence("synthetic-provider", "credit-apply", 20, 3000),
+                new MetricsEvidence("NYXJ", "credit-apply", 95, 820, 0.18, 48, 50),
+                List.of(), new ContractEvidence("NYXJ", "credit-apply", 20, 3000),
                 List.of(), "agent-console-fingerprint");
     }
 
-    /** 控制台 Agent 回放结果。 */
+    /** 控制台 Agent 模拟结果。 */
     public record AgentReplayResponse(String status, int turns, List<String> toolTrace, String finalContent) {
         /** 固定工具轨迹结构。 */
         public AgentReplayResponse {
